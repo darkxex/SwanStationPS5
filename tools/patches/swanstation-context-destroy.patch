@@ -1,0 +1,17 @@
+diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
+index a0613fb4..7970ae76 100644
+--- a/src/libretro/libretro_host_interface.cpp
++++ b/src/libretro/libretro_host_interface.cpp
+@@ -2188,7 +2188,11 @@ void HostInterface::SwitchToSoftwareRenderer()
+   m_display = std::make_unique<LibretroHostDisplay>();
+   m_display->CreateRenderDevice(wi, {}, false, false);
+   m_display->InitializeRenderDevice({}, false, false);
+-  System::RecreateGPU(GPURenderer::Software, false);
++  // PSXS5: the frontend destroys the context after retro_unload_game, when
++  // the system is already shut down and g_gpu is gone; there is no GPU to
++  // recreate then (it crashed on a null g_gpu).
++  if (!System::IsShutdown())
++    System::RecreateGPU(GPURenderer::Software, false);
+ 
+   if (save_display)
+   {
