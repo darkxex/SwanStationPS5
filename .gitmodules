@@ -7,3 +7,6 @@
 [submodule "third_party/beetle-psx"]
 	path = third_party/beetle-psx
 	url = https://github.com/mihawk-99/PS5_BeetlePSX.git
+[submodule "third_party/swanstation"]
+	path = third_party/swanstation
+	url = https://github.com/libretro/swanstation.git
