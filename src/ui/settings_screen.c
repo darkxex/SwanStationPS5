@@ -93,7 +93,7 @@ static const char *const OFF_ON[] = {"Off", "On"};
 static const char *const ASPECTS[] = {"Auto (game)", "4:3", "16:9", "16:10", "1:1 pixels",
                                       "Stretch to screen"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
-static const char *const EMULATORS[] = {"Automatic", "PCSX-ReARMed", "Beetle PSX HW"};
+static const char *const EMULATORS[] = {"Automatic", "PCSX-ReARMed", "Beetle PSX HW", "SwanStation"};
 static const char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
 static const char *const FILTERS[] = {"Sharp pixels", "Smooth pixels (Scale2x)", "xBR (smoothest)"};
 static const char *const REGIONS[] = {"Auto", "NTSC (60 Hz)", "PAL (50 Hz)"};
@@ -268,7 +268,7 @@ static const Row LIBRARY[] = {
 
 static const Row SYSTEM[] = {
     {"Emulation", "Emulator", "Beetle PSX HW is more accurate and renders on the GPU, but needs your BIOS. PCSX-ReARMed also runs without one.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(emulator), EMULATORS, 3, 0},
+     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(emulator), EMULATORS, 4, 0},
     {NULL, "Region", "Auto follows the disc; force 50 or 60 Hz if a game misbehaves.", K_CHOICE,
      APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(region), REGIONS, 3, 0},
     {NULL, "BIOS", "Your own BIOS dump in /data/PSXS5/bios, or the built-in one.", K_CHOICE,

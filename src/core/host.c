@@ -95,6 +95,28 @@ size_t beetle_retro_get_memory_size(unsigned);
 void beetle_retro_cheat_reset(void);
 void beetle_retro_cheat_set(unsigned, bool, const char *);
 static const CoreApi BEETLE = CORE_API("Beetle PSX HW", beetle_);
+void swanstation_retro_set_environment(retro_environment_t);
+void swanstation_retro_set_video_refresh(retro_video_refresh_t);
+void swanstation_retro_set_audio_sample(retro_audio_sample_t);
+void swanstation_retro_set_audio_sample_batch(retro_audio_sample_batch_t);
+void swanstation_retro_set_input_poll(retro_input_poll_t);
+void swanstation_retro_set_input_state(retro_input_state_t);
+void swanstation_retro_init(void);
+void swanstation_retro_deinit(void);
+bool swanstation_retro_load_game(const struct retro_game_info *);
+void swanstation_retro_unload_game(void);
+void swanstation_retro_get_system_av_info(struct retro_system_av_info *);
+void swanstation_retro_set_controller_port_device(unsigned, unsigned);
+void swanstation_retro_run(void);
+void swanstation_retro_reset(void);
+size_t swanstation_retro_serialize_size(void);
+bool swanstation_retro_serialize(void *, size_t);
+bool swanstation_retro_unserialize(const void *, size_t);
+void *swanstation_retro_get_memory_data(unsigned);
+size_t swanstation_retro_get_memory_size(unsigned);
+void swanstation_retro_cheat_reset(void);
+void swanstation_retro_cheat_set(unsigned, bool, const char *);
+static const CoreApi SWANSTATION = CORE_API("SwanStation", swanstation_);
 #endif
 
 static const CoreApi *core = &PCSX;
@@ -286,9 +308,37 @@ static void apply_beetle_options(const Settings *s)
 }
 #endif
 
+#if defined(PSXS5_VULKAN)
+/* SwanStation (DuckStation): the Vulkan renderer, the recompiler with LUT
+ * fastmem (MMap does not survive a title's sandbox). */
+static void apply_swanstation_options(const Settings *s)
+{
+    static const char *const regions[] = {"Auto", "NTSC-U", "PAL"};
+    static const char *const scales[] = {"1", "2", "4", "8", "16"};
+    int level = s->internal_res >= 1 && s->internal_res <= 5 ? s->internal_res : 1;
+    if (game_fixes & GDB_NO_UPSCALING)
+        level = 1;
+    bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
+    set_option("swanstation_GPU_Renderer", "Vulkan");
+    set_option("swanstation_GPU_ResolutionScale", scales[level - 1]);
+    set_option("swanstation_Console_Region", regions[s->region % REGION_COUNT]);
+    set_option("swanstation_GPU_TrueColor", s->true_colour ? "true" : "false");
+    set_option("swanstation_GPU_PGXPEnable", pgxp ? "true" : "false");
+    set_option("swanstation_BIOS_PatchFastBoot", s->boot_intro ? "false" : "true");
+    set_option("swanstation_CDROM_ReadSpeedup", s->cd_fast && !(game_fixes & GDB_NO_CD_SPEEDUP) ? "4" : "1");
+    set_option("swanstation_CPU_ExecutionMode", "Recompiler");
+    set_option("swanstation_CPU_FastmemMode", "LUT");
+}
+#endif
+
 static void apply_settings_to_options(const Settings *s)
 {
 #if defined(PSXS5_VULKAN)
+    if (core == &SWANSTATION)
+    {
+        apply_swanstation_options(s);
+        return;
+    }
     if (core == &BEETLE)
     {
         apply_beetle_options(s);
@@ -632,7 +682,7 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_SET_HW_RENDER:
     {
         struct retro_hw_render_callback *cb = data;
-        if (core != &BEETLE || cb->context_type != RETRO_HW_CONTEXT_VULKAN || !vkp_describe()[0])
+        if ((core != &BEETLE && core != &SWANSTATION) || cb->context_type != RETRO_HW_CONTEXT_VULKAN || !vkp_describe()[0])
             return false;
         hw = *cb;
         hw_requested = true;
@@ -906,6 +956,8 @@ static const CoreApi *pick_core(const Settings *settings, const char *serial, co
 #if defined(PSXS5_VULKAN)
     if (settings->emulator == EMU_BEETLE)
         return &BEETLE;
+    if (settings->emulator == EMU_SWANSTATION && vkp_describe()[0])
+        return &SWANSTATION;
     if (settings->emulator == EMU_AUTO)
     {
         /* Beetle when it can run the game well: on the GPU, with the BIOS */

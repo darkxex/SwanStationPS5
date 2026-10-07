@@ -23,8 +23,10 @@ APP_INCLUDE_PATHS ?= third_party/pcsx_rearmed/deps/libretro-common/include third
 ifeq ($(APP_VULKAN),1)
 # v2: Beetle PSX HW (Vulkan renderer), built by tools/build-beetle.sh
 PSXS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
+# SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
+PSXS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
 endif
-APP_STATIC_ARCHIVES ?= $(PSXS5_CORE) $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE)
+APP_STATIC_ARCHIVES ?= $(PSXS5_CORE) $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE) $(PSXS5_SWANSTATION)
 APP_RUNTIME_MODULES ?=
 # fcntl: console_curl. The allocator family: ps5_heap.c (the C heap is too small).
 APP_WRAP_SYMBOLS ?= fcntl malloc free calloc realloc reallocf memalign posix_memalign aligned_alloc malloc_usable_size
@@ -258,6 +260,7 @@ core:
 	@bash tools/build-rcheevos.sh ps5
 ifeq ($(APP_VULKAN),1)
 	@bash tools/build-beetle.sh
+	@bash tools/build-swanstation.sh
 endif
 
 core-desktop:
