@@ -359,7 +359,9 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
         draw_rrect(x - 10, y + 14, w + 20, h + 6, 18, 0x60000000u); /* shadow */
         if (theme.backdrop == BACKDROP_GRID) /* a neon glow */
             draw_rrect_outline(x - 14, y - 14, w + 28, h + 28, 20, 6, (theme.cover_outline & 0xffffffu) | 0x50000000u);
-        draw_rrect_outline(x - 7, y - 7, w + 14, h + 14, 14, 4, theme.cover_outline);
+        /* Classic: no white border around the selected cover (the other themes keep theirs) */
+        if (theme_current() != THEME_CLASSIC)
+            draw_rrect_outline(x - 7, y - 7, w + 14, h + 14, 14, 4, theme.cover_outline);
     }
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
