@@ -1517,7 +1517,7 @@ void shelf_screen(uint32_t pressed)
             draw_launch_disc(game, fminf(S.launch_t / DISC_TIME, 1.0f), S.launch_t);
         if (launch > 0.0f)
             text_draw(CENTER_X, plat_height() - 120, 30, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, launch),
-                      ALIGN_CENTER, tr("Compiling shaders, please wait..."));
+                      ALIGN_CENTER, tr("Compiling Shaders, please wait..."));
     }
     app_draw_toast();
 }

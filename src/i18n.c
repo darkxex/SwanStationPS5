@@ -1194,8 +1194,8 @@ static const Entry ENTRIES[] = {
     {{"SwanStation: effects that read the screen back (Final Fantasy VII's battle swirl, motion blur) are done on the GPU, without a stutter. A few games' effects may then look wrong: turn it off for those.", "SwanStation : les effets qui relisent l'écran (le tourbillon de combat de Final Fantasy VII, le flou de mouvement) sont faits par le GPU, sans saccade. Les effets de quelques jeux peuvent alors être faux : désactivez-le pour ceux-là.", "SwanStation: os efeitos que releem o ecrã (o remoinho de combate de Final Fantasy VII, o desfoque de movimento) são feitos pela GPU, sem soluços. Os efeitos de alguns jogos podem ficar errados: desligue-o nesses.", "SwanStation: los efectos que releen la pantalla (el remolino de combate de Final Fantasy VII, el desenfoque de movimiento) los hace la GPU, sin tirones. Los efectos de algunos juegos pueden verse mal: apágalo en esos.",
       "SwanStation: 画面を読み戻すエフェクト(ファイナルファンタジーVIIの戦闘突入の渦、モーションブラー)をGPUで行い、カクつきをなくします。一部のゲームでは表示が乱れるので、その場合はオフに。"}},
     /* ---- 2.2: loading */
-    {{"Compiling shaders, please wait...", "Compilation des shaders, veuillez patienter...",
-      "Compilando shaders, aguarde um momento...", "Compilando shaders, espere un momento...",
+    {{"Compiling Shaders, please wait...", "Compilation des Shaders, veuillez patienter...",
+      "Compilando Shaders, aguarde um momento...", "Compilando Shaders, espere un momento...",
       "シェーダーをコンパイル中です。しばらくお待ちください..."}},
 };
 
