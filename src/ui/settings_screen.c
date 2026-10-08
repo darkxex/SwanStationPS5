@@ -182,7 +182,7 @@ static const Row CONTROLS[] = {
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(lightbar), LIGHTBARS, 3, 0},
     {NULL, "Players", "Up to 4 with a multitap, for games that support it: each PS5 controller is a player.",
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(multitap), PLAYERS, 2, 0},
-    {NULL, "Player order", "Choose which controller is player 1, 2, 3 and 4: press Cross on each in turn. Kept until PSXS5 closes.",
+    {NULL, "Player order", "Choose which controller is player 1, 2, 3 and 4: press Cross on each in turn. Kept until SwanStationPS5 closes.",
      K_ACTION, APPLY_NOW, SP_PLAYERS, true, NO_FIELD, NULL, 0, 0},
     {"Sticks", "Dead zone", "Ignores small movements near the centre: raise it if a worn stick drifts on its own.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(stick_deadzone), DEADZONES, 5, 0},
@@ -229,7 +229,7 @@ static const Row ACHIEVEMENTS[] = {
 };
 
 static const Row LIBRARY[] = {
-    {"Shelf", "Theme", "The look of PSXS5: colours, fonts and the shelf's background.", K_CHOICE, APPLY_NOW, SP_THEME,
+    {"Shelf", "Theme", "The look of SwanStationPS5: colours, fonts and the shelf's background.", K_CHOICE, APPLY_NOW, SP_THEME,
      true, INT_FIELD(theme), THEME_NAMES, THEME_COUNT, 0},
     {NULL, "Cover art", "Flat front covers, or 3D boxes.", K_CHOICE, APPLY_NOW, SP_NONE, true,
      INT_FIELD(cover_style), COVER_STYLES, 2, 0},
@@ -269,32 +269,32 @@ static const Row SYSTEM[] = {
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(rewind), OFF_ON, 2, 0},
     {NULL, "Run-ahead", "Answers your buttons 1 or 2 frames sooner, for fighting games and platformers. It runs extra frames: at high internal resolutions some games may slow down.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(run_ahead), RUN_AHEADS, 3, 0},
-    {NULL, "Auto-save", "Saves the game by itself every few minutes into three auto-save slots (the oldest is replaced). Load one from the PSXS5 menu > Auto-saves.",
+    {NULL, "Auto-save", "Saves the game by itself every few minutes into three auto-save slots (the oldest is replaced). Load one from the SwanStationPS5 menu > Auto-saves.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(autosave), AUTOSAVES, 4, 0},
     {"People", "Who's playing", "Profiles: each person keeps their own memory cards, save states, settings, play time, favourites and RetroAchievements sign-in. Games and covers are shared.",
      K_ACTION, APPLY_NOW, SP_WHO, true, NO_FIELD, NULL, 0, 0},
     {"Phone", "Settings from your phone", "Change settings from a phone on the same network: scan the code.",
      K_TOGGLE, APPLY_NOW, SP_REMOTE, true, BOOL_FIELD(remote), OFF_ON, 2, 0},
-    {"Console", "Language", "The language of PSXS5's menus.", K_CHOICE, APPLY_NOW, SP_LANGUAGE, true,
+    {"Console", "Language", "The language of SwanStationPS5's menus.", K_CHOICE, APPLY_NOW, SP_LANGUAGE, true,
      INT_FIELD(language), NULL, LANG_COUNT, 0},
-    {NULL, "Unlock /data with etaHEN", "PSXS5 asks etaHEN for access to your games. Turn off if closing PSXS5 crashes the console.",
+    {NULL, "Unlock /data with etaHEN", "SwanStationPS5 asks etaHEN for access to your games. Turn off if closing SwanStationPS5 crashes the console.",
      K_TOGGLE, APPLY_NEXT_LAUNCH, SP_UNLOCK, true, NO_FIELD, OFF_ON, 2, 0},
-    {NULL, "Allow PSXS5 in PS5SX2 Helper", "PS5SX2 Helper only unlocks the apps listed in /data/whitelist.txt. This adds PSXS5; reload the helper (or restart the console) afterwards.",
+    {NULL, "Allow SwanStationPS5 in PS5SX2 Helper", "PS5SX2 Helper only unlocks the apps listed in /data/whitelist.txt. This adds SwanStationPS5; reload the helper (or restart the console) afterwards.",
      K_ACTION, APPLY_NOW, SP_WHITELIST, true, NO_FIELD, NULL, 0, 0},
 };
 
 static const Row ABOUT[] = {
-    {"PSXS5", "Version", "PlayStation X Super 5: PS1 emulation for jailbroken PS5, built on PCSX-ReARMed.",
+    {"SwanStationPS5", "Version", "PlayStation X Super 5: PS1 emulation for jailbroken PS5, built on PCSX-ReARMed.",
      K_INFO, APPLY_NOW, SP_VERSION, true, NO_FIELD, NULL, 0, 0},
-    {NULL, "BIOS", "PSXS5 never includes a BIOS: use a dump of your own console, or the built-in one.",
+    {NULL, "BIOS", "SwanStationPS5 never includes a BIOS: use a dump of your own console, or the built-in one.",
      K_INFO, APPLY_NOW, SP_BIOS, true, NO_FIELD, NULL, 0, 0},
     {NULL, "Games", "Games are your own backups, in /data/PSXS5/games.", K_INFO, APPLY_NOW, SP_GAMES,
      true, NO_FIELD, NULL, 0, 0},
     {NULL, "Data folder", "Saves, states, covers and settings live here.", K_INFO, APPLY_NOW, SP_DATA,
      true, NO_FIELD, NULL, 0, 0},
-    {"Updates", "Check for updates", "Looks for a newer PSXS5 on GitHub and installs it.", K_ACTION, APPLY_NOW,
+    {"Updates", "Check for updates", "Looks for a newer SwanStationPS5 on GitHub and installs it.", K_ACTION, APPLY_NOW,
      SP_UPDATE, true, NO_FIELD, NULL, 0, 0},
-    {NULL, "Check when PSXS5 starts", "Tells you on the shelf when a new version is out.", K_TOGGLE, APPLY_NOW,
+    {NULL, "Check when SwanStationPS5 starts", "Tells you on the shelf when a new version is out.", K_TOGGLE, APPLY_NOW,
      SP_NONE, true, BOOL_FIELD(update_check), OFF_ON, 2, 0},
 };
 
@@ -548,7 +548,7 @@ static const char *value_label(const Row *r, char *buf, size_t size)
         case UPDATE_NONE: return tr("Up to date");
         case UPDATE_AVAILABLE: snprintf(buf, size, tr("%s available: install"), update_version()); return buf;
         case UPDATE_INSTALLING: return tr("Installing...");
-        case UPDATE_INSTALLED: return tr("Installed: restart PSXS5");
+        case UPDATE_INSTALLED: return tr("Installed: restart SwanStationPS5");
         case UPDATE_FAILED: return update_message();
         default: return PSXS5_VERSION;
         }
@@ -1122,7 +1122,7 @@ static void draw_help(const Row *r)
     }
     y += draw_wrapped(x + 32, y, w - 64, 24, TH_TEXT_SOFT, tr(r->help)) + 20;
     static const char *const notes[] = {"Applies right away", "From the next game you start",
-                                        "After PSXS5 restarts"};
+                                        "After SwanStationPS5 restarts"};
     if (r->special == SP_REMOTE)
     {
         const char *url = remote_address();
@@ -1403,7 +1403,7 @@ static void activate(const Row *r)
         fclose(f);
         if (present)
         {
-            app_toast("PSXS5 is already in the whitelist");
+            app_toast("SwanStationPS5 is already in the whitelist");
             return;
         }
         f = fopen(list, "a");

@@ -216,7 +216,7 @@ static int install_thread(void *unused)
         fail(tr("Couldn't write the new files (is /data unlocked?)"));
         return 0;
     }
-    snprintf(message, sizeof(message), tr("PSXS5 %s is installed: restart PSXS5 to use it"), version);
+    snprintf(message, sizeof(message), tr("SwanStationPS5 %s is installed: restart SwanStationPS5 to use it"), version);
     psxs5_log("update: installed %s (%d files)", version, files);
     SDL_AtomicSet(&state, UPDATE_INSTALLED);
     return 0;

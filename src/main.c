@@ -361,7 +361,7 @@ void app_draw_game(uint8_t dim)
             draw_rrect(gx - 26, gy - 24, gw + 52, gh + 48, 34, argb_lerp(0xff000000u, 0xff0e0e11u, k));
             draw_circle(gx + gw + 30, gy + gh + 44, 7, argb_lerp(0xff000000u, 0xff3cd070u, k));
             text_draw(gx + gw * 0.5f, gy + gh + 32, 22, FONT_BOLD, argb_lerp(0xff000000u, 0xff5a5a66u, k),
-                      ALIGN_CENTER, PSXS5_NAME);
+                      ALIGN_CENTER, PSXS5_TITLE);
         }
     }
     plat_set_colour(view.brightness, view.colour, view.sharpen);
@@ -820,7 +820,7 @@ static void count_play_time(void)
 int main(void)
 {
     /* First thing: proves the loader accepted the title and main() runs. */
-    plat_notify("PSXS5 " PSXS5_VERSION " starting...");
+    plat_notify("SwanStationPS5 " PSXS5_VERSION " starting...");
     char root[PSXS5_PATH_MAX];
     plat_default_root(root, sizeof(root));
     config_paths(&app.paths, root);
@@ -832,13 +832,13 @@ int main(void)
     if (!plat_init())
     {
         char msg[300];
-        snprintf(msg, sizeof(msg), "PSXS5: %s", plat_init_error());
+        snprintf(msg, sizeof(msg), "SwanStationPS5: %s", plat_init_error());
         plat_notify(msg);
         for (;;)
             plat_sleep_us(1000000);
     }
     if (!text_init())
-        plat_notify("PSXS5: interface font missing from assets/fonts");
+        plat_notify("SwanStationPS5: interface font missing from assets/fonts");
 
     /* Sandboxed or not, files in /data open and save; only listing differs. */
     const char *dirs[] = {app.paths.root,   app.paths.games,  app.paths.bios,
@@ -861,7 +861,7 @@ int main(void)
     path_join(log_path, sizeof(log_path), app.paths.logs, "psxs5.log");
     psxs5_log_open(log_path);
     ps5_crash_install(log_path);
-    psxs5_log("PSXS5 %s starting, data root %s", PSXS5_VERSION, app.paths.root);
+    psxs5_log("SwanStationPS5 %s starting, data root %s", PSXS5_VERSION, app.paths.root);
     psxs5_log("screen: %s", plat_screen_info());
 #if defined(__PROSPERO__)
     extern size_t ps5_heap_size_mb(void);
@@ -896,7 +896,7 @@ int main(void)
     if (!app.storage_error[0])
         app_rescan();
     shelf_select_game(app.global.last_game);
-    plat_notify("PSXS5 ready");
+    plat_notify("SwanStationPS5 ready");
 
     bool quit = false;
     PadState pads[PSXS5_MAX_PADS];

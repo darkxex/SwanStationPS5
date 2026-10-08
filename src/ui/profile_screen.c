@@ -181,7 +181,7 @@ void profile_screen(uint32_t pressed)
     snprintf(points, sizeof(points), tr("%u points (hardcore)   %u points (softcore)"), ra_user_hardcore_score(),
              ra_user_softcore_score());
     text_draw(ax + as + 32, ay + 74, 24, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT,
-              ra_signed_in() ? points : tr("Not signed in yet: the points show once PSXS5 is online"));
+              ra_signed_in() ? points : tr("Not signed in yet: the points show once SwanStationPS5 is online"));
 
     /* the numbers */
     char value[48], label[96];
@@ -203,7 +203,7 @@ void profile_screen(uint32_t pressed)
     text_draw(lx + 28, cy + 22, 26, FONT_BOLD, TH_TEXT, ALIGN_LEFT, tr("Recently unlocked"));
     if (!P.recent_count)
         text_draw_fit(lx + 28, cy + 80, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, col - 56,
-                      tr("Unlocks earned in PSXS5 show here."));
+                      tr("Unlocks earned in SwanStationPS5 show here."));
     for (int i = 0; i < P.recent_count; ++i)
     {
         const RaRecent *r = &P.recent[i];

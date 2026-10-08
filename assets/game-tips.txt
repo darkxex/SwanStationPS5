@@ -11,11 +11,11 @@ Crash Team Racing	any	Up to 4 players: Settings > Controls > Players > Up to 4 (
 Crash Bash	any	Up to 4 players: Settings > Controls > Players > Up to 4 (multitap).
 Bomberman World	any	Up to 4 players: Settings > Controls > Players > Up to 4 (multitap).
 Bomberman Party Edition	any	Up to 4 players: Settings > Controls > Players > Up to 4 (multitap).
-Micro Machines V3	any	Up to 4 players in PSXS5 with the multitap (Settings > Controls > Players).
-Time Crisis	any	Made for a light gun, which PSXS5 doesn't support yet.
-Time Crisis Project Titan	any	Made for a light gun, which PSXS5 doesn't support yet.
-Point Blank	any	Made for a light gun, which PSXS5 doesn't support yet.
-Point Blank 2	any	Made for a light gun, which PSXS5 doesn't support yet.
-Point Blank 3	any	Made for a light gun, which PSXS5 doesn't support yet.
-Elemental Gearbolt	any	Made for a light gun, which PSXS5 doesn't support yet.
-Vib Ribbon	any	On a real console it builds levels from music CDs; PSXS5 can't load audio CDs, so only its own songs play.
+Micro Machines V3	any	Up to 4 players in SwanStationPS5 with the multitap (Settings > Controls > Players).
+Time Crisis	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Time Crisis Project Titan	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Point Blank	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Point Blank 2	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Point Blank 3	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Elemental Gearbolt	any	Made for a light gun, which SwanStationPS5 doesn't support yet.
+Vib Ribbon	any	On a real console it builds levels from music CDs; SwanStationPS5 can't load audio CDs, so only its own songs play.

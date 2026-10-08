@@ -470,8 +470,8 @@ static void draw_details(const Game *g, float t)
 /* Category chips along the top; the highlight slides between them. */
 static void draw_header(void)
 {
-    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_NAME);
-    float x = TH_MARGIN + text_width(44, FONT_BOLD, PSXS5_NAME) + 40, y = 46, h = 46;
+    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_TITLE);
+    float x = TH_MARGIN + text_width(44, FONT_BOLD, PSXS5_TITLE) + 40, y = 46, h = 46;
     for (int c = 0; c < CAT_COUNT; ++c)
     {
         int n = category_size(c);
@@ -588,11 +588,11 @@ static void draw_info(const Game *g, float alpha)
 static void storage_screen(uint32_t pressed)
 {
     shelf_backdrop();
-    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_NAME);
+    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_TITLE);
     float w = 1200, h = 300, x = CENTER_X - w * 0.5f, y = 330;
     draw_rrect(x, y, w, h, TH_RADIUS, TH_CARD_SOFT);
     icon_draw(ICON_ALERT_TRIANGLE, CENTER_X - 32, y + 40, 64, TH_GOLD);
-    text_draw(CENTER_X, y + 124, 36, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("PSXS5 can't open /data/PSXS5"));
+    text_draw(CENTER_X, y + 124, 36, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("SwanStationPS5 can't open /data/PSXS5"));
     text_draw_fit(CENTER_X, y + 190, 24, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, w - 80,
                   app.storage_error);
     static const int glyphs[] = {GLYPH_SQUARE};
@@ -1429,7 +1429,7 @@ void shelf_screen(uint32_t pressed)
         {
             /* games copied another way can't be found without listing /data */
             text_draw(CENTER_X, y + 252, 22, FONT_REGULAR, TH_GOLD, ALIGN_CENTER,
-                      tr("Nothing unlocked /data (LegacyJB, etaHEN...), so PSXS5 can't look into the games folder."));
+                      tr("Nothing unlocked /data (LegacyJB, etaHEN...), so SwanStationPS5 can't look into the games folder."));
             text_draw(CENTER_X, y + 286, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
                       tr("On your PC:  python tools/psxs5_sync.py index --host <PS5 IP>"));
         }

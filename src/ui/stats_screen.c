@@ -116,7 +116,7 @@ void library_stats_screen(uint32_t pressed)
     stats_format_time((uint32_t)(L.seconds > 0xffffffffu ? 0xffffffffu : L.seconds), value, sizeof(value));
     if (!L.seconds)
         str_copy(value, sizeof(value), "0");
-    tile(TH_MARGIN + (w + gap), y, w, ICON_CLOCK, value, tr("played in PSXS5"));
+    tile(TH_MARGIN + (w + gap), y, w, ICON_CLOCK, value, tr("played in SwanStationPS5"));
     snprintf(value, sizeof(value), "%d", L.ach_unlocked);
     if (L.ach_total)
         snprintf(label, sizeof(label), tr("of %d achievements, in %d games"), L.ach_total, L.games_with_ach);

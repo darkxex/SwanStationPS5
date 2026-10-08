@@ -192,7 +192,7 @@ const char *ps5_unlock_describe(UnlockResult r)
     case UNLOCK_ALREADY: return "already unlocked";
     case UNLOCK_NO_ANSWER: return "no unlock service answered (LegacyJB, etaHEN, PS5SX2 Helper)";
     case UNLOCK_CANT_REQUEST: return "couldn't write the request";
-    case UNLOCK_SKIPPED_AFTER_CRASH: return "skipped once after the last request closed PSXS5 (start again to retry)";
+    case UNLOCK_SKIPPED_AFTER_CRASH: return "skipped once after the last request closed SwanStationPS5 (start again to retry)";
     }
     return "?";
 }

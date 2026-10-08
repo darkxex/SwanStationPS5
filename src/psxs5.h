@@ -13,7 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PSXS5_NAME "PSXS5"
+#define PSXS5_NAME "PSXS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
+#define PSXS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define PSXS5_TITLE_ID "PPSA97510"
 #define PSXS5_VERSION "2.1.1"
 #define PSXS5_PATH_MAX 512

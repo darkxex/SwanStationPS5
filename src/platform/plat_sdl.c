@@ -257,7 +257,7 @@ static bool init_preview_screen(void)
 #if !defined(__PROSPERO__)
 static bool init_desktop_window(void)
 {
-    window = SDL_CreateWindow(PSXS5_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    window = SDL_CreateWindow(PSXS5_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               1280, 720, SDL_WINDOW_RESIZABLE);
     if (!window)
         return init_failed("SDL window");
