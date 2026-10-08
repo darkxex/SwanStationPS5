@@ -153,6 +153,12 @@ def c_str(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+# PSXS5's own defaults where they differ from the core's
+DEFAULT_OVERRIDES = {
+    "swanstation_Display_ShowOSDMessages": "false",  # PSXS5 draws its own toasts
+}
+
+
 def main():
     text = preprocess(SRC.read_text())
     start = text.index("option_defs_us[]")
@@ -169,6 +175,9 @@ def main():
         names = [v for v, _ in vals]
         if default not in names:
             sys.exit(f"{key}: default {default!r} is not one of its values")
+        default = DEFAULT_OVERRIDES.get(key, default)
+        if default not in names:
+            sys.exit(f"{key}: override {default!r} is not one of its values")
         opts.append((key, unescape(label), unescape(desc or ""), cat, vals, names.index(default)))
 
     order = {c: i for i, (c, _) in enumerate(CATEGORIES)}

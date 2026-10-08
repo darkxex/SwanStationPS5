@@ -416,11 +416,13 @@ static const Entry ENTRIES[] = {
     /* ---- settings: rows */
     {{"Video", "Vidéo", "Vídeo", "Video", "映像"}},
     {{"Renderer", "Moteur de rendu", "Renderizador", "Renderizador", "レンダラー"}},
-    {{"Vulkan draws on the GPU: fast, with higher internal resolutions and the shaders. Software draws on the CPU, at native resolution only. Takes effect with the next game.",
-      "Vulkan dessine avec le GPU : rapide, avec des résolutions internes plus élevées et les shaders. Software dessine avec le CPU, en résolution native uniquement. Pris en compte au prochain jeu.",
-      "O Vulkan desenha na GPU: rápido, com resoluções internas mais altas e os shaders. O Software desenha no CPU, só em resolução nativa. Aplica-se no próximo jogo.",
-      "Vulkan dibuja con la GPU: rápido, con resoluciones internas más altas y los shaders. Software dibuja con la CPU, solo en resolución nativa. Se aplica en el próximo juego.",
-      "Vulkan は GPU で描画し、高速で内部解像度の向上とシェーダーに対応します。Software は CPU で描画し、ネイティブ解像度のみです。次のゲームから反映されます。"}},
+    {{"The GPU draws fast, with higher internal resolutions and the shaders. The CPU draws at native resolution only. Takes effect with the next game.",
+      "Le GPU dessine vite, avec des résolutions internes plus élevées et les shaders. Le CPU dessine en résolution native uniquement. Pris en compte au prochain jeu.",
+      "A GPU desenha depressa, com resoluções internas mais altas e os shaders. O CPU desenha só em resolução nativa. Aplica-se no próximo jogo.",
+      "La GPU dibuja rápido, con resoluciones internas más altas y los shaders. La CPU dibuja solo en resolución nativa. Se aplica en el próximo juego.",
+      "GPU は高速に描画し、高い内部解像度とシェーダーに対応します。CPU はネイティブ解像度のみです。次のゲームから反映されます。"}},
+    {{"GPU (Recommended)", "GPU (recommandé)", "GPU (recomendado)", "GPU (Recomendado)", "GPU(推奨)"}},
+
     {{"Internal resolution", "Résolution interne", "Resolução interna", "Resolución interna", "内部解像度"}},
     {{"sharper 3D", "3D plus nette", "3D mais nítido", "3D más nítido", "3D をくっきり"}},
     {{"Upscale", "Agrandissement", "Ampliação", "Escalado", "アップスケール"}},

@@ -92,7 +92,7 @@ typedef struct
 static const char *const OFF_ON[] = {"Off", "On"};
 static const char *const ASPECTS[] = {"Core", "4:3", "16:9", "16:10", "1:1 pixels",
                                       "Stretch to screen"};
-static const char *const RENDERERS[] = {"Vulkan", "Software"};
+static const char *const RENDERERS[] = {"GPU (Recommended)", "CPU"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 /* unused while the Emulator row is commented out */
 static const __attribute__((unused)) char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
@@ -164,7 +164,7 @@ static const Row DISPLAY[] = {
 };
 
 static const Row GRAPHICS[] = {
-    {"Rendering", "Renderer", "Vulkan draws on the GPU: fast, with higher internal resolutions and the shaders. Software draws on the CPU, at native resolution only. Takes effect with the next game.",
+    {"Rendering", "Renderer", "The GPU draws fast, with higher internal resolutions and the shaders. The CPU draws at native resolution only. Takes effect with the next game.",
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(renderer), RENDERERS, 2, 0},
     {NULL, "Internal resolution", "Draws 3D at a higher resolution: sharper polygons.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
