@@ -630,6 +630,168 @@ GROUPS = {
     "Advanced (Core)": ("Avancé (cœur)", "Avançado (Núcleo)", "Avanzado (Núcleo)"),
 }
 
+# ---------------------------------------------------------------- the core's on-screen messages (host.c shows them)
+# English -> (fr, pt, es). %u / %s / %d are filled with what the core put there; keep their order.
+OSD = {
+    "Renderer switch pending, please restart the core to apply.": (
+        "Changement de moteur de rendu en attente : redémarrez le cœur pour l'appliquer.",
+        "Mudança de renderizador pendente: reinicie o núcleo para a aplicar.",
+        "Cambio de renderizador pendiente: reinicia el núcleo para aplicarlo."),
+    "Resolution changed, updating system AV info...": (
+        "Résolution modifiée, mise à jour des informations audio/vidéo...",
+        "Resolução alterada, a atualizar as informações de áudio e vídeo...",
+        "Resolución cambiada, actualizando la información de audio y video..."),
+    "Changing memory card 1 type will apply on core reload, to prevent save loss.": (
+        "Le changement du type de carte mémoire 1 s'appliquera au rechargement du cœur, pour éviter de perdre des sauvegardes.",
+        "A mudança do tipo do cartão de memória 1 só se aplica ao recarregar o núcleo, para evitar perder gravações.",
+        "El cambio del tipo de tarjeta de memoria 1 se aplicará al recargar el núcleo, para no perder partidas."),
+    "Enabling of software renderer for readbacks pending. Please restart the core to apply.": (
+        "Activation du rendu logiciel pour les lectures en attente. Redémarrez le cœur pour l'appliquer.",
+        "Ativação do renderizador por software para leituras pendente. Reinicie o núcleo para a aplicar.",
+        "Activación del renderizador por software para lecturas pendiente. Reinicia el núcleo para aplicarla."),
+    "Disabling of software renderer for readbacks pending. Please restart the core to apply.": (
+        "Désactivation du rendu logiciel pour les lectures en attente. Redémarrez le cœur pour l'appliquer.",
+        "Desativação do renderizador por software para leituras pendente. Reinicie o núcleo para a aplicar.",
+        "Desactivación del renderizador por software para lecturas pendiente. Reinicia el núcleo para aplicarla."),
+    "Changing audio hook will apply on core reload.": (
+        "Le changement du hook audio s'appliquera au rechargement du cœur.",
+        "A mudança do hook de áudio aplica-se ao recarregar o núcleo.",
+        "El cambio del hook de audio se aplicará al recargar el núcleo."),
+    "Failed to allocate memory": ("Échec de l'allocation de mémoire", "Falha ao alocar memória",
+                                  "No se pudo asignar memoria"),
+    "Failed to boot system after recreation.": (
+        "Échec du démarrage du système après la recréation.", "Falha ao iniciar o sistema após a recriação.",
+        "No se pudo iniciar el sistema tras recrearlo."),
+    "Failed to load memory save state, resetting.": (
+        "Échec du chargement de l'état en mémoire, réinitialisation.",
+        "Falha ao carregar o estado em memória, a reiniciar.",
+        "No se pudo cargar el estado en memoria, reiniciando."),
+    "Failed to recreate GPU.": ("Échec de la recréation du GPU.", "Falha ao recriar o GPU.",
+                                "No se pudo recrear la GPU."),
+    "Failed to save state before system recreation. Shutting down.": (
+        "Échec de la sauvegarde de l'état avant la recréation du système. Arrêt.",
+        "Falha ao guardar o estado antes de recriar o sistema. A encerrar.",
+        "No se pudo guardar el estado antes de recrear el sistema. Cerrando."),
+    "System failed to boot. The log may contain more information.": (
+        "Le système n'a pas démarré. Le journal peut contenir plus d'informations.",
+        "O sistema não arrancou. O registo pode ter mais informações.",
+        "El sistema no arrancó. El registro puede tener más información."),
+    "SSAA is not supported, using MSAA instead.": (
+        "Le SSAA n'est pas pris en charge, MSAA utilisé à la place.", "O SSAA não é suportado, a usar MSAA.",
+        "SSAA no es compatible, se usa MSAA."),
+    "Adaptive downsampling is not supported with the current renderer, using box filter instead.": (
+        "Le sous-échantillonnage adaptatif n'est pas pris en charge par le rendu actuel, filtre box utilisé à la place.",
+        "A redução de amostragem adaptativa não é suportada pelo renderizador atual, a usar o filtro box.",
+        "La reducción de muestreo adaptativa no es compatible con el renderizador actual, se usa el filtro box."),
+    "No GPU provided and none available, cannot create device": (
+        "Aucun GPU fourni ni disponible, impossible de créer le périphérique",
+        "Nenhum GPU fornecido nem disponível, não é possível criar o dispositivo",
+        "No se proporcionó ninguna GPU y no hay ninguna disponible, no se puede crear el dispositivo"),
+    "%ux MSAA is not supported, using %ux instead.": (
+        "Le MSAA %ux n'est pas pris en charge, %ux utilisé à la place.", "O MSAA %ux não é suportado, a usar %ux.",
+        "MSAA %ux no es compatible, se usa %ux."),
+    "Controller %u switched to analog mode.": ("Manette %u passée en mode analogique.",
+                                               "Comando %u mudou para o modo analógico.",
+                                               "Control %u cambió a modo analógico."),
+    "Controller %u switched to digital mode.": ("Manette %u passée en mode numérique.",
+                                                "Comando %u mudou para o modo digital.",
+                                                "Control %u cambió a modo digital."),
+    "Controller %u is locked to analog mode by the game.": (
+        "Manette %u verrouillée en mode analogique par le jeu.",
+        "Comando %u bloqueado no modo analógico pelo jogo.", "Control %u bloqueado en modo analógico por el juego."),
+    "Controller %u is locked to digital mode by the game.": (
+        "Manette %u verrouillée en mode numérique par le jeu.",
+        "Comando %u bloqueado no modo digital pelo jogo.", "Control %u bloqueado en modo digital por el juego."),
+    "Failed to initialize %s renderer, falling back to software renderer.": (
+        "Échec de l'initialisation du rendu %s, retour au rendu logiciel.",
+        "Falha ao iniciar o renderizador %s, a usar o renderizador por software.",
+        "No se pudo iniciar el renderizador %s, se usa el renderizador por software."),
+    "Failed to open disc image '%s': %s.": (
+        "Échec de l'ouverture de l'image disque '%s' : %s.", "Falha ao abrir a imagem de disco '%s': %s.",
+        "No se pudo abrir la imagen de disco '%s': %s."),
+    "Inserted disc '%s' (%s).": ("Disque '%s' (%s) inséré.", "Disco '%s' (%s) inserido.",
+                                 "Disco '%s' (%s) insertado."),
+    "WARNING: Running libcrypt-protected game %s (%s) without an SBI file. The game will likely not run correctly. See the README for how to add an SBI file.": (
+        "AVERTISSEMENT : jeu protégé par libcrypt %s (%s) lancé sans fichier SBI. Le jeu ne fonctionnera probablement pas correctement. Voir le README pour ajouter un fichier SBI.",
+        "AVISO: a executar o jogo protegido por libcrypt %s (%s) sem ficheiro SBI. O jogo provavelmente não funcionará bem. Consulte o README para saber como adicionar um ficheiro SBI.",
+        "ADVERTENCIA: se ejecuta el juego protegido con libcrypt %s (%s) sin un archivo SBI. Es probable que el juego no funcione bien. Consulta el README para saber cómo agregar un archivo SBI."),
+    "Failed to switch to subimage %u in '%s': %s": (
+        "Échec du passage à la sous-image %u dans '%s' : %s", "Falha ao mudar para a subimagem %u em '%s': %s",
+        "No se pudo cambiar a la subimagen %u en '%s': %s"),
+    "Failed to switch to subimage %u in '%s': %s.": (
+        "Échec du passage à la sous-image %u dans '%s' : %s.", "Falha ao mudar para a subimagem %u em '%s': %s.",
+        "No se pudo cambiar a la subimagen %u en '%s': %s."),
+    "Switched to sub-image %s (%u) in '%s'.": (
+        "Passage à la sous-image %s (%u) dans '%s'.", "Mudou para a subimagem %s (%u) em '%s'.",
+        "Se cambió a la subimagen %s (%u) en '%s'."),
+    "Save state is incompatible: minimum version is %u but state is version %u.": (
+        "État incompatible : la version minimale est %u mais l'état est en version %u.",
+        "Estado incompatível: a versão mínima é %u mas o estado é da versão %u.",
+        "Estado incompatible: la versión mínima es %u pero el estado es de la versión %u."),
+    "Save state is incompatible: maximum version is %u but state is version %u.": (
+        "État incompatible : la version maximale est %u mais l'état est en version %u.",
+        "Estado incompatível: a versão máxima é %u mas o estado é da versão %u.",
+        "Estado incompatible: la versión máxima es %u pero el estado es de la versión %u."),
+    "Failed to open CD image '%s' used by save state: %s.": (
+        "Échec de l'ouverture de l'image CD '%s' utilisée par l'état : %s.",
+        "Falha ao abrir a imagem de CD '%s' usada pelo estado: %s.",
+        "No se pudo abrir la imagen de CD '%s' usada por el estado: %s."),
+    "Failed to switch to subimage %u in CD image '%s' used by save state: %s.": (
+        "Échec du passage à la sous-image %u de l'image CD '%s' utilisée par l'état : %s.",
+        "Falha ao mudar para a subimagem %u da imagem de CD '%s' usada pelo estado: %s.",
+        "No se pudo cambiar a la subimagen %u de la imagen de CD '%s' usada por el estado: %s."),
+    "Failed to load EXE file '%s'": ("Échec du chargement du fichier EXE '%s'", "Falha ao carregar o ficheiro EXE '%s'",
+                                     "No se pudo cargar el archivo EXE '%s'"),
+    "Failed to load PSF file '%s'": ("Échec du chargement du fichier PSF '%s'", "Falha ao carregar o ficheiro PSF '%s'",
+                                     "No se pudo cargar el archivo PSF '%s'"),
+    "ERROR: %s": ("ERREUR : %s", "ERRO: %s", "ERROR: %s"),
+    "Unknown save state compression type %u": (
+        "Type de compression d'état inconnu %u", "Tipo de compressão de estado desconhecido %u",
+        "Tipo de compresión de estado desconocido %u"),
+}
+
+# The game-settings notes the core joins into one message, "A. B. C. ": each sentence is translated alone.
+_GAME = (" par les réglages du jeu.", " pelas definições do jogo.", " por los ajustes del juego.")
+for en, fr, pt, es in (
+    ("CPU interpreter forced", "Interpréteur CPU imposé", "Interpretador do CPU forçado", "Intérprete de CPU forzado"),
+    ("Software renderer forced", "Rendu logiciel imposé", "Renderizador por software forçado",
+     "Renderizador por software forzado"),
+    ("Interlacing forced", "Entrelacement imposé", "Entrelaçamento forçado", "Entrelazado forzado"),
+    ("True color disabled", "Couleurs vraies désactivées", "Cor verdadeira desativada", "Color verdadero desactivado"),
+    ("Upscaling disabled", "Mise à l'échelle désactivée", "Ampliação desativada", "Escalado desactivado"),
+    ("Scaled dithering disabled", "Tramage à l'échelle désactivé", "Dithering escalado desativado",
+     "Dithering escalado desactivado"),
+    ("Widescreen hack disabled", "Hack écran large désactivé", "Hack de ecrã panorâmico desativado",
+     "Hack de pantalla ancha desactivado"),
+    ("Forcing NTSC Timings disallowed", "Le forçage du timing NTSC est interdit",
+     "Forçar a temporização NTSC não é permitido", "Forzar la temporización NTSC no está permitido"),
+    ("PGXP geometry correction disabled", "Correction de géométrie PGXP désactivée",
+     "Correção de geometria PGXP desativada", "Corrección de geometría PGXP desactivada"),
+    ("PGXP culling disabled", "Culling PGXP désactivé", "Culling PGXP desativado", "Culling PGXP desactivado"),
+    ("PGXP perspective corrected textures disabled", "Textures PGXP corrigées en perspective désactivées",
+     "Texturas PGXP com perspetiva correta desativadas", "Texturas PGXP con perspectiva correcta desactivadas"),
+    ("PGXP perspective corrected colors disabled", "Couleurs PGXP corrigées en perspective désactivées",
+     "Cores PGXP com perspetiva correta desativadas", "Colores PGXP con perspectiva correcta desactivados"),
+    ("PGXP vertex cache forced", "Cache de sommets PGXP imposé", "Cache de vértices PGXP forçada",
+     "Caché de vértices PGXP forzada"),
+    ("PGXP CPU mode forced", "Mode CPU PGXP imposé", "Modo CPU PGXP forçado", "Modo CPU de PGXP forzado"),
+    ("PGXP Depth Buffer disabled", "Tampon de profondeur PGXP désactivé", "Buffer de profundidade PGXP desativado",
+     "Búfer de profundidad PGXP desactivado"),
+    ("Memory exceptions for recompiler forced", "Exceptions mémoire du recompilateur imposées",
+     "Exceções de memória do recompilador forçadas", "Excepciones de memoria del recompilador forzadas"),
+    ("ICache for recompiler forced", "ICache du recompilateur imposé", "ICache do recompilador forçada",
+     "ICache del recompilador forzada"),
+    ("LUT fastmem for recompiler forced", "Fastmem LUT du recompilateur imposé",
+     "Fastmem LUT do recompilador forçado", "Fastmem LUT del recompilador forzado"),
+    ("Old audio hook forced", "Ancien hook audio imposé", "Hook de áudio antigo forçado",
+     "Hook de audio antiguo forzado"),
+):
+    OSD[en + " by game settings."] = (fr + _GAME[0], pt + _GAME[1], es + _GAME[2])
+OSD["Using software renderer for readbacks based on game settings."] = (
+    "Rendu logiciel utilisé pour les lectures selon les réglages du jeu.",
+    "A usar o renderizador por software para leituras segundo as definições do jogo.",
+    "Se usa el renderizador por software para lecturas según los ajustes del juego.")
+
 
 def pattern_value(text):
     """Values that follow a pattern: 'N Sectors (7KB / 2ms)', '2x (Quad Speed)', '1.5 pixels'."""
@@ -686,6 +848,12 @@ def main():
             add(v, t)
     for en, t in GROUPS.items():
         add(en, t)
+
+    for en, t in OSD.items():
+        add(en, t)
+    (ROOT / "src/core/osd_messages.inc").write_text(
+        "/* Generated by tools/gen_swanstation_i18n.py - do not edit. The core's on-screen messages (host.c). */\n" +
+        "".join("    " + c_str(en) + ",\n" for en in OSD))
 
     out = ["/* Generated by tools/gen_swanstation_i18n.py - do not edit. SwanStation's core options in French,",
            " * Portuguese and Spanish; Japanese keeps the English text. Included at the end of ENTRIES (i18n.c). */"]

@@ -11,6 +11,7 @@
 #include "host.h"
 
 #include "../gamedb.h"
+#include "../i18n.h"
 
 #include "libretro.h"
 #include "../platform/platform.h"
@@ -559,6 +560,128 @@ float host_rumble_level(int port)
     return s > w ? s : w;
 }
 
+/* ---------------------------------------------------------------- the core's messages, translated */
+
+/* The core's English texts (generated: tools/gen_swanstation_i18n.py); the ones with %u / %s / %d hold the
+ * values the core put in. */
+static const char *const OSD_MESSAGES[] = {
+#include "osd_messages.inc"
+};
+#define OSD_MESSAGE_COUNT (sizeof(OSD_MESSAGES) / sizeof(OSD_MESSAGES[0]))
+
+typedef struct
+{
+    const char *text;
+    size_t length;
+} OsdArg;
+
+/* Does message fit the template, and what stood in place of each %u / %d / %s? */
+static bool osd_match(const char *tpl, const char *msg, OsdArg *args, int n)
+{
+    while (*tpl)
+    {
+        if (tpl[0] == '%' && (tpl[1] == 'u' || tpl[1] == 'd' || tpl[1] == 's'))
+        {
+            if (n >= 4)
+                return false;
+            size_t most = strlen(msg);
+            if (tpl[1] != 's')
+            {
+                size_t digits = 0;
+                while (digits < most && msg[digits] >= '0' && msg[digits] <= '9')
+                    ++digits;
+                most = digits;
+            }
+            for (size_t len = most; len >= 1; --len)
+            {
+                args[n] = (OsdArg){msg, len};
+                if (osd_match(tpl + 2, msg + len, args, n + 1))
+                    return true;
+            }
+            return false;
+        }
+        if (*tpl != *msg)
+            return false;
+        ++tpl, ++msg;
+    }
+    return *msg == '\0';
+}
+
+static void osd_translate(const char *msg, char *out, size_t size, int depth);
+
+/* One message (or one sentence of it): its translation, the values put back in. */
+static bool osd_translate_whole(const char *msg, char *out, size_t size, int depth)
+{
+    for (size_t i = 0; i < OSD_MESSAGE_COUNT; ++i)
+    {
+        OsdArg args[4];
+        if (!osd_match(OSD_MESSAGES[i], msg, args, 0))
+            continue;
+        const char *t = tr(OSD_MESSAGES[i]);
+        size_t o = 0;
+        int a = 0;
+        for (; *t && o + 1 < size; ++t)
+        {
+            if (t[0] == '%' && (t[1] == 'u' || t[1] == 'd' || t[1] == 's') && a < 4)
+            {
+                char piece[256];
+                size_t len = args[a].length < sizeof(piece) - 1 ? args[a].length : sizeof(piece) - 1;
+                memcpy(piece, args[a].text, len);
+                piece[len] = '\0';
+                ++a;
+                char shown[320];
+                if (t[1] == 's' && depth < 3)
+                    osd_translate(piece, shown, sizeof(shown), depth + 1); /* "ERROR: %s" holds another message */
+                else
+                    str_copy(shown, sizeof(shown), piece);
+                for (const char *c = shown; *c && o + 1 < size; ++c)
+                    out[o++] = *c;
+                ++t;
+            }
+            else
+                out[o++] = *t;
+        }
+        out[o] = '\0';
+        return true;
+    }
+    return false;
+}
+
+/* The text in the interface language. The core joins several notes into one message ("A. B. "): each
+ * sentence is translated alone. Text it does not know stays as the core wrote it. */
+static void osd_translate(const char *msg, char *out, size_t size, int depth)
+{
+    if (osd_translate_whole(msg, out, size, depth))
+        return;
+    size_t o = 0;
+    bool any = false;
+    const char *p = msg;
+    while (*p && o + 1 < size)
+    {
+        const char *end = strstr(p, ". ");
+        size_t len = end ? (size_t)(end - p) + 1 : strlen(p); /* keeps the full stop */
+        char sentence[320], done[320];
+        len = len < sizeof(sentence) - 1 ? len : sizeof(sentence) - 1;
+        memcpy(sentence, p, len);
+        sentence[len] = '\0';
+        if (osd_translate_whole(sentence, done, sizeof(done), depth))
+            any = true;
+        else
+            str_copy(done, sizeof(done), sentence);
+        for (const char *c = done; *c && o + 1 < size; ++c)
+            out[o++] = *c;
+        p += len;
+        if (end && o + 1 < size)
+        {
+            out[o++] = ' ';
+            p += 1; /* the space after the full stop */
+        }
+    }
+    out[o] = '\0';
+    if (!any)
+        str_copy(out, size, msg);
+}
+
 static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
 {
     switch (cmd)
@@ -670,7 +793,11 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
         const char *msg = ((const struct retro_message *)data)->msg;
         psxs5_log("core message: %s", msg);
         if (msg && msg[0])
-            app_toast(msg);
+        {
+            char shown[512];
+            osd_translate(msg, shown, sizeof(shown), 0);
+            app_toast(shown);
+        }
         return true;
     }
 #if defined(PSXS5_VULKAN)

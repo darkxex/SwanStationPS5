@@ -371,6 +371,20 @@ void app_draw_game(uint8_t dim)
         draw_timer();
 }
 
+/* Is there a BIOS file (any .bin) in bios/? When the folder can't be listed (sandboxed mode) we can't tell: yes. */
+static bool bios_file_present(void)
+{
+    DIR *d = opendir(app.paths.bios);
+    if (!d)
+        return true;
+    bool found = false;
+    struct dirent *e;
+    while (!found && (e = readdir(d)))
+        found = str_icmp(path_ext(e->d_name), "bin") == 0;
+    closedir(d);
+    return found;
+}
+
 void app_start_game(int index, bool resume)
 {
     if (index < 0 || index >= app.library.count)
@@ -415,6 +429,8 @@ void app_start_game(int index, bool resume)
         st->last_played = (int64_t)time(NULL);
         stats_save();
     }
+    if (!bios_file_present()) /* after the load: it blocks, and the notice would run out before it was drawn */
+        app_toast("BIOS not found, using SCPH1001.BIN is recommended");
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     ra_game_loaded(g->path);

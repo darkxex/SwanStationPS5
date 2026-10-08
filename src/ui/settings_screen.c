@@ -90,7 +90,7 @@ typedef struct
 #define NO_FIELD -1, false
 
 static const char *const OFF_ON[] = {"Off", "On"};
-static const char *const ASPECTS[] = {"Auto (game)", "4:3", "16:9", "16:10", "1:1 pixels",
+static const char *const ASPECTS[] = {"Core", "4:3", "16:9", "16:10", "1:1 pixels",
                                       "Stretch to screen"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 /* unused while the Emulator row is commented out */
