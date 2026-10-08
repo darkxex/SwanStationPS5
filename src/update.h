@@ -18,7 +18,7 @@ enum UpdateState
     UPDATE_FAILED,    /* update_message() says why */
 };
 
-#define UPDATE_REPO "SynoPiia/PSXS5"
+#define UPDATE_REPO "darkxex/SwanStationPS5"
 
 void update_check(void);   /* in the background */
 void update_install(void); /* in the background; needs UPDATE_AVAILABLE */
