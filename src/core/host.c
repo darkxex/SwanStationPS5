@@ -73,6 +73,7 @@ typedef struct
 static const CoreApi PCSX = CORE_API("PCSX-ReARMed", );
 
 #if defined(PSXS5_VULKAN)
+#if defined(PSXS5_BEETLE)
 void beetle_retro_set_environment(retro_environment_t);
 void beetle_retro_set_video_refresh(retro_video_refresh_t);
 void beetle_retro_set_audio_sample(retro_audio_sample_t);
@@ -95,6 +96,10 @@ size_t beetle_retro_get_memory_size(unsigned);
 void beetle_retro_cheat_reset(void);
 void beetle_retro_cheat_set(unsigned, bool, const char *);
 static const CoreApi BEETLE = CORE_API("Beetle PSX HW", beetle_);
+#else
+/* Beetle isn't built (Makefile: APP_BEETLE=1 brings it back): an empty entry the code never selects. */
+static const CoreApi BEETLE;
+#endif
 void swanstation_retro_set_environment(retro_environment_t);
 void swanstation_retro_set_video_refresh(retro_video_refresh_t);
 void swanstation_retro_set_audio_sample(retro_audio_sample_t);

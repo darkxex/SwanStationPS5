@@ -30,12 +30,11 @@ jobs:
     steps:
       - name: Check out source and the PCSX-ReARMed core
         uses: actions/checkout@v4
-      # Beetle's fork lists a nested submodule (lightrec's gnulib) without a URL,
-      # and lightrec is off on PS5: fetch it without recursing.
+      # SwanStation is the PS5 emulator; Beetle PSX HW is no longer built.
       - name: Fetch submodules
         run: |
           git submodule update --init --recursive --depth=1 third_party/pcsx_rearmed third_party/rcheevos
-          git submodule update --init --depth=1 third_party/beetle-psx
+          git submodule update --init --depth=1 third_party/swanstation
 
       - name: Install toolchain
         run: |
@@ -86,12 +85,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      # Beetle's fork lists a nested submodule (lightrec's gnulib) without a URL,
-      # and lightrec is off on PS5: fetch it without recursing.
       - name: Fetch submodules
         run: |
           git submodule update --init --recursive --depth=1 third_party/pcsx_rearmed third_party/rcheevos
-          git submodule update --init --depth=1 third_party/beetle-psx
       - name: Install dependencies
         run: |
           sudo apt-get update

@@ -21,10 +21,15 @@ PSXS5_CORE := build/core-ps5/libpcsx_rearmed.a
 PSXS5_RCHEEVOS := build/rcheevos-ps5/librcheevos.a
 APP_INCLUDE_PATHS ?= third_party/pcsx_rearmed/deps/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include $(PSXS5_VULKAN_INCLUDE)
 ifeq ($(APP_VULKAN),1)
-# v2: Beetle PSX HW (Vulkan renderer), built by tools/build-beetle.sh
-PSXS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
 # SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
 PSXS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
+# Beetle PSX HW is no longer built (SwanStation is the only emulator); APP_BEETLE=1 builds it
+# again, with tools/build-beetle.sh and third_party/beetle-psx checked out.
+APP_BEETLE ?= 0
+ifeq ($(APP_BEETLE),1)
+PSXS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
+APP_DEFINITIONS += PSXS5_BEETLE=1
+endif
 endif
 APP_STATIC_ARCHIVES ?= $(PSXS5_CORE) $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE) $(PSXS5_SWANSTATION)
 APP_RUNTIME_MODULES ?=
@@ -259,7 +264,9 @@ core:
 	@bash tools/build-core.sh ps5
 	@bash tools/build-rcheevos.sh ps5
 ifeq ($(APP_VULKAN),1)
+ifeq ($(APP_BEETLE),1)
 	@bash tools/build-beetle.sh
+endif
 	@bash tools/build-swanstation.sh
 endif
 
