@@ -137,6 +137,8 @@ static bool config_apply(Settings *s, const char *path)
             s->multitap = as_bool(value);
         else if (strcmp(key, "emulator") == 0)
             s->emulator = atoi(value) % EMU_COUNT;
+        else if (strcmp(key, "renderer") == 0)
+            s->renderer = atoi(value) % 2;
         else if (strcmp(key, "pgxp") == 0)
             s->pgxp = as_bool(value);
         else if (strcmp(key, "theme") == 0)
@@ -144,7 +146,7 @@ static bool config_apply(Settings *s, const char *path)
         else if (strcmp(key, "hd_textures") == 0)
             s->hd_textures = as_bool(value);
         else if (strcmp(key, "shader") == 0)
-            s->shader = atoi(value) % 4;
+            s->shader = atoi(value) % 5;
         else if (strcmp(key, "crop_edges") == 0)
             s->crop_edges = atoi(value) % 3;
         else if (strcmp(key, "ra_popups") == 0)
@@ -296,6 +298,7 @@ bool config_save(const Settings *s, const char *path)
     fprintf(f, "widescreen=%d\nmultitap=%d\nrewind=%d\nquick_resume=%d\ncrt=%d\nborder=%d\nremote=%d\nupdate_check=%d\n",
             s->widescreen, s->multitap, s->rewind, s->quick_resume, s->crt, s->border, s->remote,
             s->update_check);
+    fprintf(f, "renderer=%d\n", s->renderer);
     fprintf(f, "emulator=%d\npgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->emulator, s->pgxp,
             s->ra_popups, s->ra_tracker, s->crop_edges);
     fprintf(f, "ra_popup_style=%d\nlightbar=%d\nshader=%d\nhd_textures=%d\ntheme=%d\n", s->ra_popup_style,

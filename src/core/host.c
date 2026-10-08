@@ -152,6 +152,7 @@ static bool disk_available;
 static bool loaded;
 static size_t state_size; /* host_state_size(), measured once per game */
 static unsigned game_fixes; /* GDB_* fixes for the next game (gamedb.h) */
+static int session_renderer; /* Settings > Graphics > Renderer as the game was loaded: it cannot change while playing */
 static int lid_open_frames;   /* frames left before the lid closes after a disc change */
 static bool speculative;      /* run-ahead's look-ahead frames: run, drawn, not heard or felt */
 
@@ -327,7 +328,7 @@ static void apply_swanstation_options(const Settings *s)
     if (game_fixes & GDB_NO_UPSCALING)
         level = 1;
     bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
-    set_option("swanstation_GPU_Renderer", "Vulkan");
+    set_option("swanstation_GPU_Renderer", session_renderer == 1 ? "Software" : "Vulkan");
     set_option("swanstation_GPU_ResolutionScale", scales[level - 1]);
     set_option("swanstation_Console_Region", regions[s->region % REGION_COUNT]);
     set_option("swanstation_GPU_TrueColor", s->true_colour ? "true" : "false");
@@ -1121,6 +1122,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     rumble_feel = settings->rumble_feel;
     memset(rumble_strong, 0, sizeof(rumble_strong));
     memset(rumble_weak, 0, sizeof(rumble_weak));
+    session_renderer = settings->renderer;
     apply_settings_to_options(settings);
 
 #define STEP(s) (psxs5_log("host: %s", s), ps5_crash_step(s))

@@ -16,7 +16,7 @@
 #define PSXS5_NAME "PSXS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define PSXS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define PSXS5_TITLE_ID "PPSA98510"
-#define PSXS5_VERSION "1.0.1"
+#define PSXS5_VERSION "1.0.4"
 #define PSXS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core
@@ -93,6 +93,7 @@ typedef struct
     int aspect;       /* enum AspectMode */
     bool integer_scale; /* whole-number scale factors only */
     bool smooth;      /* bilinear for the final scale to the screen */
+    int renderer;     /* SwanStation: 0 Vulkan (the GPU), 1 Software (the CPU) */
     int internal_res; /* 1..5 = native, 2x, 4x, 8x, 16x */
     int upscale;      /* 1..4: prescale before the final scale */
     int upscale_filter; /* enum UpscaleFilter */
@@ -127,7 +128,7 @@ typedef struct
     bool update_check;    /* look for new PSXS5 releases at start */
     int emulator;         /* enum Emulator */
     bool pgxp;            /* Beetle: precise geometry, no wobbling polygons */
-    int shader;           /* Beetle on the GPU: 0 off, 1 sharp bilinear, 2 CRT, 3 LCD3x */
+    int shader;           /* Beetle on the GPU: 0 off, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear */
     bool hd_textures;     /* Beetle: use a texture pack beside the game when there is one */
     int theme;            /* enum ThemeId in ui/theme.h */
     int crop_edges;       /* 0 off, 1: 8 lines top and bottom, 2: 16 (the black a CRT hid) */

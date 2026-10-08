@@ -1362,7 +1362,7 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
         /* supersampling: a picture bigger than its place on screen, averaged down */
         int shader = settings->shader;
         if (!shader && settings->supersampling && (game_src_w > dw || game_src_h > dh))
-            shader = 4; /* supersampling: its own shader after the user's three */
+            shader = 5; /* supersampling: its own shader after the user's four */
         /* "Smooth final scaling" off: sharp pixels (the shaders need the bilinear sampler) */
         vkp_set_game_nearest(!settings->smooth && !shader);
         vkp_show_game((float)hole.x, (float)hole.y, (float)hole.w, (float)hole.h, crop, shader, game_src_w,

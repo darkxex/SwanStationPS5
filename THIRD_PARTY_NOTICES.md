@@ -163,3 +163,4 @@ No proprietary runtime module, encryption key, or game file is included.
 | [Tabler Icons](https://tabler.io/icons) 3.31.0 (subset by `tools/make_icon_font.py`) | interface icons (`assets/fonts/tabler-psxs5.ttf`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
 | [QR Code generator](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki | the phone page QR code (`third_party/qrcodegen`) | MIT |
 | [lcd3x](https://github.com/libretro/slang-shaders) by Gigaherz | the LCD3x shader, ported to GLSL in `src/platform/vk/shaders/lcd3x.frag` | Public domain |
+| [crt-royale](https://github.com/libretro/slang-shaders) (crt-royale-fast) by TroggleMonkey, adapted by Hyllian | the CRT Royale shader, compiled to SPIR-V by `tools/make-royale.py` (`third_party/crt-royale`) | GPL-2.0-or-later (`third_party/crt-royale/LICENSE.TXT`) |
