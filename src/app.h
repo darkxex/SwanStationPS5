@@ -51,6 +51,7 @@ typedef struct
 extern App app;
 
 void app_toast(const char *message); /* translated, shown for 2.5 s */
+void app_toast_for(const char *message, float seconds); /* the same, for a chosen time */
 void app_draw_toast(void);
 /* The running game behind a menu; dim 255 = full brightness. */
 void app_draw_game(uint8_t dim);

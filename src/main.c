@@ -45,18 +45,27 @@ static char toast[160];
 static uint64_t toast_until;
 /* messages that arrive while one shows wait their turn */
 static char toast_queue[4][160];
+static uint64_t toast_queue_us[4];
+static uint64_t toast_total_us = 2500000; /* how long the one on screen stays */
 static int toast_queued;
 static int covers_style_loaded = -1;
 static bool covers_download_loaded;
 
-static void show_next_toast(const char *text)
+static void show_next_toast(const char *text, uint64_t length_us)
 {
     str_copy(toast, sizeof(toast), text);
-    toast_until = plat_ticks_us() + 2500000;
+    toast_total_us = length_us;
+    toast_until = plat_ticks_us() + length_us;
 }
 
 void app_toast(const char *message)
 {
+    app_toast_for(message, 2.5f);
+}
+
+void app_toast_for(const char *message, float seconds)
+{
+    uint64_t length_us = (uint64_t)(seconds * 1e6f);
     psxs5_log("%s", message);
     const char *text = tr(message);
     if (toast[0] && plat_ticks_us() < toast_until)
@@ -64,10 +73,13 @@ void app_toast(const char *message)
         if (!strcmp(toast, text))
             return;
         if (toast_queued < 4)
+        {
+            toast_queue_us[toast_queued] = length_us;
             str_copy(toast_queue[toast_queued++], sizeof(toast_queue[0]), text);
+        }
         return;
     }
-    show_next_toast(text);
+    show_next_toast(text, length_us);
 }
 
 void app_draw_toast(void)
@@ -75,14 +87,15 @@ void app_draw_toast(void)
     uint64_t now = plat_ticks_us();
     if (toast_queued && (!toast[0] || now > toast_until))
     {
-        show_next_toast(toast_queue[0]);
+        show_next_toast(toast_queue[0], toast_queue_us[0]);
         memmove(toast_queue[0], toast_queue[1], sizeof(toast_queue[0]) * 3);
+        memmove(toast_queue_us, toast_queue_us + 1, sizeof(toast_queue_us[0]) * 3);
         --toast_queued;
     }
     if (!toast[0] || now > toast_until)
         return;
     /* slide up in the first 150 ms, fade out in the last 300 ms */
-    float shown = (float)(2500000 - (toast_until - now)) / 1e6f;
+    float shown = (float)(toast_total_us - (toast_until - now)) / 1e6f;
     float left = (float)(toast_until - now) / 1e6f;
     float a = left < 0.3f ? left / 0.3f : 1.0f;
     float rise = shown < 0.15f ? (1.0f - shown / 0.15f) * 24.0f : 0.0f;
@@ -430,7 +443,7 @@ void app_start_game(int index, bool resume)
         stats_save();
     }
     if (!bios_file_present()) /* after the load: it blocks, and the notice would run out before it was drawn */
-        app_toast("BIOS not found, using SCPH1001.BIN is recommended");
+        app_toast_for("BIOS not found, using SCPH1001.BIN is recommended", 3.0f);
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     ra_game_loaded(g->path);
