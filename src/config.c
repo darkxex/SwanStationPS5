@@ -12,7 +12,7 @@ void config_defaults(Settings *s)
 {
     memset(s, 0, sizeof(*s));
     s->aspect = ASPECT_AUTO;
-    s->smooth = true;
+    s->smooth = false; /* sharp pixels; "Smooth final scaling" is opt-in */
     s->internal_res = 1;
     s->upscale = 2;
     s->upscale_filter = UPSCALE_XBR;
