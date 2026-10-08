@@ -21,6 +21,8 @@
 #endif
 #include "../platform/ps5_crash.h"
 
+void app_toast(const char *message); /* main.c: a short notice on screen */
+
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
@@ -663,8 +665,14 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
         return true;
     case RETRO_ENVIRONMENT_SET_MESSAGE:
-        psxs5_log("core message: %s", ((const struct retro_message *)data)->msg);
+    {
+        /* the core's on-screen messages (its "Display OSD Messages" option decides whether it sends them) */
+        const char *msg = ((const struct retro_message *)data)->msg;
+        psxs5_log("core message: %s", msg);
+        if (msg && msg[0])
+            app_toast(msg);
         return true;
+    }
 #if defined(PSXS5_VULKAN)
     case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
         *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
