@@ -94,7 +94,7 @@ static const char *const ASPECTS[] = {"Auto (game)", "4:3", "16:9", "16:10", "1:
                                       "Stretch to screen"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 /* unused while the Emulator row is commented out */
-static const char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
+static const __attribute__((unused)) char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
 static const char *const FILTERS[] = {"Sharp pixels", "Smooth pixels (Scale2x)", "xBR (smoothest)"};
 static const char *const REGIONS[] = {"Auto", "NTSC (60 Hz)", "PAL (50 Hz)"};
 static const char *const __attribute__((unused)) BIOS[] = {"Real BIOS if present", "Built-in HLE"};
@@ -127,11 +127,15 @@ static const char *const AUTOSAVES[] = {"Off", "Every 5 minutes", "Every 10 minu
 static const char *const SORTS[] = {"Title", "Recently played", "Most played", "Region"};
 
 static const Row DISPLAY[] = {
+    /* "Upscale filter" and "Upscale" are CPU prescalers (Scale2x, xBR) for the software frames of the old core;
+     * SwanStation draws on the GPU and never goes through them, so they did nothing. To bring them back, restore
+     * these two rows and the "Picture" group header on the first one.
     {"Picture", "Upscale filter", "How pixels are smoothed when the picture is enlarged.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(upscale_filter), FILTERS, 3, 0},
     {NULL, "Upscale", "Enlarges the picture before it is scaled to the screen.", K_CHOICE, APPLY_NOW,
      SP_NONE, false, INT_FIELD(upscale), UPSCALE, 4, 1},
-    {NULL, "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
+    */
+    {"Picture", "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(aspect), ASPECTS, 6, 0},
     {NULL, "Shader", "SwanStation on the GPU: sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 3, 0},
@@ -159,11 +163,11 @@ static const Row DISPLAY[] = {
 
 static const Row GRAPHICS[] = {
     {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons. Above 2x needs SwanStation.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
+     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
     {NULL, "Precise geometry (PGXP)", "SwanStation: stops polygons wobbling and textures warping.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
+     K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
     {NULL, "True colour", "SwanStation: draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(true_colour), OFF_ON, 2, 0},
+     K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(true_colour), OFF_ON, 2, 0},
     {"Smoothing", "Supersampling", "SwanStation at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(supersampling), OFF_ON, 2, 0},
 };
@@ -325,6 +329,21 @@ static bool is_swanstation_row(const Row *r)
            r->offset < (int)(offsetof(Settings, ss_opt) + sizeof(((Settings *)0)->ss_opt));
 }
 
+/* The core reads these only when a game boots or loads (BIOS, disc loading, RAM size, memory card 1, the audio hook
+ * and the software readback renderer); every other option of its own takes effect while the game runs. */
+static bool ss_needs_reload(const char *key)
+{
+    static const char *const reload[] = {
+        "swanstation_BIOS_PathNTSCJ", "swanstation_BIOS_PathNTSCU", "swanstation_BIOS_PathPAL",
+        "swanstation_CDROM_ReadThread", "swanstation_CDROM_LoadImagePatches", "swanstation_CDROM_LoadImageToRAM",
+        "swanstation_CDROM_PreCacheCHD", "swanstation_GPU_UseSoftwareRendererForReadbacks",
+        "swanstation_MemoryCards_Card1Type", "swanstation_Console_Enable8MBRAM", "swanstation_Audio_FastHook"};
+    for (size_t i = 0; i < sizeof(reload) / sizeof(reload[0]); ++i)
+        if (strcmp(key, reload[i]) == 0)
+            return true;
+    return false;
+}
+
 static void add_swanstation_rows(Tab *tab, const Row *base, int base_count, const int *categories, int ncat)
 {
     static char groups[SSC_COUNT][48];
@@ -349,7 +368,7 @@ static void add_swanstation_rows(Tab *tab, const Row *base, int base_count, cons
                      SS_OPTS[i].label,
                      SS_OPTS[i].help,
                      K_CHOICE,
-                     APPLY_NEXT_GAME,
+                     ss_needs_reload(SS_OPTS[i].key) ? APPLY_NEXT_GAME : APPLY_NOW,
                      SP_NONE,
                      false,
                      (int)(offsetof(Settings, ss_opt) + (size_t)i * sizeof(int)),

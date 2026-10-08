@@ -97,7 +97,8 @@ static struct
     VkPipeline shaded[3]; /* the game through sharp.frag, crt.frag, downsample.frag */
     VkDescriptorSetLayout set_layout;
     VkDescriptorPool pool;
-    VkSampler sampler;
+    VkSampler sampler, sampler_nearest; /* the game picture uses _nearest when the final scale is not smoothed */
+    bool game_nearest;
     /* the interface canvas */
     int cw, ch;
     VkImage canvas;
@@ -564,6 +565,9 @@ static bool create_pipeline(char *error, size_t size)
     si.addressModeU = si.addressModeV = si.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     si.maxLod = 0.0f;
     CHECK(vkCreateSampler(V.device, &si, NULL, &V.sampler), "sampler");
+    si.magFilter = VK_FILTER_NEAREST;
+    si.minFilter = VK_FILTER_NEAREST;
+    CHECK(vkCreateSampler(V.device, &si, NULL, &V.sampler_nearest), "nearest sampler");
     VkDescriptorPoolSize ps = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8};
     VkDescriptorPoolCreateInfo dp = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
     dp.maxSets = 8;
@@ -762,7 +766,7 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
         mb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                              0, 1, &mb, 0, NULL, 0, NULL);
-        VkDescriptorImageInfo di = {V.sampler, V.game_view, V.game_layout};
+        VkDescriptorImageInfo di = {V.game_nearest ? V.sampler_nearest : V.sampler, V.game_view, V.game_layout};
         VkWriteDescriptorSet w = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         w.dstSet = V.game_sets[f];
         w.descriptorCount = 1;
@@ -861,6 +865,8 @@ static void destroy_device_objects(void)
         vkDestroyDescriptorPool(V.device, V.pool, NULL);
     if (V.sampler)
         vkDestroySampler(V.device, V.sampler, NULL);
+    if (V.sampler_nearest)
+        vkDestroySampler(V.device, V.sampler_nearest, NULL);
     if (V.opaque)
         vkDestroyPipeline(V.device, V.opaque, NULL);
     if (V.blended)
@@ -895,6 +901,7 @@ static void destroy_device_objects(void)
     V.canvas_memory = VK_NULL_HANDLE;
     V.pool = VK_NULL_HANDLE;
     V.sampler = VK_NULL_HANDLE;
+    V.sampler_nearest = VK_NULL_HANDLE;
     V.opaque = V.blended = VK_NULL_HANDLE;
     V.layout = VK_NULL_HANDLE;
     V.set_layout = VK_NULL_HANDLE;
@@ -1078,6 +1085,11 @@ done:
     return ok;
 }
 
+void vkp_set_game_nearest(bool nearest)
+{
+    V.game_nearest = nearest;
+}
+
 void vkp_show_game(float x, float y, float w, float h, float crop, int shader, int tex_w, int tex_h, int lines)
 {
     V.game_shown = true;
@@ -1118,6 +1130,10 @@ bool vkp_game_image_ready(void)
 void vkp_set_colour(float brightness, float saturation, float warmth, float sharpen)
 {
     (void)brightness, (void)saturation, (void)warmth, (void)sharpen;
+}
+void vkp_set_game_nearest(bool nearest)
+{
+    (void)nearest;
 }
 void vkp_show_game(float x, float y, float w, float h, float crop, int shader, int tex_w, int tex_h, int lines)
 {
