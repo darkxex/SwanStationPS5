@@ -102,6 +102,7 @@ static const char *const PADS[] = {"Digital pad", "DualShock (analog)"};
 static const char *const COVER_STYLES[] = {"Flat", "3D box"};
 static const char *const SOUND_STYLES[] = {"Soft", "Wood", "Pop", "Chime", "Classic", "Off"};
 static const char *const VOLUMES[] = {"25%", "50%", "75%", "100%"};
+static const char *const VIBRATIONS[] = {"Off", "25%", "50%", "75%", "100%"};
 static const char *const STICK_MODES[] = {"Auto (digital games)", "Always", "Off"};
 static const char *const BACKGROUNDS[] = {"Dark", "Cover colour"};
 static const char *const CRT_LEVELS[] = {"Off", "Light", "Strong"};
@@ -137,9 +138,9 @@ static const Row DISPLAY[] = {
     */
     {"Picture", "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(aspect), ASPECTS, 6, 0},
-    {NULL, "Shader", "SwanStation on the GPU: sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
+    {NULL, "Shader", "Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 3, 0},
-    {NULL, "Sharpening", "SwanStation with the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
+    {NULL, "Sharpening", "With the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
@@ -162,13 +163,13 @@ static const Row DISPLAY[] = {
 };
 
 static const Row GRAPHICS[] = {
-    {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons. Above 2x needs SwanStation.",
+    {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
-    {NULL, "Precise geometry (PGXP)", "SwanStation: stops polygons wobbling and textures warping.",
+    {NULL, "Precise geometry (PGXP)", "Stops polygons wobbling and textures warping.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
-    {NULL, "True colour", "SwanStation: draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
+    {NULL, "True colour", "Draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(true_colour), OFF_ON, 2, 0},
-    {"Smoothing", "Supersampling", "SwanStation at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
+    {"Smoothing", "Supersampling", "At 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(supersampling), OFF_ON, 2, 0},
 };
 
@@ -177,10 +178,8 @@ static const Row CONTROLS[] = {
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(analog), PADS, 2, 0},
     {NULL, "Left stick as D-pad", "Lets the left stick move in games that only read the D-pad.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(stick_dpad), STICK_MODES, 3, 0},
-    {NULL, "Vibration", "Passes the game's rumble to your controller.", K_TOGGLE, APPLY_NOW, SP_NONE,
-     false, BOOL_FIELD(rumble), OFF_ON, 2, 0},
-    {NULL, "Vibration strength", "How strong the rumble feels.", K_CHOICE, APPLY_NOW, SP_NONE, false,
-     INT_FIELD(rumble_strength), VOLUMES, 4, 0},
+    {NULL, "Vibration", "Passes the game's rumble to your controller.", K_CHOICE, APPLY_NOW, SP_NONE,
+     false, INT_FIELD(vibration), VIBRATIONS, 5, 0},
     {NULL, "Light bar", "The controller's light: as the system sets it, blue/red/green/pink by player, or the colour of the game's cover.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(lightbar), LIGHTBARS, 3, 0},
     {NULL, "Players", "Up to 4 with a multitap, for games that support it: each PS5 controller is a player.",

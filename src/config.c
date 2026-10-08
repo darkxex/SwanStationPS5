@@ -18,16 +18,15 @@ void config_defaults(Settings *s)
     s->upscale_filter = UPSCALE_XBR;
     s->region = REGION_AUTO;
     s->dithering = true;
-    s->analog = false; /* the classic digital pad; the DualShock is for games that use the sticks */
+    s->analog = true; /* DualShock: it starts in digital mode, so digital-only games still work */
     s->boot_intro = true; /* the BIOS runs its full start-up (no fast boot) */
     s->cover_style = COVER_FLAT;
     s->cover_download = true;
     s->ui_sound = 0;  /* Soft */
     s->ui_volume = 1; /* 50 % */
-    s->rumble = true;
+    s->vibration = 4;
     s->quick_resume = true;
     s->update_check = true;
-    s->rumble_strength = 3;
     s->pgxp = true; /* Beetle: no wobbling polygons */
     s->ra_popups = true;
     s->hd_textures = true;
@@ -57,6 +56,8 @@ static bool config_apply(Settings *s, const char *path)
     if (!f)
         return false;
     char line[256];
+    bool seen_vibration = false;
+    int old_rumble = -1, old_strength = -1;
     while (fgets(line, sizeof(line), f))
     {
         char *eq = strchr(line, '=');
@@ -119,10 +120,15 @@ static bool config_apply(Settings *s, const char *path)
             s->language = atoi(value) % 5;
         else if (strcmp(key, "ui_volume") == 0)
             s->ui_volume = atoi(value) % 4;
-        else if (strcmp(key, "rumble") == 0)
-            s->rumble = as_bool(value);
+        else if (strcmp(key, "vibration") == 0)
+        {
+            s->vibration = atoi(value) % 5;
+            seen_vibration = true;
+        }
+        else if (strcmp(key, "rumble") == 0) /* older files: an on/off and a strength */
+            old_rumble = as_bool(value) ? 1 : 0;
         else if (strcmp(key, "rumble_strength") == 0)
-            s->rumble_strength = atoi(value) % 4;
+            old_strength = atoi(value) % 4;
         else if (strcmp(key, "sort_mode") == 0)
             s->sort_mode = atoi(value) % 8;
         else if (strcmp(key, "widescreen") == 0)
@@ -232,6 +238,12 @@ static bool config_apply(Settings *s, const char *path)
         }
     }
     fclose(f);
+    if (!seen_vibration && (old_rumble >= 0 || old_strength >= 0))
+    {
+        bool on = old_rumble >= 0 ? old_rumble == 1 : s->vibration > 0;
+        int strength = old_strength >= 0 ? old_strength : s->vibration > 0 ? s->vibration - 1 : 3;
+        s->vibration = on ? strength + 1 : 0;
+    }
     return true;
 }
 
@@ -275,11 +287,11 @@ bool config_save(const Settings *s, const char *path)
             "dithering=%d\ncd_fast=%d\nanalog=%d\nstate_slot=%d\nlast_game=%d\n"
             "cover_style=%d\ncover_download=%d\nui_sound=%d\nui_volume=%d\n"
             "integer_scale=%d\ninternal_res=%d\nupscale=%d\nupscale_filter=%d\nstick_dpad=%d\nlanguage=%d\n"
-            "rumble=%d\nrumble_strength=%d\nsort_mode=%d\nshelf_category=%d\nbackground=%d\n",
+            "vibration=%d\nsort_mode=%d\nshelf_category=%d\nbackground=%d\n",
             s->aspect, s->smooth, s->show_fps, s->region, s->force_hle, s->dithering,
             s->cd_fast, s->analog, s->state_slot, s->last_game, s->cover_style,
             s->cover_download, s->ui_sound, s->ui_volume, s->integer_scale, s->internal_res, s->upscale,
-            s->upscale_filter, s->stick_dpad, s->language, s->rumble, s->rumble_strength,
+            s->upscale_filter, s->stick_dpad, s->language, s->vibration,
             s->sort_mode, s->shelf_category, s->background);
     fprintf(f, "widescreen=%d\nmultitap=%d\nrewind=%d\nquick_resume=%d\ncrt=%d\nborder=%d\nremote=%d\nupdate_check=%d\n",
             s->widescreen, s->multitap, s->rewind, s->quick_resume, s->crt, s->border, s->remote,

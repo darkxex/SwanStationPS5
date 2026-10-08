@@ -27,8 +27,6 @@ void host_set_special(int device);
 void host_set_fixes(unsigned flags);
 /* How hard the game is rumbling this player's controller now, 0..1. */
 float host_rumble_level(int port);
-/* True while the game keeps this DualShock in digital mode (sticks ignored). */
-bool host_pad_digital(int port);
 void host_run_frame(void);
 /* Run-ahead: frames run only to show the future are silent and don't rumble. */
 void host_set_speculative(bool on);

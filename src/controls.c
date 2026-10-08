@@ -333,7 +333,7 @@ static void update_triggers(int port, const Settings *s)
 {
     PlatTrigger l2 = {0}, r2 = {0};
     float rumble = host_rumble_level(port);
-    if (s->rumble && s->rumble_feel == 3 && rumble > 0.05f)
+    if (s->vibration && s->rumble_feel == 3 && rumble > 0.05f)
     {
         /* the game's rumble in the triggers too */
         PlatTrigger v = {TRIGGER_VIBRATION, 2, (uint8_t)(1 + rumble * 7.0f), (uint8_t)(30 + rumble * 120.0f), 0};

@@ -661,10 +661,11 @@ static void game_screen(PadState *pads)
             pads[0].buttons |= BIT(BTN_SELECT);
             --select_frames;
         }
-        /* Digital-only games (or digital mode) ignore the sticks: let the left
-         * stick drive the D-pad there, while analog games keep real analog. */
+        /* A digital pad has no sticks: let the left stick drive the D-pad. With a
+         * DualShock, Auto leaves that to the core (only while the game keeps it in
+         * digital mode: AnalogDPadInDigitalMode in host.c), Always does it here. */
         bool map = app.settings.stick_dpad == STICK_DPAD_ALWAYS ||
-                   (app.settings.stick_dpad == STICK_DPAD_AUTO && host_pad_digital(i));
+                   (app.settings.stick_dpad == STICK_DPAD_AUTO && !app.settings.analog);
         if (map)
         {
             const int16_t dead = 16000;

@@ -32,7 +32,15 @@ SKIP = {
     "swanstation_Main_RunaheadFrameCount", # Run-ahead (PSXS5 does it)
     "swanstation_GPU_Renderer",            # always Vulkan: the PS5 screen is drawn through it
     "swanstation_CPU_FastmemMode",         # always LUT: MMap does not survive a title's sandbox
+    "swanstation_ControllerPorts_MultitapMode",  # Settings > Controls > Players
+    "swanstation_Controller_EnableRumble",       # always on: Settings > Controls > Vibration decides
+    "swanstation_Controller1_AnalogDPadInDigitalMode",  # Settings > Controls > Left stick as D-pad
+    "swanstation_Controller2_AnalogDPadInDigitalMode",
+    "swanstation_Controller3_AnalogDPadInDigitalMode",
+    "swanstation_Controller4_AnalogDPadInDigitalMode",
 }
+# Per-port copies for ports 5 to 8: the PS5 takes 4 controllers at most
+SKIP_PATTERN = re.compile(r"^swanstation_Controller[5-8]_")
 
 CATEGORIES = [("console", "Console"), ("enhancement", "Enhancements"), ("display", "Display"),
               ("port", "Controller ports"), ("advanced", "Advanced")]
@@ -155,7 +163,7 @@ def main():
     opts = []
     for e in entries:
         key, label, _, desc, _, cat, pairs, default = e[:8]
-        if key in SKIP or not key.startswith("swanstation_"):
+        if key in SKIP or SKIP_PATTERN.match(key) or not key.startswith("swanstation_"):
             continue
         vals = [(p[0], p[1] or p[0]) for p in pairs if isinstance(p, list) and p and p[0] is not None]
         names = [v for v, _ in vals]

@@ -341,6 +341,16 @@ static void apply_swanstation_options(const Settings *s)
         set_option(SS_OPTS[i].key, SS_OPTS[i].values[v >= 0 && v < SS_OPTS[i].count ? v : SS_OPTS[i].def]);
     }
     set_option("swanstation_CPU_FastmemMode", "LUT");
+    /* controls: Settings > Controls decides these, not the core's own rows */
+    set_option("swanstation_ControllerPorts_MultitapMode", s->multitap ? "Port1Only" : "Disabled");
+    set_option("swanstation_Controller_EnableRumble", "true"); /* Vibration off mutes it in rumble_cb */
+    const char *stick_dpad = s->analog && s->stick_dpad == STICK_DPAD_AUTO ? "true" : "false";
+    for (int port = 1; port <= 4; ++port)
+    {
+        char key[56];
+        snprintf(key, sizeof(key), "swanstation_Controller%d_AnalogDPadInDigitalMode", port);
+        set_option(key, stick_dpad);
+    }
 }
 #endif
 
@@ -1107,7 +1117,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     lid_open_frames = 0;
     frame_data = NULL;
     pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
-    rumble_scale = settings->rumble ? (settings->rumble_strength + 1) * 0.25f : 0.0f;
+    rumble_scale = settings->vibration * 0.25f;
     rumble_feel = settings->rumble_feel;
     memset(rumble_strong, 0, sizeof(rumble_strong));
     memset(rumble_weak, 0, sizeof(rumble_weak));
@@ -1145,11 +1155,13 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     STEP("retro_get_system_av_info");
     core->get_system_av_info(&av_info);
     /* DualShock starts in digital mode, so it is also safe for digital-only games. */
-    unsigned device = settings->analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, core == &SWANSTATION ? 0 : 1)
+    unsigned device = settings->analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, (core == &SWANSTATION ? 0 : 1))
                                        : RETRO_DEVICE_JOYPAD;
     multitap = settings->multitap;
     for (unsigned port = 0; port < (multitap ? 4u : 2u); ++port)
         core->set_controller_port_device(port, device);
+    psxs5_log("pad debug: analog=%d multitap=%d device=0x%x special=%d gun=%d fixes=%x", settings->analog,
+              settings->multitap, device, special_device, gun_device, game_fixes);
     /* NeGcon (analog subclass 3) in every port, or a mouse in port 1 */
     if (special_device == 1)
         for (unsigned port = 0; port < (multitap ? 4u : 2u); ++port)
@@ -1212,12 +1224,6 @@ const struct retro_memory_map *host_memory_map(void)
     return loaded && memory_map.num_descriptors ? &memory_map : NULL;
 }
 
-bool host_pad_digital(int port)
-{
-    (void)port;
-    return false;
-}
-
 void host_set_pads(const PadState pads[PSXS5_MAX_PADS])
 {
     memcpy(pad_state, pads, sizeof(pad_state));
@@ -1245,7 +1251,7 @@ void host_reset(void)
 
 void host_apply_settings(const Settings *settings)
 {
-    rumble_scale = settings->rumble ? (settings->rumble_strength + 1) * 0.25f : 0.0f;
+    rumble_scale = settings->vibration * 0.25f;
     rumble_feel = settings->rumble_feel;
     apply_settings_to_options(settings);
 }
