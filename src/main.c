@@ -444,6 +444,8 @@ void app_start_game(int index, bool resume)
     }
     if (!bios_file_present()) /* after the load: it blocks, and the notice would run out before it was drawn */
         app_toast_for("BIOS not found, SCPH1001.BIN is recommended due to the low compatibility of OpenBios.", 10.0f);
+    if (app.settings.renderer == 1)
+        app_toast_for("Rendering in software, Vulkan is recommended.", 5.0f);
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     ra_game_loaded(g->path);
