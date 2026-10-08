@@ -90,7 +90,7 @@ def main():
     print(f"==> {out}  ({count} files, {out.stat().st_size / 1e6:.1f} MB)")
     print(f"    sha256 {digest}")
     print(f"    publish: gh release create v{version} {out.name} --repo darkxex/SwanStationPS5 "
-          f"--title \"SwanStationPS5 {version}\" --notes-file docs/releases/v{version}.md --latest")
+          f"--title \"SwanStationPS5 {version}\" --generate-notes --latest")
 
 
 main()

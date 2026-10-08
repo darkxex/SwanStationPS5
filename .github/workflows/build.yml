@@ -125,9 +125,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes=docs/releases/${GITHUB_REF_NAME}.md
-          [ -f "$notes" ] || notes=/dev/null
           # --latest=false: PSXS5 2.0.0 updates from the release marked Latest and its
           # updater leaves the app unable to start, so v2.0.0 stays Latest; 2.1.1 and
           # later read the whole list of releases.
-          gh release create "$GITHUB_REF_NAME" "$ZIP" PSXS5-symbols.txt --title "PSXS5 ${GITHUB_REF_NAME#v}" --notes-file "$notes" --latest=false
+          gh release create "$GITHUB_REF_NAME" "$ZIP" PSXS5-symbols.txt --title "PSXS5 ${GITHUB_REF_NAME#v}" --generate-notes --latest=false
