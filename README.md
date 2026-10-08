@@ -41,10 +41,6 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 
 The in-game shots show a test picture; your games appear there.
 
-## A passion project
-
-SwanStationPS5 is a hobby project, made for the love of the PS1 library. No company or schedule is behind it, and nothing is for sale. Expect rough edges. Bug reports that come with `/data/PSXS5/logs/psxs5.log` are the most helpful.
-
 ## Highlights
 
 - **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x, at full speed.
