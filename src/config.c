@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "config.h"
-#include "ui/theme.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +12,6 @@ void config_defaults(Settings *s)
 {
     memset(s, 0, sizeof(*s));
     s->aspect = ASPECT_AUTO;
-    s->theme = THEME_MEMORY_DARK; /* the Memory Card Dark theme */
     s->smooth = false; /* sharp pixels; "Smooth final scaling" is opt-in */
     s->internal_res = 1;
     s->upscale = 2;
