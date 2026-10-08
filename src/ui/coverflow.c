@@ -37,6 +37,7 @@
 
 #define CENTER_X 960.0f
 #define CENTER_Y 430.0f
+#define FLOW_SHIFT 100.0f /* the cover row of the default layout sits lower, centred with its title and tags */
 #define COVER_H 500.0f
 #define SIDE_GAP 400.0f  /* centre to the first neighbour */
 #define STACK_GAP 150.0f /* between further neighbours */
@@ -199,10 +200,23 @@ static int selected_game(void)
     return S.view_count ? S.view[S.cursor] : -1;
 }
 
+/* Vertical centre of the chosen cover: the default layout is lowered, the others keep CENTER_Y */
+static float flow_y(void)
+{
+    return theme.layout == LAYOUT_GRID || theme.layout == LAYOUT_SPINES ? CENTER_Y : CENTER_Y + FLOW_SHIFT;
+}
+
+/* DuckStation's name for the disc when its database knows it, else the file or folder name */
+static const char *display_title(const Game *g)
+{
+    const GameInfo *info = gamedb_get(g->serial);
+    return info && info->name[0] ? info->name : g->title;
+}
+
 void shelf_init(int last_game)
 {
     S.last_cursor_game = last_game;
-    srand((unsigned)time(NULL)); /* Surprise me */
+    srand((unsigned)time(NULL)); /* the screensaver slideshow */
     S.tint[0] = 0x3a / 255.0f;
     S.tint[1] = 0x50 / 255.0f;
     S.tint[2] = 0xc8 / 255.0f;
@@ -371,7 +385,7 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     else
     {
         draw_rrect(x, y, w, h, 10, TH_CARD);
-        text_draw_fit(cx, cy - 16, 24, FONT_BOLD, TH_TEXT_DIM, ALIGN_CENTER, w - 24, g->title);
+        text_draw_fit(cx, cy - 16, 24, FONT_BOLD, TH_TEXT_DIM, ALIGN_CENTER, w - 24, display_title(g));
     }
     if (selected)
         draw_ach_badge(g, x + w, y + h, 20);
@@ -384,7 +398,7 @@ static void draw_details(const Game *g, float t)
     float ease = 1.0f - (1.0f - t) * (1.0f - t);
     float w = 620, x = plat_width() - (w + 48) * ease, y = 130, h = 830;
     draw_rrect(x, y, w, h, TH_RADIUS, argb_alpha(TH_CARD_A(theme.light ? 0xff : 0xf2), t));
-    text_draw_fit(x + 40, y + 34, 32, FONT_BOLD, argb_alpha(TH_TEXT, t), ALIGN_LEFT, w - 80, g->title);
+    text_draw_fit(x + 40, y + 34, 32, FONT_BOLD, argb_alpha(TH_TEXT, t), ALIGN_LEFT, w - 80, display_title(g));
     GameStats *st = stats_get(g->id);
     char played[48] = "", when[48] = "", ach[48] = "", discs[16];
     if (st)
@@ -540,12 +554,15 @@ static void draw_header(void)
 static void draw_info(const Game *g, float alpha)
 {
     GameStats *st = stats_get(g->id);
-    float y = 730;
-    float tw = text_width(52, FONT_BOLD, g->title);
+    /* default layout: the title above the cover, the tags below it, 16 px from each; Record Shelf: both below */
+    const bool spines = theme.layout == LAYOUT_SPINES;
+    const float title_y = spines ? 730 : flow_y() - COVER_H * 0.5f - 68;
+    const float tags_y = spines ? 814 : flow_y() + COVER_H * 0.5f + 16;
+    float tw = text_width(52, FONT_BOLD, display_title(g));
     if (st && st->favorite)
-        icon_draw(ICON_STAR, CENTER_X - fminf(tw, 1500) * 0.5f - 52, y + 10, 40,
+        icon_draw(ICON_STAR, CENTER_X - fminf(tw, 1500) * 0.5f - 52, title_y + 10, 40,
                   argb_alpha(TH_GOLD, alpha));
-    text_draw_fit(CENTER_X, y, 52, FONT_BOLD, argb_alpha(TH_TEXT, alpha), ALIGN_CENTER, 1500, g->title);
+    text_draw_fit(CENTER_X, title_y, 52, FONT_BOLD, argb_alpha(TH_TEXT, alpha), ALIGN_CENTER, 1500, display_title(g));
 
     /* tags: region, serial, discs, play time, last played */
     char discs[32], played[48] = "", played_tag[64] = "", when[48] = "";
@@ -568,7 +585,7 @@ static void draw_info(const Game *g, float alpha)
         }
         else
             widths[i] = 0;
-    float x = CENTER_X - (total - 10) * 0.5f, ty = y + 84;
+    float x = CENTER_X - (total - 10) * 0.5f, ty = tags_y;
     for (int i = 0; i < 5; ++i)
         if (widths[i] > 0)
             x += draw_pill(x, ty, 40, 22, argb_alpha(TH_PILL_A(0xc0), alpha),
@@ -884,7 +901,7 @@ static void draw_grid(int game, float launch)
         if (on)
             draw_rrect_outline(x - 5, y - 5, tile + 10, tile + 10, TH_RADIUS_SMALL + 4, 4, theme.cover_outline);
         text_draw_fit(x + 4, y + tile + 8, 18, on ? FONT_BOLD : FONT_REGULAR, on ? TH_TEXT : TH_TEXT_DIM, ALIGN_LEFT,
-                      tile - 8, g->title);
+                      tile - 8, display_title(g));
     }
     plat_set_clip(0, 0, 0, 0);
 
@@ -903,7 +920,7 @@ static void draw_grid(int game, float launch)
     }
     float ty = cy + 32 + art + 28;
     float a = 1.0f - launch;
-    text_draw_fit(cx + 32, ty, 36, FONT_BOLD, argb_alpha(TH_TEXT, a), ALIGN_LEFT, cw - 64, g->title);
+    text_draw_fit(cx + 32, ty, 36, FONT_BOLD, argb_alpha(TH_TEXT, a), ALIGN_LEFT, cw - 64, display_title(g));
     GameStats *st = stats_get(g->id);
     char played[48] = "", ach[48] = "";
     if (st && st->seconds)
@@ -1048,7 +1065,7 @@ static void draw_launch_disc(int game, float d, float t)
     float cx = CENTER_X + (right + r * 0.25f - CENTER_X) * ease;
     /* only the part out of the case shows */
     plat_set_clip((int)right, 0, plat_width() - (int)right, plat_height());
-    draw_disc(game, cx, CENTER_Y, r, spin);
+    draw_disc(game, cx, flow_y(), r, spin);
     plat_set_clip(0, 0, 0, 0);
 }
 
@@ -1148,7 +1165,7 @@ static bool slideshow(uint32_t pressed)
     for (int i = 0; i < 30; ++i) /* darker towards the bottom */
         draw_rect(0, sh - 300 + i * 10, sw, 10, (uint32_t)(i * 6.5f) << 24);
     text_draw_fit(TH_MARGIN, sh - 170, 56, FONT_BOLD, argb_alpha(0xffffffffu, fade), ALIGN_LEFT, sw - 2 * TH_MARGIN,
-                  g->title);
+                  display_title(g));
     GameStats *st = stats_get(g->id);
     char line[96] = "";
     if (st && st->seconds)
@@ -1272,17 +1289,11 @@ void shelf_screen(uint32_t pressed)
                 game = selected_game();
             }
         }
-        if ((pressed & BIT(BTN_MENU)) && S.view_count > 1 && !S.details)
+        if ((pressed & BIT(BTN_MENU)) && !S.details)
         {
-            /* Surprise me: another game of this category; the shelf glides there */
-            int pick = S.cursor;
-            while (pick == S.cursor)
-                pick = rand() % S.view_count;
-            S.cursor = pick;
-            S.title_fade = 0.35f;
-            app_toast("Surprise!");
             sfx_play(SFX_SELECT);
-            game = selected_game();
+            memcards_open(SCREEN_LIBRARY);
+            return;
         }
         if (pressed & BIT(BTN_TRIANGLE) && game >= 0)
         {
@@ -1410,7 +1421,7 @@ void shelf_screen(uint32_t pressed)
                 uint8_t s8 = (uint8_t)(255 * shade);
                 uint32_t tint = 0xff000000u | (uint32_t)s8 << 16 | (uint32_t)s8 << 8 | s8;
                 int index = S.view[k];
-                draw_cover(covers_get(index), &app.library.games[index], CENTER_X + ox, CENTER_Y,
+                draw_cover(covers_get(index), &app.library.games[index], CENTER_X + ox, flow_y(),
                            COVER_H * scale, squeeze, tint, selected && ad < 0.25f && launch < 0.5f);
             }
         plat_profile("covers");
@@ -1457,11 +1468,11 @@ void shelf_screen(uint32_t pressed)
     GameStats *hint_st = game >= 0 ? stats_get(app.library.games[game].id) : NULL;
     const char *const labels[] = {"Play", "Details", S.details ? "Choose a cover" : "Settings",
                                   S.details ? (hint_st && hint_st->hidden ? "Unhide" : "Hide") : "Favorite",
-                                  "Surprise me"};
+                                  "Memory cards"};
     char right[128];
     snprintf(right, sizeof(right), "%s   \xc2\xb7   %s: %s", tr("L1 / R1  Category"), tr("OPTIONS  Sort"),
              shelf_sort_name(app.global.sort_mode));
-    app_draw_hints(glyphs, labels, S.view_count ? (S.view_count > 1 && !S.details ? 5 : 4) : 1,
+    app_draw_hints(glyphs, labels, S.view_count ? (!S.details ? 5 : 4) : 1,
                    S.view_count ? right : NULL);
     plat_profile("hints");
 

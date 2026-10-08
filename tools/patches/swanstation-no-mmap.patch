@@ -1,0 +1,16 @@
+diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
+index 014ebdbc..e9e09c7a 100644
+--- a/src/common/file_system.cpp
++++ b/src/common/file_system.cpp
+@@ -590,8 +590,10 @@ bool FindFiles(const char* Path, const char* Pattern, uint32_t Flags, FindResult
+ 
+ RFILE* OpenMappableRFile(const char* filename)
+ {
++   /* PSXS5: no mapping hint. On the PS5, mmap() of a disc image (700 MB) took
++    * ~16 s on the first open of a game; plain reads start at once. */
+    return filestream_open(filename, RETRO_VFS_FILE_ACCESS_READ,
+-         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
++         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+ }
+ 
+ const uint8_t* GetMappedView(RFILE* fp, int64_t* size)

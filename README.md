@@ -182,7 +182,7 @@ The folder names kept PSXS5's (`/data/PSXS5/`, `psxs5.ini`, `psxs5.log`, `tools/
 | Triangle | Game details (L3 there hides the game) |
 | Square | Settings |
 | R3 | Favorite |
-| Touchpad | Surprise me: a random game |
+| Touchpad | Memory cards |
 | OPTIONS | Sort order |
 | Circle | Back |
 
