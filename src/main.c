@@ -443,7 +443,7 @@ void app_start_game(int index, bool resume)
         stats_save();
     }
     if (!bios_file_present()) /* after the load: it blocks, and the notice would run out before it was drawn */
-        app_toast_for("BIOS not found, using SCPH1001.BIN is recommended", 6.0f);
+        app_toast_for("BIOS not found, SCPH1001.BIN is recommended due to the low compatibility of OpenBios.", 10.0f);
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     ra_game_loaded(g->path);
