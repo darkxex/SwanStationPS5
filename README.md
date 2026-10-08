@@ -20,7 +20,7 @@ SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 ho
 
 It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive the SwanStation core. It does **not** use PSXS5's emulator submodules (PCSX-ReARMed and Beetle PSX HW): SwanStation is the only emulator, and the build no longer includes the others.
 
-- The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, and best with your own.
+- The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
 
@@ -138,7 +138,7 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
    > python tools/psxs5_sync.py index --host <PS5 IP> --fix-cues
    > ```
    > `--fix-cues` repairs `.cue` files that point at a `.bin` that was renamed, for example to `BREATH~1.BIN` by a FAT32 copy.
-6. **Optional: add your BIOS.** Put your own dump directly in `/data/PSXS5/bios/`, not in a subfolder, and keep its standard name: `scph5501.bin` (US), `scph5500.bin` (Japan) or `scph5502.bin` (Europe) are the best choices; `scph1001.bin` and `scph101.bin` also work. *Settings → About* shows whether it was found. From a PC: `python tools/psxs5_sync.py bios scph5501.bin --host <PS5 IP>`.
+6. **Optional, but add your BIOS.** `SCPH1001.BIN` is highly recommended for good emulation. Put your own dump directly in `/data/PSXS5/bios/`, not in a subfolder, and keep its standard name. `scph5501.bin` (US), `scph5500.bin` (Japan) and `scph5502.bin` (Europe) also work, as does `scph101.bin`. *Settings → About* shows whether it was found. From a PC: `python tools/psxs5_sync.py bios scph5501.bin --host <PS5 IP>`.
 7. **Restart SwanStationPS5.** Covers download the first time, then the shelf opens with your games.
 
 > **Where do things go?** Games: `/data/PSXS5/games/<Game name>/`. BIOS: `/data/PSXS5/bios/`. SwanStationPS5 creates both folders the first time it starts; you can also create them yourself over FTP.
