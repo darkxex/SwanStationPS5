@@ -381,9 +381,10 @@ static const Entry ENTRIES[] = {
     {{"On", "Oui", "Ligado", "Sí", "オン"}},
     {{"Auto", "Auto", "Automático", "Automático", "自動"}},
     {{"Core", "Cœur", "Núcleo", "Núcleo", "コア"}},
-    {{"Rendering in software, Vulkan is recommended.", "Rendu logiciel, Vulkan est recommandé.",
-      "A renderizar por software, recomenda-se usar o Vulkan.", "Renderizando por Software, se recomienda usar Vulkan.",
-      "ソフトウェアで描画中です。Vulkan の使用を推奨します。"}},
+    {{"Rendering on the CPU, using the GPU is recommended.", "Rendu sur le CPU, il est recommandé d'utiliser le GPU.",
+      "A renderizar no CPU, recomenda-se usar a GPU.", "Renderizando por CPU, se recomienda usar la GPU.",
+      "CPU で描画中です。GPU の使用を推奨します。"}},
+
     {{"BIOS not found, SCPH1001.BIN is recommended due to the low compatibility of OpenBios.",
       "BIOS introuvable, il est recommandé d'utiliser SCPH1001.BIN, en raison de la faible compatibilité d'OpenBios.",
       "BIOS não encontrada, recomenda-se usar SCPH1001.BIN, devido à baixa compatibilidade do OpenBios.",
