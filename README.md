@@ -313,6 +313,7 @@ python3 tools/make_release.py   # optional: build and pack SwanStationPS5-v<vers
 | `src/platform/` | PS5 video output, input, heap, scaling filters |
 | `tools/psxs5_sync.py` | the PC tool |
 | `tools/make_release.py` | builds the app and packs the release zip |
+| `tools/make_dds.py` | converts the two backgrounds to the BC7 `pic0.dds` / `pic1.dds` |
 | `tools/make_art.py` | generates the icon, home-screen art and this page's banner |
 | `docs/boilerplate/` | documentation of the PS5 app boilerplate SwanStationPS5 is built on |
 

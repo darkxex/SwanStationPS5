@@ -6,7 +6,7 @@
     python tools/make_art.py            -> sce_sys/icon0.png
                                            sce_sys/background-source.png (selected)
                                            sce_sys/launch-background-source.png (launching)
-Convert the two backgrounds to pic0.dds / pic1.dds with texconv (see README).
+Convert the two backgrounds to pic0.dds / pic1.dds with tools/make_dds.py.
 
 The look matches the in-app shelf: a deep blue gradient, a glowing CD with a
 rainbow sheen and the four face-button shapes in their classic colours.
