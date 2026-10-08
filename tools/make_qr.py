@@ -8,7 +8,7 @@ from pathlib import Path
 import segno
 from PIL import Image
 
-URL = "https://github.com/SynoPiia/PSXS5"
+URL = "https://github.com/darkxex/SwanStationPS5"
 ROOT = Path(__file__).resolve().parent.parent
 
 matrix = segno.make(URL, error="m").matrix

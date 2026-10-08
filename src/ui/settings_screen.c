@@ -1145,7 +1145,7 @@ static void draw_help(const Row *r)
         text_draw(x + w * 0.5f, qy + qs + 30, 22, FONT_BOLD, TH_TEXT, ALIGN_CENTER,
                   tr("Scan for the GitHub page"));
         text_draw(x + w * 0.5f, qy + qs + 64, 20, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
-                  "github.com/SynoPiia/PSXS5");
+                  "github.com/darkxex/SwanStationPS5");
     }
     if (r->kind != K_INFO && r->kind != K_ACTION)
     {
