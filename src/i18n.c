@@ -1211,7 +1211,7 @@ static const char *const NAMES[LANG_COUNT] = {"English", "Français", "Portuguê
 static int current;
 
 /* English key -> entry, open addressing; built on first use. */
-#define SLOTS 512
+#define SLOTS 2048 /* at least twice the entries: with fewer slots than entries build() never ends */
 static int16_t slots[SLOTS];
 static bool built;
 
