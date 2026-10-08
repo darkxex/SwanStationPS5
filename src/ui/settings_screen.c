@@ -340,7 +340,7 @@ static void add_swanstation_rows(Tab *tab, const Row *base, int base_count, cons
     for (int c = 0; c < ncat; ++c)
     {
         bool first = true;
-        snprintf(groups[categories[c]], sizeof(groups[0]), "SwanStation: %s", SS_CATEGORY_NAMES[categories[c]]);
+        snprintf(groups[categories[c]], sizeof(groups[0]), "%s (Core)", SS_CATEGORY_NAMES[categories[c]]);
         for (int i = 0; i < SS_OPT_COUNT; ++i)
         {
             if (SS_OPTS[i].category != categories[c] || n >= MAX_ROWS)

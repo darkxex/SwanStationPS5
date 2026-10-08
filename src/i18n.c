@@ -1197,6 +1197,7 @@ static const Entry ENTRIES[] = {
     {{"Compiling Shaders, please wait...", "Compilation des Shaders, veuillez patienter...",
       "Compilando Shaders, aguarde um momento...", "Compilando Shaders, espere un momento...",
       "シェーダーをコンパイル中です。しばらくお待ちください..."}},
+#include "i18n_swanstation.inc"
 };
 
 #define ENTRY_COUNT (int)(sizeof(ENTRIES) / sizeof(ENTRIES[0]))
@@ -1207,7 +1208,7 @@ static const char *const NAMES[LANG_COUNT] = {"English", "Français", "Portuguê
 static int current;
 
 /* English key -> entry, open addressing; built on first use. */
-#define SLOTS 2048 /* at least twice the entries: with fewer slots than entries build() never ends */
+#define SLOTS 4096 /* at least twice the entries: with fewer slots than entries build() never ends */
 static int16_t slots[SLOTS];
 static bool built;
 
