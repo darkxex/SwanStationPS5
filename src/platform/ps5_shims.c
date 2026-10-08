@@ -19,7 +19,7 @@ char *nl_langinfo(int item)
 }
 
 /* __builtin_cpu_init/__builtin_cpu_supports normally come from compiler-rt.
- * PCSX-ReARMed only uses them to warn about a missing SSE2/AVX. The PS5's
+ * The cores only use them to warn about a missing SSE2/AVX. The PS5's
  * Zen 2 CPU has CMOV, MMX, POPCNT, SSE..SSE4.2, AVX and AVX2: feature bits
  * 0-10 in compiler-rt's numbering. */
 struct ProcessorModel

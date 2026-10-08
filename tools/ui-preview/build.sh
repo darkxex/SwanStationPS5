@@ -20,7 +20,7 @@ sources=(src/cheats.c src/config.c src/covers.c src/disc.c src/i18n.c src/librar
     src/ui/*.c tools/ui-preview/stubs.c)
 python -m ziglang cc -target x86_64-windows-gnu -std=gnu11 -O2 -w \
     -DPSXS5_PREVIEW -DSDL_MAIN_HANDLED -include tools/ui-preview/compat.h \
-    -Isrc -Ithird_party/stb -Ithird_party/pcsx_rearmed/deps/libretro-common/include \
+    -Isrc -Ithird_party/stb -Ithird_party/swanstation/dep/libretro-common/include \
     -Ithird_party/rcheevos/include -I"$sdl/include" \
     "${sources[@]}" "$sdl/lib/libSDL2.dll.a" -o "$out/psxs5-preview.exe"
 cp "$sdl/bin/SDL2.dll" "$out/"

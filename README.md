@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="Platform: jailbroken PS5" src="https://img.shields.io/badge/platform-jailbroken%20PS5-3d55c8">
-  <img alt="SwanStation and PCSX-ReARMed" src="https://img.shields.io/badge/emulation-SwanStation%20%7C%20PCSX--ReARMed-5a6fe0">
+  <img alt="SwanStation" src="https://img.shields.io/badge/emulation-SwanStation-5a6fe0">
   <img alt="Vulkan" src="https://img.shields.io/badge/GPU-Vulkan%20up%20to%2016x-c83d5a">
   <img alt="RetroAchievements" src="https://img.shields.io/badge/RetroAchievements-supported-f0b429">
   <img alt="Licence: GPL-3.0-or-later" src="https://img.shields.io/badge/licence-GPL--3.0--or--later-2b2f7a">
@@ -19,7 +19,6 @@
 SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 home screen. It is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia that runs every game on SwanStation.
 
 - The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, and best with your own.
-  - [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed) stays in the build, on the CPU, for when the screen isn't drawn through Vulkan. It needs no BIOS.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
 
@@ -48,7 +47,7 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
 
 - **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x, at full speed.
 - **No more wobbly 3D.** PGXP (precise geometry) keeps polygons still and textures straight.
-- **One emulator, nothing to choose.** Every game runs on SwanStation. PCSX-ReARMed only steps in when the screen isn't drawn through Vulkan. Memory cards are saved per game.
+- **One emulator, nothing to choose.** Every game runs on SwanStation. Memory cards are saved per game.
 - **SwanStation's own options.** 104 of its core options (MSAA, texture filter, widescreen hack, PGXP details, controller ports, CPU overclock...) in Settings → Display, Graphics, Controls and System. They are in English and only on the console.
 
 - **Five themes.** Classic, Neon Arcade, Memory Card (light and dark, a grid of covers) and Record Shelf (spines on a shelf), each with its own colours and fonts.
@@ -69,7 +68,7 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
   - Counted achievements (18/80 dragons) show a progress bar, and a small tracker pops up in game when they move.
 - **Settings from your phone.** Turn it on and scan the QR code: a settings page opens on any phone on the same network.
 - **Updates from GitHub.** SwanStationPS5 tells you when a new release is out and installs it from *Settings → About*.
-- **Native app.** A real home-screen title (`PPSA97510`) with its own icon and art. Nothing is streamed and no PC is needed while you play.
+- **Native app.** A real home-screen title (`PPSA98510`) with its own icon and art. Nothing is streamed and no PC is needed while you play.
 - **A shelf for your games.** A 3D cover flow with reflections and a soft click as you browse.
   - Covers are matched by the serial read from each disc, so every region gets its own art.
   - Missing covers download on the console.
@@ -77,7 +76,7 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
   - Or pick one by hand: on the shelf press **Triangle** (Details), then **Square**, and choose any image from `covers/` or the game's folder.
 - **Plays every common format.** `.cue`/`.bin`, `.chd`, `.pbp` (including multi-disc), `.iso`, `.img`, `.mdf`, `.ccd` and `.m3u` playlists for multi-disc games.
 - **Sharp on a 4K TV.**
-  - Internal resolution: native up to 16x with SwanStation, up to 2x with PCSX-ReARMed.
+  - Internal resolution: native up to 16x with SwanStation.
   - Upscale: 1x to 4x, with three filters:
     - Sharp pixels
     - Smooth pixels (Scale2x/3x)
@@ -109,7 +108,7 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
 ## What you need
 
 - **A jailbroken PS5** with [etaHEN](https://github.com/etaHEN/etaHEN) and kstuff loaded. Development happens on firmware 13.60.
-- **[ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus)**, loaded at every boot. It puts SwanStationPS5 on the home screen from `/data/homebrew/PPSA97510/`.
+- **[ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus)**, loaded at every boot. It puts SwanStationPS5 on the home screen from `/data/homebrew/PPSA98510/`.
 - **An FTP client**, such as etaHEN's FTP server on port 2121 with FileZilla, or the included PC tool.
 - **Your own games**, dumped from discs you own.
 - **Optional: your own PS1 BIOS**, dumped from your own console. Without one, SwanStation uses its built-in OpenBIOS, which is less compatible.
@@ -118,10 +117,10 @@ SwanStationPS5 is a hobby project, made for the love of the PS1 library. No comp
 
 ## Getting started
 
-1. **Download** the `SwanStationPS5-v*.zip` from the [latest release](../../releases/latest) and extract it. Inside is a `PPSA97510` folder and the PC tools.
-2. **Install the app.** Copy the `PPSA97510` folder to `/data/homebrew/` on the PS5 over FTP. Then set its permissions to `777`: in FileZilla, right-click the folder → *File permissions* → `777`, recurse into subdirectories. Without this, the PS5 says *"Can't start the game or app"* (CE-107750-0). The PC tool does all of this for you:
+1. **Download** the `SwanStationPS5-v*.zip` from the [latest release](../../releases/latest) and extract it. Inside is a `PPSA98510` folder and the PC tools.
+2. **Install the app.** Copy the `PPSA98510` folder to `/data/homebrew/` on the PS5 over FTP. Then set its permissions to `777`: in FileZilla, right-click the folder → *File permissions* → `777`, recurse into subdirectories. Without this, the PS5 says *"Can't start the game or app"* (CE-107750-0). The PC tool does all of this for you:
    ```bash
-   python tools/psxs5_sync.py app --app-dir PPSA97510 --host <PS5 IP>
+   python tools/psxs5_sync.py app --app-dir PPSA98510 --host <PS5 IP>
    ```
 3. **Restart ShadowMountPlus** (or the console). SwanStationPS5 appears on the home screen.
 4. **Start SwanStationPS5 once.** It creates its folders in `/data/PSXS5/` (see [below](#folders-on-the-console)) and shows an empty shelf that tells you where games go.
@@ -157,7 +156,7 @@ The log shows the result: `storage: unlocked`, or `storage: sandboxed (...)` wit
 ### Folders on the console
 
 ```text
-/data/homebrew/PPSA97510/     the app
+/data/homebrew/PPSA98510/     the app
 /data/PSXS5/
 ├── games/<Game name>/        your games, one folder per game (a cheats.cht here overrides the library)
 ├── bios/                     optional: your BIOS dump (scph*.bin)
@@ -269,7 +268,7 @@ python tools/psxs5_sync.py covers  --host <PS5 IP>                     # covers 
 python tools/psxs5_sync.py cheats  --host <PS5 IP>                     # the cheat library
 python tools/psxs5_sync.py bios    scph5501.bin --host <PS5 IP>        # your own BIOS dump
 python tools/psxs5_sync.py ra-login --host <PS5 IP>                    # RetroAchievements
-python tools/psxs5_sync.py app     --app-dir PPSA97510 --host <PS5 IP> # install or update the app
+python tools/psxs5_sync.py app     --app-dir PPSA98510 --host <PS5 IP> # install or update the app
 ```
 
 `sync` handles the whole library, one game at a time:
@@ -296,14 +295,13 @@ To build the PS5 app on Linux or WSL (Ubuntu 24.04):
 sudo apt install clang-18 lld-18 llvm-18 make ninja-build ccache pkg-config python3 python3-venv tar unzip wget
 git clone https://github.com/darkxex/SwanStationPS5.git
 cd SwanStationPS5
-git submodule update --init --recursive third_party/pcsx_rearmed third_party/rcheevos
+git submodule update --init --recursive third_party/rcheevos
 git submodule update --init third_party/swanstation
-make            # -> dist/PPSA97510/ and dist/PPSA97510.zip
+make            # -> dist/PPSA98510/ and dist/PPSA98510.zip
 python3 tools/make_release.py   # optional: build and pack SwanStationPS5-v<version>.zip
-make desktop    # optional PC test build (needs libsdl2-dev libcurl4-openssl-dev zlib1g-dev)
 ```
 
-`make` builds PCSX-ReARMed (`tools/build-core.sh`), SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation; `APP_BEETLE=1` also builds the old Beetle PSX HW core (`tools/build-beetle.sh`).
+`make` builds SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation; `APP_BEETLE=1` also builds the old Beetle PSX HW core (`tools/build-beetle.sh`).
 
 | Path | What |
 |---|---|
@@ -322,7 +320,6 @@ make desktop    # optional PC test build (needs libsdl2-dev libcurl4-openssl-dev
 
 SwanStationPS5 is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia and is built on the work of a lot of people. Thank you all.
 
-* **notaz, the PCSX / PCSX-Reloaded teams and the libretro contributors**, for [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed), and for [libretro](https://www.libretro.com/), the interface PSXS5 drives the emulators through.
 * **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator SwanStationPS5 runs.
 * **Ryphecha and the Mednafen team, the Beetle PSX contributors and Themaister** (parallel-psx), for [Beetle PSX HW](https://github.com/libretro/beetle-psx-libretro), and **Mihawk-99** for its PS5 port and for the PS5 port of Mesa's RADV Vulkan driver.
 * **BlackBearReloaded**, for [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate), the build pipeline, runtime and deploy tooling that turn SwanStationPS5 into a home-screen app.
@@ -344,7 +341,7 @@ Licences for everything above are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICE
 
 ## Legal
 
-SwanStationPS5 is free software under the GPL-3.0-or-later. SwanStation is GPL-3.0, and PCSX-ReARMed is GPL-2.0-or-later, with parts under LGPL-2.1-or-later.
+SwanStationPS5 is free software under the GPL-3.0-or-later. SwanStation is GPL-3.0.
 
 SwanStationPS5 is not affiliated with or endorsed by Sony Interactive Entertainment. "PlayStation" is a registered trademark of Sony Interactive Entertainment Inc. It is used here only to describe what the emulator does.
 

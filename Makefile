@@ -15,11 +15,9 @@ PSXS5_VULKAN_INCLUDE := .deps/native/radv-release/include
 else
 APP_DEFINITIONS ?= PSXS5_HAVE_CURL=1
 endif
-# PSXS5: the PCSX-ReARMed core is linked as a static libretro archive.
-PSXS5_CORE := build/core-ps5/libpcsx_rearmed.a
 # RetroAchievements: rcheevos (MIT), built by tools/build-rcheevos.sh.
 PSXS5_RCHEEVOS := build/rcheevos-ps5/librcheevos.a
-APP_INCLUDE_PATHS ?= third_party/pcsx_rearmed/deps/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include $(PSXS5_VULKAN_INCLUDE)
+APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include $(PSXS5_VULKAN_INCLUDE)
 ifeq ($(APP_VULKAN),1)
 # SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
 PSXS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
@@ -31,7 +29,7 @@ PSXS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
 APP_DEFINITIONS += PSXS5_BEETLE=1
 endif
 endif
-APP_STATIC_ARCHIVES ?= $(PSXS5_CORE) $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE) $(PSXS5_SWANSTATION)
+APP_STATIC_ARCHIVES ?= $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE) $(PSXS5_SWANSTATION)
 APP_RUNTIME_MODULES ?=
 # fcntl: console_curl. The allocator family: ps5_heap.c (the C heap is too small).
 APP_WRAP_SYMBOLS ?= fcntl malloc free calloc realloc reallocf memalign posix_memalign aligned_alloc malloc_usable_size
@@ -251,7 +249,7 @@ distclean: clean
 	@printf '%s\n' '==> [distclean] Removing downloaded dependency caches'
 	@rm -rf -- .deps
 
-.PHONY: core core-desktop desktop run-desktop
+.PHONY: core
 # The core is rebuilt by its own Makefile; this only forwards to it.
 .PHONY: radv
 # v2: the RADV driver build and the SDK platform layer (tools/fetch-radv.sh).
@@ -261,7 +259,6 @@ ifeq ($(APP_VULKAN),1)
 endif
 
 core:
-	@bash tools/build-core.sh ps5
 	@bash tools/build-rcheevos.sh ps5
 ifeq ($(APP_VULKAN),1)
 ifeq ($(APP_BEETLE),1)
@@ -270,24 +267,11 @@ endif
 	@bash tools/build-swanstation.sh
 endif
 
-core-desktop:
-	@bash tools/build-core.sh desktop
-	@bash tools/build-rcheevos.sh desktop
-
-# Linux/WSL desktop build of the same frontend, for testing games on a PC.
-desktop: core-desktop
-	@$(MAKE) --no-print-directory -f Makefile.desktop
-
-run-desktop: desktop
-	@./build/desktop/psxs5
-
 help:
 	@printf '%s\n' \
 	  'PSXS5:' \
-	  'make                 Build the PS5 app folder dist/PPSA97510 (core + frontend)' \
+	  'make                 Build the PS5 app folder dist/PPSA98510 (core + frontend)' \
 	  'make deploy PS5_HOST=<ip>  Build and upload to /data/homebrew over FTP' \
-	  'make desktop         Build the desktop test build (needs libsdl2-dev)' \
-	  'make run-desktop     Run it; set PSXS5_ROOT to a folder with games/' \
 	  '' \
 	  'Boilerplate:' \
 	  'make                 Generate libc.prx and build the app folder' \

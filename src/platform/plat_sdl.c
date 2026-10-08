@@ -1079,7 +1079,7 @@ void plat_set_colour(int brightness, int colour, int sharpen)
 #endif
 }
 
-/* The PCSX-ReARMed picture (XRGB8888) graded on the CPU. */
+/* The emulator picture (XRGB8888) graded on the CPU. */
 static void grade_pixels(uint32_t *px, int w, int h, size_t pitch)
 {
     if (!colour_on)
@@ -1676,8 +1676,8 @@ void plat_asset_path(char *out, size_t size, const char *relative)
     /* /app0 exists only inside the sandbox. Once the HEN frees PSXS5 its
      * file system is the console's real one, where the title is mounted at
      * /system_ex/app/<id> (ShadowMountPlus) and stored in /data/homebrew/<id>. */
-    static const char *const bases[] = {"/app0/assets", "/system_ex/app/PPSA97510/assets",
-                                        "/data/homebrew/PPSA97510/assets"};
+    static const char *const bases[] = {"/app0/assets", "/system_ex/app/PPSA98510/assets",
+                                        "/data/homebrew/PPSA98510/assets"};
     static int chosen = -1;
     if (chosen < 0)
     {

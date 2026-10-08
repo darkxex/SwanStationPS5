@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Checks api.github.com for the latest release; installing downloads its
- * PSXS5-vX.Y.Z.zip and writes the PPSA97510 folder inside it over the
+ * PSXS5-vX.Y.Z.zip and writes the PPSA98510 folder inside it over the
  * installed app. Each file goes to <name>.new and is renamed into place:
  * a running eboot.bin can't be overwritten, but it can be replaced by name,
  * and the new one runs from the next start.
@@ -23,7 +23,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define APP_DIR "/data/homebrew/PPSA97510"
+#define APP_DIR "/data/homebrew/PPSA98510"
 
 static SDL_atomic_t state;
 static char version[32], zip_url[512], message[256];
@@ -186,11 +186,11 @@ static int install_thread(void *unused)
         mz_zip_archive_file_stat st;
         if (!mz_zip_reader_file_stat(&archive, i, &st) || st.m_is_directory)
             continue;
-        /* PSXS5-v1.2.0/PPSA97510/<path> -> APP_DIR/<path> */
-        const char *inside = strstr(st.m_filename, "PPSA97510/");
+        /* PSXS5-v1.2.0/PPSA98510/<path> -> APP_DIR/<path> */
+        const char *inside = strstr(st.m_filename, "PPSA98510/");
         if (!inside || strstr(inside, ".."))
             continue;
-        inside += strlen("PPSA97510/");
+        inside += strlen("PPSA98510/");
         char target[PSXS5_PATH_MAX], temp[PSXS5_PATH_MAX + 8], parent[PSXS5_PATH_MAX];
         path_join(target, sizeof(target), APP_DIR, inside);
         str_copy(parent, sizeof(parent), target);

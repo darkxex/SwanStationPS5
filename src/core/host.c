@@ -2,10 +2,9 @@
  * PSXS5 - libretro host for the statically linked cores.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * The cores are linked into PSXS5 as static archives: PCSX-ReARMed
- * (libpcsx_rearmed.a, plain retro_*) and, in v2 builds, Beetle PSX HW
- * (libbeetle_psx.a, its retro_* renamed beetle_retro_* by
- * tools/build-beetle.sh). A table of functions picks one per game. Only the
+ * SwanStation is linked into PSXS5 as a static archive (libswanstation.a, its
+ * retro_* renamed swanstation_retro_* by tools/build-swanstation.sh); Beetle PSX HW
+ * can be linked too (APP_BEETLE=1). A table of functions drives the core. Only the
  * environment callbacks the cores rely on are implemented; everything else
  * answers "unsupported" as libretro allows.
  */
@@ -70,7 +69,9 @@ typedef struct
             p##retro_cheat_set                                                                  \
     }
 
-static const CoreApi PCSX = CORE_API("PCSX-ReARMed", );
+#if !defined(PSXS5_VULKAN)
+#error "SwanStation renders through Vulkan: build with APP_VULKAN=1"
+#endif
 
 #if defined(PSXS5_VULKAN)
 #if defined(PSXS5_BEETLE)
@@ -124,7 +125,7 @@ void swanstation_retro_cheat_set(unsigned, bool, const char *);
 static const CoreApi SWANSTATION = CORE_API("SwanStation", swanstation_);
 #endif
 
-static const CoreApi *core = &PCSX;
+static const CoreApi *core = &SWANSTATION;
 
 typedef struct
 {
@@ -154,7 +155,6 @@ static bool speculative;      /* run-ahead's look-ahead frames: run, drawn, not 
 static char patches_dir[PSXS5_PATH_MAX];
 static bool multitap;
 
-void psxs5_set_patches_dir(const char *dir); /* core: tools/patches/pcsx_rearmed-patchesdir.patch */
 
 static struct retro_memory_descriptor memory_descriptors[32];
 static struct retro_memory_map memory_map;
@@ -271,7 +271,7 @@ static void apply_beetle_options(const Settings *s)
     /* analog mode from the start for games known to use the sticks; the
      * L1+L2+R1+R2+START+SELECT combination still switches it, as the ANALOG button did */
     set_option("beetle_psx_hw_analog_toggle", (game_fixes & GDB_ANALOG) ? "enabled-analog" : "enabled");
-    /* card 0 through SAVE_RAM: PSXS5 keeps it in PCSX-ReARMed's file */
+    /* card 0 through SAVE_RAM: PSXS5 keeps it in <saves>/<serial>_1.mcd */
     set_option("beetle_psx_hw_use_mednafen_memcard0_method", "libretro");
     /* Vulkan: never. Beetle repeats a frame there whenever the game didn't
      * switch display buffers, so screens drawn straight into the shown buffer
@@ -355,26 +355,6 @@ static void apply_settings_to_options(const Settings *s)
         return;
     }
 #endif
-    static const char *regions[] = {"auto", "NTSC", "PAL"};
-    set_option("pcsx_rearmed_region", regions[s->region % REGION_COUNT]);
-    set_option("pcsx_rearmed_bios", s->force_hle ? "HLE" : "auto");
-    set_option("pcsx_rearmed_dithering", s->dithering ? "enabled" : "disabled");
-    set_option("pcsx_rearmed_cd_turbo", s->cd_fast && !(game_fixes & GDB_NO_CD_SPEEDUP) ? "enabled" : "disabled");
-    set_option("pcsx_rearmed_rgb32_output", "enabled");
-    set_option("pcsx_rearmed_memcard1", "serial");   /* one card per game, managed by the core */
-    set_option("pcsx_rearmed_show_bios_bootlogo", s->boot_intro ? "enabled" : "disabled");
-    set_option("pcsx_rearmed_vibration", "enabled");
-    set_option("pcsx_rearmed_display_fps_v2", "disabled");
-    /* 2x internal resolution: the enhanced GPU renders the 3D scene at double size. */
-    set_option("pcsx_rearmed_neon_enhancement_enable", s->internal_res >= 2 ? "enabled" : "disabled");
-    set_option("pcsx_rearmed_neon_enhancement_no_main", "disabled");
-    /* players 3 and 4 through a multitap in port 1 */
-    set_option("pcsx_rearmed_multitap", s->multitap ? "port 1" : "disabled");
-    /* the widescreen codes need the picture's sides drawn */
-    set_option("pcsx_rearmed_show_overscan", s->widescreen ? "hack" : "disabled");
-    /* the emulated CPU's speed: auto is about 57 % of a real PS1's cycles */
-    static const char *const clock[] = {"auto", "75", "100"};
-    set_option("pcsx_rearmed_psxclock", clock[s->overclock >= 0 && s->overclock <= 2 ? s->overclock : 0]);
 }
 
 /* ---------------------------------------------------------------- Vulkan rendering */
@@ -836,8 +816,7 @@ static int16_t RETRO_CALLCONV input_state_cb(unsigned port, unsigned device, uns
 /* ---------------------------------------------------------------- memory card */
 
 /* One card per game, whichever emulator runs it: <saves>/<serial>_1.mcd,
- * the file PCSX-ReARMed writes itself ("serial" cards) and the memory card
- * manager shows. Beetle's card is the frontend's (SAVE_RAM): loaded from that
+ * the file the memory card manager shows. Beetle's card is the frontend's (SAVE_RAM): loaded from that
  * file after retro_load_game, written back when it changes. */
 static char card_path[PSXS5_PATH_MAX];
 static uint8_t card_saved[128 * 1024];
@@ -860,7 +839,7 @@ static void card_prepare(const char *serial, const char *game_path)
         strncat(name, "_1.mcd", sizeof(name) - strlen(name) - 1);
     }
     path_join(card_path, sizeof(card_path), host_paths->saves, name);
-    /* PCSX names it as the disc spells its ID, sometimes lower case */
+    /* older saves name it as the disc spells its ID, sometimes lower case */
     FILE *f = fopen(card_path, "rb");
     if (f)
     {
@@ -959,36 +938,12 @@ static bool __attribute__((unused)) beetle_bios_present(const char *serial)
 }
 #endif
 
-/* Which core runs a game, and why not Beetle when Automatic picks PCSX. */
-static const CoreApi *pick_core(const Settings *settings, const char *serial, const char **why)
-{
-    *why = NULL;
-    (void)settings, (void)serial;
-#if defined(PSXS5_VULKAN)
-    /* SwanStation is the only emulator offered (the Emulator setting is hidden); PCSX-ReARMed
-     * only when the screen isn't drawn through Vulkan, as SwanStation renders on the GPU.
-     * Beetle PSX HW and the old choice stay in the build: restore the Settings row to bring them back. */
-    if (vkp_describe()[0])
-        return &SWANSTATION;
-    *why = "the screen isn't drawn through Vulkan";
-#endif
-    return &PCSX;
-}
-
-static const CoreApi *choose_core(const Settings *settings, const char *serial)
-{
-    const char *why;
-    const CoreApi *c = pick_core(settings, serial, &why);
-    if (why)
-        psxs5_log("host: PCSX-ReARMed, as %s", why);
-    return c;
-}
-
 const char *host_emulator_for(const Settings *settings, const char *serial, const char **why_not_beetle)
 {
-    if (!host_paths)
-        host_paths = app_paths();
-    return pick_core(settings, serial ? serial : "", why_not_beetle)->name;
+    (void)settings, (void)serial;
+    if (why_not_beetle)
+        *why_not_beetle = NULL;
+    return SWANSTATION.name;
 }
 
 const char *host_core_name(void)
@@ -1002,7 +957,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     host_unload();
     host_paths = paths;
     str_copy(loading_path, sizeof(loading_path), game_path);
-    core = choose_core(settings, serial ? serial : "");
+    core = &SWANSTATION;
     psxs5_log("host: emulator %s", core->name);
     {
         /* Beetle keeps its Vulkan pipeline cache in <saves>/Beetle PSX HW; without
@@ -1033,8 +988,6 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     core->set_input_state(input_state_cb);
     STEP("retro_init");
     core->init();
-    if (core == &PCSX)
-        psxs5_set_patches_dir(patches_dir);
 
     STEP("retro_load_game");
     struct retro_game_info info = {game_path, NULL, 0, NULL};
@@ -1062,10 +1015,10 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     multitap = settings->multitap;
     for (unsigned port = 0; port < (multitap ? 4u : 2u); ++port)
         core->set_controller_port_device(port, device);
-    /* NeGcon (analog subclass 3 in Beetle, 2 in PCSX-ReARMed) in every port, or a mouse in port 1 */
+    /* NeGcon (analog subclass 3) in every port, or a mouse in port 1 */
     if (special_device == 1)
         for (unsigned port = 0; port < (multitap ? 4u : 2u); ++port)
-            core->set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, core == &PCSX ? 2 : 3));
+            core->set_controller_port_device(port, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 3));
     if (special_device == 2)
         core->set_controller_port_device(0, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE, 0));
     if (special_device)
@@ -1124,62 +1077,10 @@ const struct retro_memory_map *host_memory_map(void)
     return loaded && memory_map.num_descriptors ? &memory_map : NULL;
 }
 
-/* The core's CD layer (libpcsxcore/cdrom-async.h): reads through whatever
- * image format is loaded (bin/cue, CHD, PBP...). */
-int cdra_readTrack(const unsigned char *time);
-void *cdra_getBuffer(void);
-int cdra_init(void);
-int cdra_open(void);
-void cdra_close(void);
-void set_cd_image(const char *fname); /* PCSX-ReARMed frontend/main.c */
-
-/* When another core runs the game, PCSX-ReARMed's CD layer still reads every
- * image format (bin/cue, CHD, PBP...): open it just to hash the disc. */
-static bool hash_disc_open;
-
-bool host_hash_disc_begin(const char *disc_path)
-{
-    if (loaded && core == &PCSX)
-        return true; /* the running core's disc */
-    host_hash_disc_end();
-    cdra_init();
-    set_cd_image(disc_path);
-    hash_disc_open = cdra_open() == 0;
-    if (!hash_disc_open)
-        psxs5_log("ra: could not open %s to identify it", disc_path);
-    return hash_disc_open;
-}
-
-void host_hash_disc_end(void)
-{
-    if (hash_disc_open)
-        cdra_close();
-    hash_disc_open = false;
-}
-
-bool host_read_sector(uint32_t lba, uint8_t out[2048])
-{
-    if (!hash_disc_open && (!loaded || core != &PCSX))
-        return false;
-    unsigned abs = lba + 150; /* sector 0 is at 00:02:00 */
-    /* minute, second, frame as plain numbers: the core's cdra_readTrack takes
-     * them through msf2sec, not as the BCD the PS1's CD commands use */
-    unsigned char time[3] = {(unsigned char)(abs / 75 / 60), (unsigned char)(abs / 75 % 60),
-                             (unsigned char)(abs % 75)};
-    if (cdra_readTrack(time) != 0)
-        return false;
-    const uint8_t *buf = cdra_getBuffer();
-    if (!buf)
-        return false;
-    memcpy(out, buf + 12, 2048); /* skip MSF/mode + subheader: Mode 2 Form 1 data */
-    return true;
-}
-
-int padGetMode(unsigned int index); /* core, added by tools/patches/pcsx_rearmed-padgetmode.patch */
-
 bool host_pad_digital(int port)
 {
-    return loaded && core == &PCSX && padGetMode((unsigned)port) == 0;
+    (void)port;
+    return false;
 }
 
 void host_set_pads(const PadState pads[PSXS5_MAX_PADS])
@@ -1289,7 +1190,7 @@ size_t host_state_size(void)
         /* Beetle measures by saving a whole state: once per game, with room
          * to spare in case a later state is a little larger */
         size_t size = core->serialize_size();
-        state_size = size && core != &PCSX ? size + 512 * 1024 : size; /* Beetle */
+        state_size = size ? size + 512 * 1024 : size;
         psxs5_log("host: states take %zu KB", state_size / 1024);
     }
     return state_size;

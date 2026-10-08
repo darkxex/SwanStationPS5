@@ -35,7 +35,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
 }
 void host_unload(void) { loaded = false; }
 bool host_loaded(void) { return loaded; }
-const char *host_core_name(void) { return "PCSX-ReARMed"; }
+const char *host_core_name(void) { return "SwanStation"; }
 const char *host_emulator_for(const Settings *s, const char *serial, const char **why)
 { (void)s; (void)serial; *why = NULL; return "Beetle PSX HW"; }
 bool host_hash_disc_begin(const char *p) { (void)p; return false; }

@@ -678,7 +678,7 @@ def ra_login(host: str, port: int, user: str | None, hardcore: bool, profile: st
 
 
 # Beetle PSX HW looks for one file name per region (scph5500/5501/5502.bin);
-# PCSX-ReARMed takes any of them. The region is the letter that ends the
+# SwanStation takes any of them. The region is the letter that ends the
 # version text inside the dump: "System ROM Version 4.1 12/16/97 E".
 BIOS_REGION_NAMES = {"J": "scph5500.bin", "A": "scph5501.bin", "E": "scph5502.bin"}
 
@@ -785,7 +785,7 @@ def main() -> None:
     ap.add_argument("--user", help="ra-login: RetroAchievements user name")
     ap.add_argument("--hardcore", action="store_true", help="ra-login: start in hardcore mode")
     ap.add_argument("--profile", help="ra-login: sign in a PSXS5 profile (its name, as on the console)")
-    ap.add_argument("--app-dir", type=Path, default=Path(__file__).resolve().parent.parent / "dist" / "PPSA97510",
+    ap.add_argument("--app-dir", type=Path, default=Path(__file__).resolve().parent.parent / "dist" / "PPSA98510",
                     help="app: the built title folder to install")
     ap.add_argument("--all", action="store_true", help="covers: the whole database, not just your games")
     ap.add_argument("--style", choices=["default", "3d", "both"], default="default",

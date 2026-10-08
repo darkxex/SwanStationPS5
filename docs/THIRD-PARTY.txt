@@ -5,9 +5,6 @@ with every component below as a submodule or in third_party/).
 
 PSXS5 contains, built into eboot.bin:
 
-PCSX-ReARMed (PlayStation emulator)
-  GNU GPL v2 or later - COPYING-pcsx_rearmed.txt
-  https://github.com/libretro/pcsx_rearmed
 
 SwanStation (DuckStation's libretro core)
   GNU GPL v3

@@ -1,5 +1,5 @@
 /*
- * PSXS5 - libretro host for the statically linked PCSX-ReARMed core.
+ * PSXS5 - libretro host for the statically linked SwanStation core.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #ifndef PSXS5_HOST_H
@@ -13,10 +13,9 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
                char *error, size_t error_size);
 void host_unload(void);
 bool host_loaded(void);
-/* "PCSX-ReARMed" or "Beetle PSX HW": the emulator of the loaded game */
+/* "SwanStation": the emulator of the loaded game */
 const char *host_core_name(void);
-/* The emulator a game would get with these settings ("Beetle PSX HW" or
- * "PCSX-ReARMed"); *why_not_beetle says why Automatic picked PCSX-ReARMed. */
+/* The emulator a game would get with these settings ("SwanStation"); *why_not_beetle is always NULL. */
 const char *host_emulator_for(const Settings *settings, const char *serial, const char **why_not_beetle);
 
 void host_set_pads(const PadState pads[PSXS5_MAX_PADS]);
@@ -59,10 +58,6 @@ struct retro_memory_map;
 const struct retro_memory_map *host_memory_map(void);
 void *host_memory_data(unsigned id); /* retro_get_memory_data of the running core */
 size_t host_memory_size(unsigned id);
-bool host_read_sector(uint32_t lba, uint8_t out[2048]); /* user data of a disc sector */
-/* host_read_sector from this image (any core), until _end. */
-bool host_hash_disc_begin(const char *disc_path);
-void host_hash_disc_end(void);
 
 int host_disc_count(void);
 int host_disc_index(void);

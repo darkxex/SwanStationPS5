@@ -149,7 +149,6 @@ No proprietary runtime module, encryption key, or game file is included.
 
 | Component | Use | License |
 | --- | --- | --- |
-| [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed) | PlayStation emulation core (`third_party/pcsx_rearmed`) | GPL-2.0-or-later, parts LGPL-2.1-or-later |
 | [stb_image, stb_truetype](https://github.com/nothings/stb) | cover decoding, font rendering (`third_party/stb`) | Public domain / MIT |
 | [Inter](https://github.com/rsms/inter) | interface font (`assets/fonts`) | SIL Open Font License 1.1 (`assets/fonts/OFL.txt`) |
 | [xlenore/psx-covers](https://github.com/xlenore/psx-covers) | cover art, downloaded at runtime by serial; not bundled | see that repository |

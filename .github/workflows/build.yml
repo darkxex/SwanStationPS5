@@ -1,8 +1,8 @@
-# PSXS5 - cloud build: the PS5 app folder plus a desktop compile/link check.
+# PSXS5 - cloud build: the PS5 app folder.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Download the result from the run's page: Artifacts > PSXS5-PPSA97510.
-# Unzip it and copy the PPSA97510 folder to /data/homebrew/ on the PS5.
+# Download the result from the run's page: Artifacts > PSXS5-PPSA98510.
+# Unzip it and copy the PPSA98510 folder to /data/homebrew/ on the PS5.
 
 name: Build PSXS5
 
@@ -28,12 +28,12 @@ jobs:
     env:
       CCACHE_DIR: ${{ github.workspace }}/.deps/ccache
     steps:
-      - name: Check out source and the PCSX-ReARMed core
+      - name: Check out source
         uses: actions/checkout@v4
       # SwanStation is the PS5 emulator; Beetle PSX HW is no longer built.
       - name: Fetch submodules
         run: |
-          git submodule update --init --recursive --depth=1 third_party/pcsx_rearmed third_party/rcheevos
+          git submodule update --init --recursive --depth=1 third_party/rcheevos
           git submodule update --init --depth=1 third_party/swanstation
 
       - name: Install toolchain
@@ -57,7 +57,7 @@ jobs:
         run: make
 
       - name: Check system module imports
-        run: python3 tools/check-imports.py dist/PPSA97510/eboot.bin
+        run: python3 tools/check-imports.py dist/PPSA98510/eboot.bin
 
       # Crash reports in psxs5.log give addresses as offsets from main();
       # this map turns them into function names.
@@ -73,32 +73,16 @@ jobs:
       - name: Upload the app folder
         uses: actions/upload-artifact@v4
         with:
-          name: PSXS5-PPSA97510
+          name: PSXS5-PPSA98510
           path: |
             dist/
             !dist/*.zip
           if-no-files-found: error
 
-  desktop:
-    name: Desktop build (compile and link check)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - name: Fetch submodules
-        run: |
-          git submodule update --init --recursive --depth=1 third_party/pcsx_rearmed third_party/rcheevos
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes build-essential libsdl2-dev libcurl4-openssl-dev zlib1g-dev
-      - name: Build
-        run: make desktop
-
   release:
     name: Publish the release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [ps5, desktop]
+    needs: [ps5]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -106,7 +90,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: PSXS5-PPSA97510
+          name: PSXS5-PPSA98510
           path: app
       - uses: actions/download-artifact@v4
         with:
@@ -116,7 +100,7 @@ jobs:
         run: |
           name=PSXS5-${GITHUB_REF_NAME}
           mkdir -p "$name/tools"
-          cp -r app/PPSA97510 "$name/"
+          cp -r app/PPSA98510 "$name/"
           cp tools/psxs5_sync.py tools/psx_disc.py "$name/tools/"
           cp README.md LICENSE THIRD_PARTY_NOTICES.md "$name/"
           zip -qr "$name.zip" "$name"

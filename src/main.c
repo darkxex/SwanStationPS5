@@ -4,7 +4,7 @@
  *
  * Entry point, game start/stop and the emulation screen. The other screens
  * live in src/ui (shelf, settings, in-game menu and cheats).
- * Emulation is PCSX-ReARMed, linked statically and driven through libretro.
+ * Emulation is SwanStation, linked statically and driven through libretro.
  */
 #include "app.h"
 

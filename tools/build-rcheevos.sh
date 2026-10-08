@@ -43,7 +43,7 @@ for s in "${sources[@]}"; do
     o="$out/obj/$(echo "$s" | tr '/' '_' | sed 's/\.c$/.o/')"
     if [[ ! -f $o || $src/$s -nt $o ]]; then
         "${cc[@]}" "${flags[@]}" -std=gnu99 -DRC_CLIENT_SUPPORTS_HASH \
-            -I"$src/include" -I"$root/third_party/pcsx_rearmed/deps/libretro-common/include" \
+            -I"$src/include" -I"$root/third_party/swanstation/dep/libretro-common/include" \
             -c "$src/$s" -o "$o"
     fi
     objects+=("$o")

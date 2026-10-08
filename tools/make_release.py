@@ -6,8 +6,8 @@
     python3 tools/make_release.py --jobs 12 --no-nice
 
 The version is read from PSXS5_VERSION in src/psxs5.h, so the zip is named after the build it holds.
-The zip has one folder, SwanStationPS5-v<version>/, with the app (PPSA97510/), the PC tools, the
-README and the licences. The in-app updater only needs the PPSA97510/ folder inside it.
+The zip has one folder, SwanStationPS5-v<version>/, with the app (PPSA98510/), the PC tools, the
+README and the licences. The in-app updater only needs the PPSA98510/ folder inside it.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 """
@@ -21,7 +21,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APP = "PPSA97510"
+APP = "PPSA98510"
 EXTRA_FILES = [
     "tools/psxs5_sync.py",
     "tools/psx_disc.py",

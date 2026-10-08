@@ -15,7 +15,7 @@
 
 #define PSXS5_NAME "PSXS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define PSXS5_TITLE "SwanStationPS5" /* what is shown on screen */
-#define PSXS5_TITLE_ID "PPSA97510"
+#define PSXS5_TITLE_ID "PPSA98510"
 #define PSXS5_VERSION "1.0.0"
 #define PSXS5_PATH_MAX 512
 
@@ -93,7 +93,7 @@ typedef struct
     int aspect;       /* enum AspectMode */
     bool integer_scale; /* whole-number scale factors only */
     bool smooth;      /* bilinear for the final scale to the screen */
-    int internal_res; /* 1..5 = native, 2x, 4x, 8x, 16x; PCSX-ReARMed stops at 2x */
+    int internal_res; /* 1..5 = native, 2x, 4x, 8x, 16x */
     int upscale;      /* 1..4: prescale before the final scale */
     int upscale_filter; /* enum UpscaleFilter */
     bool show_fps;
@@ -168,7 +168,7 @@ typedef struct
 
 enum Emulator
 {
-    EMU_AUTO,   /* SwanStation when it can run the game, else PCSX-ReARMed */
+    EMU_AUTO,   /* kept for old config files: SwanStation is the only emulator */
     EMU_PCSX,
     EMU_BEETLE,
     EMU_SWANSTATION,

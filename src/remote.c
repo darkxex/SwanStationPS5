@@ -160,7 +160,7 @@ static void state_file(const RemoteGame *g, int slot, char *out, size_t size)
     path_join(out, size, app.paths.states, file);
 }
 
-/* PCSX-ReARMed's and Beetle's card: <saves>/<serial>_1.mcd (lower case as some
+/* The card: <saves>/<serial>_1.mcd (lower case as some
  * discs spell it). "" when the game has no serial. */
 static void card_file(const RemoteGame *g, char *out, size_t size)
 {

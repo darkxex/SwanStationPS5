@@ -94,7 +94,6 @@ static const char *const ASPECTS[] = {"Auto (game)", "4:3", "16:9", "16:10", "1:
                                       "Stretch to screen"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 /* unused while the Emulator row is commented out */
-static const __attribute__((unused)) char *const EMULATORS[] = {"Automatic", "PCSX-ReARMed", "Beetle PSX HW", "SwanStation"};
 static const char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
 static const char *const FILTERS[] = {"Sharp pixels", "Smooth pixels (Scale2x)", "xBR (smoothest)"};
 static const char *const REGIONS[] = {"Auto", "NTSC (60 Hz)", "PAL (50 Hz)"};
@@ -250,11 +249,6 @@ static const Row LIBRARY[] = {
 };
 
 static const Row SYSTEM[] = {
-    /* The emulator is fixed to SwanStation (host.c pick_core); to bring the choice back, restore this row
-     * and drop the "Emulation" header from the Region row below.
-    {"Emulation", "Emulator", "Beetle PSX HW is more accurate and renders on the GPU, but needs your BIOS. PCSX-ReARMed also runs without one.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(emulator), EMULATORS, 4, 0},
-    */
     {"Emulation", "Region", "Auto follows the disc; force 50 or 60 Hz if a game misbehaves.", K_CHOICE,
      APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(region), REGIONS, 3, 0},
     {NULL, "Fast CD loading", "Shorter loading screens; videos still play at normal speed. Rarely, a game glitches.", K_TOGGLE, APPLY_NOW,
@@ -284,7 +278,7 @@ static const Row SYSTEM[] = {
 };
 
 static const Row ABOUT[] = {
-    {"SwanStationPS5", "Version", "PlayStation X Super 5: PS1 emulation for jailbroken PS5, built on PCSX-ReARMed.",
+    {"SwanStationPS5", "Version", "PlayStation X Super 5: PS1 emulation for jailbroken PS5, built on SwanStation.",
      K_INFO, APPLY_NOW, SP_VERSION, true, NO_FIELD, NULL, 0, 0},
     {NULL, "BIOS", "SwanStationPS5 never includes a BIOS: use a dump of your own console, or the built-in one.",
      K_INFO, APPLY_NOW, SP_BIOS, true, NO_FIELD, NULL, 0, 0},
