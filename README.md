@@ -18,6 +18,8 @@
 
 SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 home screen. It is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia that runs every game on SwanStation.
 
+It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive the SwanStation core. It does **not** use PSXS5's emulator submodules (PCSX-ReARMed and Beetle PSX HW): SwanStation is the only emulator, and the build no longer includes the others.
+
 - The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, and best with your own.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
@@ -154,6 +156,8 @@ A PS5 app can read and write files in `/data`, but it can't list folders unless 
 The log shows the result: `storage: unlocked`, or `storage: sandboxed (...)` with the reason. Sandboxed still works, but SwanStationPS5 then only knows the games in `/data/PSXS5/library.txt` (written by the PC tool's `upload` and `index` commands).
 
 ### Folders on the console
+
+The folder names kept PSXS5's (`/data/PSXS5/`, `psxs5.ini`, `psxs5.log`, `tools/psxs5_sync.py`) on purpose, so both apps stay compatible with each other: they use the same games, covers, cheats and BIOS folders, memory cards are the same `.mcd` files, and the PC tool works with either one.
 
 ```text
 /data/homebrew/PPSA98510/     the app
