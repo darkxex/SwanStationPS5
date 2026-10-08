@@ -356,14 +356,15 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     float w = h * aspect * squeeze, x = cx - w * 0.5f, y = cy - h * 0.5f;
     if (selected)
     {
-        /* Classic: no dark shadow behind the selected cover either */
-        if (theme_current() != THEME_CLASSIC)
+        /* Classic and Neon Arcade: no shadow, glow or border around the selected cover (the other themes keep theirs) */
+        int id = theme_current();
+        if (id != THEME_CLASSIC && id != THEME_NEON)
+        {
             draw_rrect(x - 10, y + 14, w + 20, h + 6, 18, 0x60000000u); /* shadow */
-        if (theme.backdrop == BACKDROP_GRID) /* a neon glow */
-            draw_rrect_outline(x - 14, y - 14, w + 28, h + 28, 20, 6, (theme.cover_outline & 0xffffffu) | 0x50000000u);
-        /* Classic: no white border around the selected cover (the other themes keep theirs) */
-        if (theme_current() != THEME_CLASSIC)
+            if (theme.backdrop == BACKDROP_GRID) /* a neon glow */
+                draw_rrect_outline(x - 14, y - 14, w + 28, h + 28, 20, 6, (theme.cover_outline & 0xffffffu) | 0x50000000u);
             draw_rrect_outline(x - 7, y - 7, w + 14, h + 14, 14, 4, theme.cover_outline);
+        }
     }
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
