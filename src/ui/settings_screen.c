@@ -134,9 +134,9 @@ static const Row DISPLAY[] = {
      SP_NONE, false, INT_FIELD(upscale), UPSCALE, 4, 1},
     {NULL, "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(aspect), ASPECTS, 6, 0},
-    {NULL, "Shader", "Beetle PSX HW on the GPU: sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
+    {NULL, "Shader", "SwanStation on the GPU: sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 3, 0},
-    {NULL, "Sharpening", "Beetle PSX HW with the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
+    {NULL, "Sharpening", "SwanStation with the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
@@ -159,13 +159,13 @@ static const Row DISPLAY[] = {
 };
 
 static const Row GRAPHICS[] = {
-    {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons. Above 2x needs Beetle PSX HW.",
+    {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons. Above 2x needs SwanStation.",
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
-    {NULL, "Precise geometry (PGXP)", "Beetle PSX HW: stops polygons wobbling and textures warping.",
+    {NULL, "Precise geometry (PGXP)", "SwanStation: stops polygons wobbling and textures warping.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
-    {NULL, "True colour", "Beetle PSX HW: draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
+    {NULL, "True colour", "SwanStation: draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(true_colour), OFF_ON, 2, 0},
-    {"Smoothing", "Supersampling", "Beetle PSX HW at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
+    {"Smoothing", "Supersampling", "SwanStation at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(supersampling), OFF_ON, 2, 0},
 };
 

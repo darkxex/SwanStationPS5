@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="Platform: jailbroken PS5" src="https://img.shields.io/badge/platform-jailbroken%20PS5-3d55c8">
-  <img alt="Beetle PSX HW and PCSX-ReARMed" src="https://img.shields.io/badge/emulation-Beetle%20PSX%20HW%20%7C%20PCSX--ReARMed-5a6fe0">
+  <img alt="SwanStation and PCSX-ReARMed" src="https://img.shields.io/badge/emulation-SwanStation%20%7C%20PCSX--ReARMed-5a6fe0">
   <img alt="Vulkan" src="https://img.shields.io/badge/GPU-Vulkan%20up%20to%2016x-c83d5a">
   <img alt="RetroAchievements" src="https://img.shields.io/badge/RetroAchievements-supported-f0b429">
   <img alt="Licence: GPL-3.0-or-later" src="https://img.shields.io/badge/licence-GPL--3.0--or--later-2b2f7a">
@@ -18,10 +18,8 @@
 
 PSXS5 (PlayStation X Super 5) is a PlayStation 1 emulator that installs as an app on the PS5 home screen.
 
-- Two emulators are built into the app:
-  - [Beetle PSX HW](https://github.com/libretro/beetle-psx-libretro) (Mednafen), accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP.
-  - [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed), on the CPU. It needs no BIOS.
-  - PSXS5 picks Beetle when it can, game by game.
+- The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, and best with your own.
+  - [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed) stays in the build, on the CPU, for when the screen isn't drawn through Vulkan. It needs no BIOS.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
 
@@ -48,7 +46,7 @@ PSXS5 is a hobby project, made for the love of the PS1 library. No company or sc
 
 ## Highlights
 
-- **Up to 16x resolution on the GPU.** Beetle PSX HW renders through Vulkan: native, 2x, 4x, 8x or 16x, at full speed.
+- **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x, at full speed.
 - **No more wobbly 3D.** PGXP (precise geometry) keeps polygons still and textures straight.
 - **The right emulator, automatically.** *Emulator: Automatic* uses Beetle when the BIOS for the game's region is there, and PCSX-ReARMed otherwise. Both share one memory card per game.
 
@@ -78,7 +76,7 @@ PSXS5 is a hobby project, made for the love of the PS1 library. No company or sc
   - Or pick one by hand: on the shelf press **Triangle** (Details), then **Square**, and choose any image from `covers/` or the game's folder.
 - **Plays every common format.** `.cue`/`.bin`, `.chd`, `.pbp` (including multi-disc), `.iso`, `.img`, `.mdf`, `.ccd` and `.m3u` playlists for multi-disc games.
 - **Sharp on a 4K TV.**
-  - Internal resolution: native up to 16x with Beetle PSX HW, up to 2x with PCSX-ReARMed.
+  - Internal resolution: native up to 16x with SwanStation, up to 2x with PCSX-ReARMed.
   - Upscale: 1x to 4x, with three filters:
     - Sharp pixels
     - Smooth pixels (Scale2x/3x)
@@ -98,7 +96,7 @@ PSXS5 is a hobby project, made for the love of the PS1 library. No company or sc
   - DualShock analog with rumble.
   - On digital-only games, the left stick drives the D-pad.
   - Cross confirms and Circle goes back in the menus.
-- **Your BIOS, or none.** Beetle PSX HW needs a BIOS dump of your own console for the game's region (`scph5500.bin` Japan, `scph5501.bin` USA, `scph5502.bin` Europe in `bios/`; the PC tool names them for you). Without one, PCSX-ReARMed runs the game with its built-in BIOS.
+- **Your BIOS, or none.** SwanStation works best with a BIOS dump of your own console for the game's region (`scph5500.bin` Japan, `scph5501.bin` USA, `scph5502.bin` Europe in `bios/`; the PC tool names them for you). Without one, SwanStation uses its built-in OpenBIOS, which is less compatible.
 - **Five languages.** English, Français, Português (Portugal), Español (Latinoamérica) and 日本語, under Settings → System → Language.
 - **Quiet interface sounds.** Five styles (Soft, Wood, Pop, Chime, Classic), a volume setting, or off.
 - **A PC tool for your library.** `tools/psxs5_sync.py` prepares your games on Windows and uploads them over FTP:
@@ -227,7 +225,7 @@ It also shows the time and how long you've been playing.
 | Controls | Controller (digital or DualShock), left stick as D-pad, vibration, light bar, players (multitap), player order, dead zone, stick response, rumble feel, trigger effects, gas and brake on R2 / L2, light gun, button mapping |
 | Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, hardcore mode |
 | Library | Theme, cover style, download missing covers, sort, your library, memory cards, rescan |
-| System | Emulator (Automatic, Beetle PSX HW, PCSX-ReARMed), region, BIOS, fast CD loading, PAL at 60 Hz, known game fixes, overclock, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
+| System | region, PS1 startup intro, fast CD loading, known game fixes, SwanStation's console and advanced options, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
 
 Video settings apply while you play. Emulator, internal resolution, PGXP, region, BIOS and controller apply from the next game.
 
@@ -284,7 +282,7 @@ It remembers what is already on the console, so you can run it again whenever yo
 
 ## Known limitations
 
-- **Beetle PSX HW needs a BIOS** for the game's region; without it PSXS5 uses PCSX-ReARMed (up to 2x).
+- **SwanStation works best with a BIOS** for the game's region; without one it uses its built-in OpenBIOS, which is less compatible.
 - **Sandboxed mode.** If etaHEN won't unlock `/data`, PSXS5 still runs: it reads the game list the PC tool uploads (`library.txt`) instead of listing the folder.
 - **Closing from the PS button** crashed the console once during testing while `/data` was unlocked through etaHEN. If it happens to you, set *Settings → System → Unlock /data with etaHEN* to Off and let us know.
 - The PS5's own keyboard and on-screen keyboard aren't used, so text entry (like the RetroAchievements sign-in) happens on the PC.
@@ -301,7 +299,7 @@ make            # -> dist/PPSA97510/
 make desktop    # optional PC test build (needs libsdl2-dev libcurl4-openssl-dev zlib1g-dev)
 ```
 
-`make` builds PCSX-ReARMed (`tools/build-core.sh`), Beetle PSX HW (`tools/build-beetle.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and Beetle.
+`make` builds PCSX-ReARMed (`tools/build-core.sh`), SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation; `APP_BEETLE=1` also builds the old Beetle PSX HW core (`tools/build-beetle.sh`).
 
 | Path | What |
 |---|---|
@@ -319,6 +317,7 @@ make desktop    # optional PC test build (needs libsdl2-dev libcurl4-openssl-dev
 PSXS5 is built on the work of a lot of people. Thank you all.
 
 * **notaz, the PCSX / PCSX-Reloaded teams and the libretro contributors**, for [PCSX-ReARMed](https://github.com/libretro/pcsx_rearmed), and for [libretro](https://www.libretro.com/), the interface PSXS5 drives both emulators through.
+* **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator PSXS5 runs.
 * **Ryphecha and the Mednafen team, the Beetle PSX contributors and Themaister** (parallel-psx), for [Beetle PSX HW](https://github.com/libretro/beetle-psx-libretro), and **Mihawk-99** for its PS5 port and for the PS5 port of Mesa's RADV Vulkan driver.
 * **BlackBearReloaded**, for [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate), the build pipeline, runtime and deploy tooling that turn PSXS5 into a home-screen app.
 * **John Törnblom**, for the [ps5-payload-dev](https://github.com/ps5-payload-dev) SDK, and PacBrew's SDL2 and libcurl ports.

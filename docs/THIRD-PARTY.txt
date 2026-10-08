@@ -9,6 +9,11 @@ PCSX-ReARMed (PlayStation emulator)
   GNU GPL v2 or later - COPYING-pcsx_rearmed.txt
   https://github.com/libretro/pcsx_rearmed
 
+SwanStation (DuckStation's libretro core)
+  GNU GPL v3
+  LICENSE-swanstation.txt
+  https://github.com/libretro/swanstation
+
 Beetle PSX HW (Mednafen PSX, libretro port, PS5 fork by Mihawk-99)
   GNU GPL v2 or later (Mednafen); the Vulkan renderer (parallel-psx / rhi) is MIT
   COPYING-beetle-psx.txt
