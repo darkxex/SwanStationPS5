@@ -98,7 +98,7 @@ static const __attribute__((unused)) char *const EMULATORS[] = {"Automatic", "PC
 static const char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
 static const char *const FILTERS[] = {"Sharp pixels", "Smooth pixels (Scale2x)", "xBR (smoothest)"};
 static const char *const REGIONS[] = {"Auto", "NTSC (60 Hz)", "PAL (50 Hz)"};
-static const char *const BIOS[] = {"Real BIOS if present", "Built-in HLE"};
+static const char *const __attribute__((unused)) BIOS[] = {"Real BIOS if present", "Built-in HLE"};
 static const char *const PADS[] = {"Digital pad", "DualShock (analog)"};
 static const char *const COVER_STYLES[] = {"Flat", "3D box"};
 static const char *const SOUND_STYLES[] = {"Soft", "Wood", "Pop", "Chime", "Classic", "Off"};
@@ -116,14 +116,14 @@ static const char *const DEADZONES[] = {"Off", "5%", "10%", "15%", "20%"};
 static const char *const RESPONSES[] = {"Normal", "Precise", "Quick"};
 static const char *const RUMBLE_FEELS[] = {"Classic", "Soft", "Punchy", "Punchy, in the triggers too"};
 static const char *const LIGHTGUNS[] = {"Automatic", "Off", "On"};
-static const char *const OVERCLOCKS[] = {"Off", "A little", "A lot"};
+static const char *const __attribute__((unused)) OVERCLOCKS[] = {"Off", "A little", "A lot"};
 static const char *const BRIGHTNESS[] = {"Darker", "Normal", "Brighter", "Brightest"};
 static const char *const COLOURS[] = {"Natural", "Vivid", "Soft", "Warm", "Cool", "Black and white"};
 static const char *const SHARPENS[] = {"Off", "Light", "Strong"};
 static const char *const RUN_AHEADS[] = {"Off", "1 frame", "2 frames"};
-static const char *const MSAA[] = {"Off", "2x", "4x", "8x", "16x"};
-static const char *const TEXTURE_FILTERS[] = {"Off", "Bilinear", "xBR", "SABR", "JINC2", "3-point"};
-static const char *const DEINTERLACERS[] = {"Weave", "Bob", "Motion-adaptive"};
+static const char *const __attribute__((unused)) MSAA[] = {"Off", "2x", "4x", "8x", "16x"};
+static const char *const __attribute__((unused)) TEXTURE_FILTERS[] = {"Off", "Bilinear", "xBR", "SABR", "JINC2", "3-point"};
+static const char *const __attribute__((unused)) DEINTERLACERS[] = {"Weave", "Bob", "Motion-adaptive"};
 static const char *const AUTOSAVES[] = {"Off", "Every 5 minutes", "Every 10 minutes", "Every 15 minutes"};
 static const char *const SORTS[] = {"Title", "Recently played", "Most played", "Region"};
 
@@ -140,8 +140,6 @@ static const Row DISPLAY[] = {
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
-    {NULL, "Widescreen", "Turns on the game's widescreen code from the cheat library and shows 16:9. Games without one stay 4:3.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(widescreen), OFF_ON, 2, 0},
     {"Screen fit", "Integer scaling", "Whole-number scale factors only: even pixels, black borders.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(integer_scale), OFF_ON, 2, 0},
     {NULL, "Smooth final scaling", "Softens the last step up to your TV's resolution.", K_TOGGLE,
@@ -163,28 +161,12 @@ static const Row DISPLAY[] = {
 static const Row GRAPHICS[] = {
     {"Rendering", "Internal resolution", "Draws 3D at a higher resolution: sharper polygons. Above 2x needs Beetle PSX HW.",
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 5, 1},
-    {NULL, "HD texture packs", "Beetle PSX HW: uses a pack in <game folder>/<game file name>-texture-replacements when there is one.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(hd_textures), OFF_ON, 2, 0},
     {NULL, "Precise geometry (PGXP)", "Beetle PSX HW: stops polygons wobbling and textures warping.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
-    {NULL, "Dithering", "The PS1's dot pattern that fakes more colours. Off looks cleaner.", K_TOGGLE,
-     APPLY_NOW, SP_NONE, false, BOOL_FIELD(dithering), OFF_ON, 2, 0},
     {NULL, "True colour", "Beetle PSX HW: draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(true_colour), OFF_ON, 2, 0},
-    {NULL, "Faster screen effects", "Beetle PSX HW: effects that read the screen back (Final Fantasy VII's battle swirl, motion blur) are done on the GPU, without a stutter. A few games' effects may then look wrong: turn it off for those.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(fast_effects), OFF_ON, 2, 0},
-    {NULL, "Smooth video colours", "Beetle PSX HW: smooths the blocky colour edges of the PS1's video cutscenes (FMV).",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(fmv_smooth), OFF_ON, 2, 0},
-    {"Smoothing", "Anti-aliasing", "Beetle PSX HW: smooths the jagged edges of polygons (MSAA). Higher costs more GPU time, and a few games show seams or glitches with it: turn it off for those.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(msaa), MSAA, 5, 0},
-    {NULL, "Texture filtering", "Beetle PSX HW: smooths blocky 3D textures. xBR and SABR keep edges sharp; bilinear is softest.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(texture_filter), TEXTURE_FILTERS, 6, 0},
-    {NULL, "Filter 2D too", "Also filters sprites and menus. Off keeps them pixel-sharp, which usually looks better.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(filter_2d), OFF_ON, 2, 0},
-    {NULL, "Supersampling", "Beetle PSX HW at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
+    {"Smoothing", "Supersampling", "Beetle PSX HW at 4x or more: the big picture is averaged down to your TV's pixels, for a clean, stable image without shimmering. With the shader off.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(supersampling), OFF_ON, 2, 0},
-    {NULL, "Deinterlacing", "For interlaced menus and videos: Weave is sharp but can comb, Bob never combs, Motion-adaptive mixes both.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(deinterlace), DEINTERLACERS, 3, 0},
 };
 
 static const Row CONTROLS[] = {
@@ -275,18 +257,12 @@ static const Row SYSTEM[] = {
     */
     {"Emulation", "Region", "Auto follows the disc; force 50 or 60 Hz if a game misbehaves.", K_CHOICE,
      APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(region), REGIONS, 3, 0},
-    {NULL, "BIOS", "Your own BIOS dump in /data/PSXS5/bios, or the built-in one.", K_CHOICE,
-     APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(force_hle), BIOS, 2, 0},
     {NULL, "Fast CD loading", "Shorter loading screens; videos still play at normal speed. Rarely, a game glitches.", K_TOGGLE, APPLY_NOW,
      SP_NONE, false, BOOL_FIELD(cd_fast), OFF_ON, 2, 0},
     {NULL, "PS1 startup intro", "Shows the PlayStation logo and sound before the game, as a real console does. Needs your own BIOS.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(boot_intro), OFF_ON, 2, 0},
-    {NULL, "PAL at 60 Hz", "Beetle PSX HW: European games run at 60 Hz like the American ones: smoother and full speed. A few games then misbehave.",
-     K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(pal60), OFF_ON, 2, 0},
     {NULL, "Known game fixes", "Turns off, for that game only, the settings DuckStation's game database says it breaks with (PGXP, widescreen, upscaling, filtering).",
      K_TOGGLE, APPLY_NEXT_GAME, SP_NONE, false, BOOL_FIELD(game_fixes), OFF_ON, 2, 0},
-    {NULL, "Overclock", "Runs the emulated PS1 faster, which smooths games that slow down on a real console. Some games then run too fast in places.",
-     K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(overclock), OVERCLOCKS, 3, 0},
     {"Playing", "Quick resume", "Saves when you leave a game, so the shelf can offer Continue.", K_TOGGLE,
      APPLY_NOW, SP_NONE, true, BOOL_FIELD(quick_resume), OFF_ON, 2, 0},
     {NULL, "Rewind", "Keeps the last 8 seconds so you can go back (touchpad + L2). Uses about 200 MB of memory.",
@@ -331,7 +307,7 @@ typedef struct
 } Tab;
 
 #define TAB(n, i, r) {n, i, r, (int)(sizeof(r) / sizeof(r[0]))}
-static const Tab TABS[] = {
+static Tab TABS[] = {
     TAB("Display", ICON_DEVICE_TV, DISPLAY),
     TAB("Graphics", ICON_SPARKLES, GRAPHICS),
     TAB("Controls", ICON_DEVICE_GAMEPAD_2, CONTROLS),
@@ -342,6 +318,90 @@ static const Tab TABS[] = {
     TAB("About", ICON_INFO_CIRCLE, ABOUT),
 };
 #define TAB_COUNT (int)(sizeof(TABS) / sizeof(TABS[0]))
+
+/* SwanStation's own core options (swanstation_options.h, made by tools/gen_swanstation_options.py), added to
+ * the tab each belongs to: console and advanced to System, enhancements to Graphics, display to Display, and
+ * the controller ports to Controls. Built once, the first time a tab is used. */
+#define MAX_ROWS 160
+static bool ss_rows_built;
+
+static bool is_swanstation_row(const Row *r)
+{
+    return r->offset >= (int)offsetof(Settings, ss_opt) &&
+           r->offset < (int)(offsetof(Settings, ss_opt) + sizeof(((Settings *)0)->ss_opt));
+}
+
+static void add_swanstation_rows(Tab *tab, const Row *base, int base_count, const int *categories, int ncat)
+{
+    static char groups[SSC_COUNT][48];
+    int extra = 0;
+    for (int c = 0; c < ncat; ++c)
+        for (int i = 0; i < SS_OPT_COUNT; ++i)
+            extra += SS_OPTS[i].category == categories[c];
+    Row *rows = malloc(sizeof(Row) * (size_t)(base_count + extra));
+    if (!rows)
+        return;
+    memcpy(rows, base, sizeof(Row) * (size_t)base_count);
+    int n = base_count;
+    for (int c = 0; c < ncat; ++c)
+    {
+        bool first = true;
+        snprintf(groups[categories[c]], sizeof(groups[0]), "SwanStation: %s", SS_CATEGORY_NAMES[categories[c]]);
+        for (int i = 0; i < SS_OPT_COUNT; ++i)
+        {
+            if (SS_OPTS[i].category != categories[c] || n >= MAX_ROWS)
+                continue;
+            Row r = {first ? groups[categories[c]] : NULL,
+                     SS_OPTS[i].label,
+                     SS_OPTS[i].help,
+                     K_CHOICE,
+                     APPLY_NEXT_GAME,
+                     SP_NONE,
+                     false,
+                     (int)(offsetof(Settings, ss_opt) + (size_t)i * sizeof(int)),
+                     false,
+                     SS_OPTS[i].labels,
+                     SS_OPTS[i].count,
+                     0};
+            rows[n++] = r;
+            first = false;
+        }
+    }
+    tab->rows = rows;
+    tab->count = n;
+}
+
+static void ensure_rows(void)
+{
+    if (ss_rows_built)
+        return;
+    ss_rows_built = true;
+    for (int t = 0; t < TAB_COUNT; ++t)
+    {
+        const Row *base = TABS[t].rows;
+        int count = TABS[t].count;
+        if (base == SYSTEM)
+        {
+            static const int cats[] = {SSC_CONSOLE, SSC_ADVANCED};
+            add_swanstation_rows(&TABS[t], base, count, cats, 2);
+        }
+        else if (base == GRAPHICS)
+        {
+            static const int cats[] = {SSC_ENHANCEMENT};
+            add_swanstation_rows(&TABS[t], base, count, cats, 1);
+        }
+        else if (base == DISPLAY)
+        {
+            static const int cats[] = {SSC_DISPLAY};
+            add_swanstation_rows(&TABS[t], base, count, cats, 1);
+        }
+        else if (base == CONTROLS)
+        {
+            static const int cats[] = {SSC_PORT};
+            add_swanstation_rows(&TABS[t], base, count, cats, 1);
+        }
+    }
+}
 
 /* ---------------------------------------------------------------- state */
 
@@ -375,6 +435,7 @@ void settings_opened(void)
 
 static const Tab *tab(void)
 {
+    ensure_rows();
     return &TABS[S.tab];
 }
 
@@ -1186,8 +1247,8 @@ static void draw_rows(void)
                 cap_h = 50;
     const Tab *t = tab();
     /* layout pass: row positions in content space */
-    float ys[32], y = 0, sel_top = 0;
-    for (int i = 0; i < t->count && i < 32; ++i)
+    float ys[MAX_ROWS], y = 0, sel_top = 0;
+    for (int i = 0; i < t->count && i < MAX_ROWS; ++i)
     {
         if (t->rows[i].group)
             y += (i ? 22 : 0) + cap_h;
@@ -1536,6 +1597,7 @@ static size_t json_text(char *out, size_t size, size_t at, const char *s)
 /* Every tab and setting the phone page shows, with values, in the menus' language. */
 int settings_json(char *out, size_t size)
 {
+    ensure_rows();
     size_t at = 0;
     out[0] = '\0';
     PUT("{\"game\":");
@@ -1550,8 +1612,8 @@ int settings_json(char *out, size_t size)
         for (int i = 0; i < TABS[t].count && at < size; ++i)
         {
             const Row *r = &TABS[t].rows[i];
-            if (r->kind == K_ACTION)
-                continue; /* menus and pages stay on the console */
+            if (r->kind == K_ACTION || is_swanstation_row(r))
+                continue; /* menus, pages and SwanStation's long option lists stay on the console */
             PUT("%s{\"key\":\"%d.%d\",\"name\":", first ? "" : ",", t, i);
             first = false;
             at = json_text(out, size, at, tr(r->name));
@@ -1601,6 +1663,7 @@ int settings_json(char *out, size_t size)
  * name, or NULL when the key is unknown. */
 const char *settings_set_by_key(const char *key, int value)
 {
+    ensure_rows();
     int t = -1, i = -1;
     if (sscanf(key, "%d.%d", &t, &i) != 2 || t < 0 || t >= TAB_COUNT || i < 0 || i >= TABS[t].count)
         return NULL;

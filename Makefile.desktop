@@ -13,7 +13,7 @@ SDL_LIBS := $(shell sdl2-config --libs)
 
 SRCS := src/main.c src/util.c src/library.c src/config.c src/cheats.c src/disc.c \
 	src/covers.c src/net.c src/stb_impl.c src/ra/achievements.c src/i18n.c src/stats.c src/tips.c src/controls.c src/bezels.c src/art.c src/profiles.c src/gamedb.c src/play.c src/remote.c src/update.c src/vendor.c src/platform/vk/vk_probe.c \
-	src/core/host.c src/platform/plat_sdl.c src/platform/blit.c src/platform/xbr.c \
+	src/core/host.c src/core/swanstation_options.c src/platform/plat_sdl.c src/platform/blit.c src/platform/xbr.c \
 	src/ui/text.c src/ui/draw.c src/ui/sfx.c src/ui/coverflow.c \
 	src/ui/icons.c src/ui/settings_screen.c src/ui/menu_screen.c src/ui/memcards_screen.c src/ui/stats_screen.c src/ui/manual_screen.c src/ui/theme.c src/ui/cheat_search.c src/ui/guide_screen.c src/ui/profile_screen.c
 OBJS := $(SRCS:src/%.c=$(OUT)/obj/%.o)

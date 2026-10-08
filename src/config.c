@@ -18,7 +18,8 @@ void config_defaults(Settings *s)
     s->upscale_filter = UPSCALE_XBR;
     s->region = REGION_AUTO;
     s->dithering = true;
-    s->analog = true;
+    s->analog = false; /* the classic digital pad; the DualShock is for games that use the sticks */
+    s->boot_intro = true; /* the BIOS runs its full start-up (no fast boot) */
     s->cover_style = COVER_FLAT;
     s->cover_download = true;
     s->ui_sound = 0;  /* Soft */
@@ -40,6 +41,8 @@ void config_defaults(Settings *s)
     s->racing_triggers = true;
     for (int i = 0; i < 16; ++i)
         s->button_map[i] = (int8_t)i;
+    for (int i = 0; i < SS_OPT_COUNT; ++i)
+        s->ss_opt[i] = SS_OPTS[i].def;
 }
 
 static bool as_bool(const char *v)
@@ -62,7 +65,16 @@ static bool config_apply(Settings *s, const char *path)
         *eq = '\0';
         char *key = line, *value = eq + 1;
         value[strcspn(value, "\r\n")] = '\0';
-        if (strcmp(key, "aspect") == 0)
+        if (strncmp(key, "swanstation_", 12) == 0)
+        {
+            /* a SwanStation core option, by name and value (so reordering the table keeps saved files valid) */
+            for (int i = 0; i < SS_OPT_COUNT; ++i)
+                if (strcmp(key, SS_OPTS[i].key) == 0)
+                    for (int v = 0; v < SS_OPTS[i].count; ++v)
+                        if (strcmp(value, SS_OPTS[i].values[v]) == 0)
+                            s->ss_opt[i] = v;
+        }
+        else if (strcmp(key, "aspect") == 0)
             s->aspect = atoi(value) % ASPECT_COUNT;
         else if (strcmp(key, "smooth") == 0)
             s->smooth = as_bool(value);
@@ -71,7 +83,7 @@ static bool config_apply(Settings *s, const char *path)
         else if (strcmp(key, "region") == 0)
             s->region = atoi(value) % REGION_COUNT;
         else if (strcmp(key, "force_hle") == 0)
-            s->force_hle = as_bool(value);
+            s->force_hle = false; /* SwanStation has no built-in HLE BIOS: an old file may still say 1 */
         else if (strcmp(key, "dithering") == 0)
             s->dithering = as_bool(value);
         else if (strcmp(key, "cd_fast") == 0)
@@ -285,6 +297,12 @@ bool config_save(const Settings *s, const char *path)
     fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\nnegcon=%d\n",
             s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->negcon);
     fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\n", s->touch_mouse, s->run_ahead, s->fast_effects);
+    for (int i = 0; i < SS_OPT_COUNT; ++i)
+    {
+        int v = s->ss_opt[i];
+        if (v >= 0 && v < SS_OPTS[i].count && v != SS_OPTS[i].def) /* only what differs from the default */
+            fprintf(f, "%s=%s\n", SS_OPTS[i].key, SS_OPTS[i].values[v]);
+    }
     fprintf(f, "button_map=");
     for (int i = 0; i < 16; ++i)
         fprintf(f, i ? ",%d" : "%d", s->button_map[i]);

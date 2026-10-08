@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_OPTIONS 200
+#define MAX_OPTIONS 256
 
 /* ---------------------------------------------------------------- the cores */
 
@@ -331,7 +331,12 @@ static void apply_swanstation_options(const Settings *s)
     set_option("swanstation_GPU_PGXPEnable", pgxp ? "true" : "false");
     set_option("swanstation_BIOS_PatchFastBoot", s->boot_intro ? "false" : "true");
     set_option("swanstation_CDROM_ReadSpeedup", s->cd_fast && !(game_fixes & GDB_NO_CD_SPEEDUP) ? "4" : "1");
-    set_option("swanstation_CPU_ExecutionMode", "Recompiler");
+    /* every other SwanStation option comes from Settings > (Display, Graphics, Controls, System) */
+    for (int i = 0; i < SS_OPT_COUNT; ++i)
+    {
+        int v = s->ss_opt[i];
+        set_option(SS_OPTS[i].key, SS_OPTS[i].values[v >= 0 && v < SS_OPTS[i].count ? v : SS_OPTS[i].def]);
+    }
     set_option("swanstation_CPU_FastmemMode", "LUT");
 }
 #endif
@@ -1052,7 +1057,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     STEP("retro_get_system_av_info");
     core->get_system_av_info(&av_info);
     /* DualShock starts in digital mode, so it is also safe for digital-only games. */
-    unsigned device = settings->analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 1)
+    unsigned device = settings->analog ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, core == &SWANSTATION ? 0 : 1)
                                        : RETRO_DEVICE_JOYPAD;
     multitap = settings->multitap;
     for (unsigned port = 0; port < (multitap ? 4u : 2u); ++port)
