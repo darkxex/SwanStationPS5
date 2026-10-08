@@ -298,7 +298,7 @@ cd SwanStationPS5
 git submodule update --init --recursive third_party/rcheevos
 git submodule update --init third_party/swanstation
 make            # -> dist/PPSA98510/ and dist/PPSA98510.zip
-python3 tools/make_release.py   # optional: build and pack SwanStationPS5-v<version>.zip
+python3 tools/make_release.py   # optional: build and pack PPSA98510.zip, the release asset
 ```
 
 `make` builds SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation; `APP_BEETLE=1` also builds the old Beetle PSX HW core (`tools/build-beetle.sh`).
@@ -312,7 +312,7 @@ python3 tools/make_release.py   # optional: build and pack SwanStationPS5-v<vers
 | `src/ui/` | cover flow, text, sounds |
 | `src/platform/` | PS5 video output, input, heap, scaling filters |
 | `tools/psxs5_sync.py` | the PC tool |
-| `tools/make_release.py` | builds the app and packs the release zip |
+| `tools/make_release.py` | builds the app and packs PPSA98510.zip, the release asset |
 | `tools/make_dds.py` | converts the two backgrounds to the BC7 `pic0.dds` / `pic1.dds` |
 | `tools/make_art.py` | generates the icon, home-screen art and this page's banner |
 | `docs/boilerplate/` | documentation of the PS5 app boilerplate SwanStationPS5 is built on |
