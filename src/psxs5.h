@@ -165,7 +165,7 @@ typedef struct
 
 enum Emulator
 {
-    EMU_AUTO,   /* Beetle when it can run the game, else PCSX-ReARMed */
+    EMU_AUTO,   /* SwanStation when it can run the game, else PCSX-ReARMed */
     EMU_PCSX,
     EMU_BEETLE,
     EMU_SWANSTATION,

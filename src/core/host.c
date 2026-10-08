@@ -913,7 +913,7 @@ static void card_flush(void)
 #if defined(PSXS5_VULKAN)
 /* Beetle needs a real BIOS of the disc's region, by one of the names it
  * looks for (libretro.c firmware_is_present). Region from the serial. */
-static bool beetle_bios_present(const char *serial)
+static bool __attribute__((unused)) beetle_bios_present(const char *serial)
 {
     static const char *const jp[] = {"scph5500.bin", "SCPH5500.bin", "SCPH5500.BIN", "SCPH-5500.bin",
                                      "SCPH-5500.BIN", NULL};
@@ -953,23 +953,14 @@ static bool beetle_bios_present(const char *serial)
 static const CoreApi *pick_core(const Settings *settings, const char *serial, const char **why)
 {
     *why = NULL;
-#if defined(PSXS5_VULKAN)
-    if (settings->emulator == EMU_BEETLE)
-        return &BEETLE;
-    if (settings->emulator == EMU_SWANSTATION && vkp_describe()[0])
-        return &SWANSTATION;
-    if (settings->emulator == EMU_AUTO)
-    {
-        /* Beetle when it can run the game well: on the GPU, with the BIOS */
-        *why = settings->force_hle             ? "the built-in BIOS was chosen"
-               : !vkp_describe()[0]            ? "the screen isn't drawn through Vulkan"
-               : !beetle_bios_present(serial) ? "no BIOS for this disc's region"
-                                               : NULL;
-        if (!*why)
-            return &BEETLE;
-    }
-#else
     (void)settings, (void)serial;
+#if defined(PSXS5_VULKAN)
+    /* SwanStation is the only emulator offered (the Emulator setting is hidden); PCSX-ReARMed
+     * only when the screen isn't drawn through Vulkan, as SwanStation renders on the GPU.
+     * Beetle PSX HW and the old choice stay in the build: restore the Settings row to bring them back. */
+    if (vkp_describe()[0])
+        return &SWANSTATION;
+    *why = "the screen isn't drawn through Vulkan";
 #endif
     return &PCSX;
 }
