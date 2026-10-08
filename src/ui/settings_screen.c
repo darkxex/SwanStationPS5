@@ -108,7 +108,7 @@ static const char *const BACKGROUNDS[] = {"Dark", "Cover colour"};
 static const char *const CRT_LEVELS[] = {"Off", "Light", "Strong"};
 static const char *const BORDERS[] = {"Black", "Soft glow", "TV frame"};
 static const char *const CROPS[] = {"Off", "A little", "More"};
-static const char *const SHADERS[] = {"Off", "Sharp bilinear", "CRT"};
+static const char *const SHADERS[] = {"Off", "Sharp bilinear", "CRT", "LCD3x"};
 static const char *const POPUP_STYLES[] = {"Banner", "Compact", "Big trophy"};
 static const char *const LIGHTBARS[] = {"System", "Player colours", "Game cover colour"};
 static const char *const PLAYERS[] = {"1 or 2", "Up to 4 (multitap)"};
@@ -138,8 +138,8 @@ static const Row DISPLAY[] = {
     */
     {"Picture", "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(aspect), ASPECTS, 6, 0},
-    {NULL, "Shader", "Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
-     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 3, 0},
+    {NULL, "Shader", "Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow; LCD3x looks like a handheld's LCD.",
+     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 4, 0},
     {NULL, "Sharpening", "With the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",

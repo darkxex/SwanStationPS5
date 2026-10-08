@@ -127,7 +127,7 @@ typedef struct
     bool update_check;    /* look for new PSXS5 releases at start */
     int emulator;         /* enum Emulator */
     bool pgxp;            /* Beetle: precise geometry, no wobbling polygons */
-    int shader;           /* Beetle on the GPU: 0 off, 1 sharp bilinear, 2 CRT */
+    int shader;           /* Beetle on the GPU: 0 off, 1 sharp bilinear, 2 CRT, 3 LCD3x */
     bool hd_textures;     /* Beetle: use a texture pack beside the game when there is one */
     int theme;            /* enum ThemeId in ui/theme.h */
     int crop_edges;       /* 0 off, 1: 8 lines top and bottom, 2: 16 (the black a CRT hid) */

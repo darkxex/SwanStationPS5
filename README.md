@@ -220,7 +220,7 @@ It also shows the time and how long you've been playing.
 
 | Section | Settings |
 |---|---|
-| Display | Upscale filter, aspect ratio, shader (sharp bilinear, CRT), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, and SwanStation's display options |
+| Display | Upscale filter, aspect ratio, shader (sharp bilinear, CRT, LCD3x), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, and SwanStation's display options |
 | Graphics | Internal resolution (native to 16x), PGXP, true colour, supersampling, and SwanStation's enhancement options (MSAA, texture filter, widescreen hack, PGXP details...) |
 | Controls | Controller (digital or DualShock), left stick as D-pad, vibration, light bar, players (multitap), player order, dead zone, stick response, rumble feel, trigger effects, gas and brake on R2 / L2, light gun, button mapping, and SwanStation's controller port options |
 | Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, hardcore mode |

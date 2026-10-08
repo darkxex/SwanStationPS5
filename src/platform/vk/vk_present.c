@@ -94,7 +94,7 @@ static struct
     VkRenderPass pass;
     VkPipelineLayout layout;
     VkPipeline opaque, blended;
-    VkPipeline shaded[3]; /* the game through sharp.frag, crt.frag, downsample.frag */
+    VkPipeline shaded[4]; /* the game through sharp.frag, crt.frag, lcd3x.frag, downsample.frag */
     VkDescriptorSetLayout set_layout;
     VkDescriptorPool pool;
     VkSampler sampler, sampler_nearest; /* the game picture uses _nearest when the final scale is not smoothed */
@@ -123,7 +123,7 @@ static struct
     bool game_shown; /* plat asked for the picture this frame */
     float game_rect[4];
     float game_crop; /* share of the picture's height hidden at top and bottom */
-    int game_shader;  /* 0 none, 1 sharp bilinear, 2 CRT */
+    int game_shader;  /* 0 none, 1 sharp bilinear, 2 CRT, 3 LCD3x, 4 supersampling */
     float game_tex[2], game_lines;
 } V;
 
@@ -529,9 +529,10 @@ static bool create_pipeline(char *error, size_t size)
     gp.renderPass = V.pass;
     VkResult r = vkCreateGraphicsPipelines(V.device, VK_NULL_HANDLE, 1, &gp, NULL, &V.opaque);
     /* the game's shaders: the same opaque pipeline with another fragment stage */
-    const uint32_t *shader_code[3] = {SPV_SHARP_FRAG, SPV_CRT_FRAG, SPV_DOWNSAMPLE_FRAG};
-    const size_t shader_size[3] = {sizeof(SPV_SHARP_FRAG), sizeof(SPV_CRT_FRAG), sizeof(SPV_DOWNSAMPLE_FRAG)};
-    for (int k = 0; k < 3 && r == VK_SUCCESS; ++k)
+    const uint32_t *shader_code[4] = {SPV_SHARP_FRAG, SPV_CRT_FRAG, SPV_LCD3X_FRAG, SPV_DOWNSAMPLE_FRAG};
+    const size_t shader_size[4] = {sizeof(SPV_SHARP_FRAG), sizeof(SPV_CRT_FRAG), sizeof(SPV_LCD3X_FRAG),
+                                   sizeof(SPV_DOWNSAMPLE_FRAG)};
+    for (int k = 0; k < 4 && r == VK_SUCCESS; ++k)
     {
         VkShaderModule fm;
         sm.codeSize = shader_size[k];
@@ -793,12 +794,12 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
          * transparent (premultiplied) where the game shows */
         float kx = (float)V.extent.width / V.cw, ky = (float)V.extent.height / V.ch;
         int sh = V.game_shader;
-        VkPipeline pipe = sh >= 1 && sh <= 3 && V.shaded[sh - 1] ? V.shaded[sh - 1] : V.opaque;
+        VkPipeline pipe = sh >= 1 && sh <= 4 && V.shaded[sh - 1] ? V.shaded[sh - 1] : V.opaque;
         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
-        /* sharp: screen pixels per texel; crt: the PS1's line count */
+        /* sharp: screen pixels per texel; crt and lcd3x: the PS1's line count */
         float shown = 1.0f - 2.0f * V.game_crop;
         float info[4] = {V.game_tex[0], V.game_tex[1],
-                         sh == 2 ? V.game_lines * shown : V.game_rect[2] * kx / (V.game_tex[0] > 0 ? V.game_tex[0] : 1),
+                         sh == 2 || sh == 3 ? V.game_lines * shown : V.game_rect[2] * kx / (V.game_tex[0] > 0 ? V.game_tex[0] : 1),
                          V.game_rect[3] * ky / (V.game_tex[1] * shown > 0 ? V.game_tex[1] * shown : 1)};
         draw_quad(cb, V.game_sets[f], V.game_rect[0] * kx, V.game_rect[1] * ky, V.game_rect[2] * kx,
                   V.game_rect[3] * ky, V.game_crop, 1.0f - V.game_crop, info, colour_k);
@@ -874,7 +875,7 @@ static void destroy_device_objects(void)
     for (int k = 0; k < 3; ++k)
         if (V.shaded[k])
             vkDestroyPipeline(V.device, V.shaded[k], NULL);
-    V.shaded[0] = V.shaded[1] = V.shaded[2] = VK_NULL_HANDLE;
+    V.shaded[0] = V.shaded[1] = V.shaded[2] = V.shaded[3] = VK_NULL_HANDLE;
     if (V.layout)
         vkDestroyPipelineLayout(V.device, V.layout, NULL);
     if (V.set_layout)

@@ -144,7 +144,7 @@ static bool config_apply(Settings *s, const char *path)
         else if (strcmp(key, "hd_textures") == 0)
             s->hd_textures = as_bool(value);
         else if (strcmp(key, "shader") == 0)
-            s->shader = atoi(value) % 3;
+            s->shader = atoi(value) % 4;
         else if (strcmp(key, "crop_edges") == 0)
             s->crop_edges = atoi(value) % 3;
         else if (strcmp(key, "ra_popups") == 0)

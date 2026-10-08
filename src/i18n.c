@@ -206,11 +206,11 @@ static const Entry ENTRIES[] = {
     {{"Zoom", "Zoom", "Zoom", "Zoom", "ズーム"}},
     {{"Shader", "Shader", "Shader", "Shader", "シェーダー"}},
     {{"Sharp bilinear", "Bilinéaire net", "Bilinear nítido", "Bilineal nítido", "シャープ・バイリニア"}},
-    {{"Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow.",
-      "Le bilinéaire net garde des pixels nets sans scintillement ; CRT ajoute lignes, grille RVB et halo.",
-      "O bilinear nítido mantém os píxeis nítidos sem cintilação; CRT junta linhas, grelha RGB e brilho.",
-      "Bilineal nítido mantiene los píxeles nítidos sin parpadeo; CRT añade líneas, rejilla RGB y brillo.",
-      "シャープ・バイリニアはちらつかずにドットをくっきり保ちます。CRT は走査線、RGB グリル、発光を加えます。"}},
+    {{"Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow; LCD3x looks like a handheld's LCD.",
+      "Le bilinéaire net garde des pixels nets sans scintillement ; CRT ajoute lignes, grille RVB et halo ; LCD3x imite l'écran LCD d'une console portable.",
+      "O bilinear nítido mantém os píxeis nítidos sem cintilação; CRT junta linhas, grelha RGB e brilho; LCD3x imita o ecrã LCD de uma consola portátil.",
+      "Bilineal nítido mantiene los píxeles nítidos sin parpadeo; CRT añade líneas, rejilla RGB y brillo; LCD3x imita la pantalla LCD de una consola portátil.",
+      "シャープ・バイリニアはちらつかずにドットをくっきり保ちます。CRT は走査線、RGB グリル、発光を加えます。LCD3x は携帯機の液晶のような表示にします。"}},
     {{"Runs on %s: %s.", "Tourne sur %s : %s.", "Corre no %s: %s.", "Corre en %s: %s.", "%s で動作: %s。"}},
     {{"Runs on %s.", "Tourne sur %s.", "Corre no %s.", "Corre en %s.", "%s で動作。"}},
     {{"the built-in BIOS was chosen", "le BIOS intégré est choisi", "a BIOS integrada foi escolhida",
@@ -1208,9 +1208,9 @@ static const Entry ENTRIES[] = {
     {{"Effects that read the screen back (Final Fantasy VII's battle swirl, motion blur) are done on the GPU, without a stutter. A few games' effects may then look wrong: turn it off for those.", "Les effets qui relisent l'écran (le tourbillon de combat de Final Fantasy VII, le flou de mouvement) sont faits par le GPU, sans saccade. Les effets de quelques jeux peuvent alors être faux : désactivez-le pour ceux-là.", "Os efeitos que releem o ecrã (o remoinho de combate de Final Fantasy VII, o desfoque de movimento) são feitos pela GPU, sem soluços. Os efeitos de alguns jogos podem ficar errados: desligue-o nesses.", "Los efectos que releen la pantalla (el remolino de combate de Final Fantasy VII, el desenfoque de movimiento) los hace la GPU, sin tirones. Los efectos de algunos juegos pueden verse mal: apágalo en esos.",
       "画面を読み戻すエフェクト(ファイナルファンタジーVIIの戦闘突入の渦、モーションブラー)をGPUで行い、カクつきをなくします。一部のゲームでは表示が乱れるので、その場合はオフに。"}},
     /* ---- 2.2: loading */
-    {{"Compiling Shaders, please wait...", "Compilation des Shaders, veuillez patienter...",
-      "Compilando Shaders, aguarde um momento...", "Compilando Shaders, espere un momento...",
-      "シェーダーをコンパイル中です。しばらくお待ちください..."}},
+    {{"Loading your game...", "Chargement de votre jeu...",
+      "A carregar o seu jogo...", "Cargando tu juego...",
+      "ゲームを読み込み中です..."}},
 #include "i18n_swanstation.inc"
 };
 
