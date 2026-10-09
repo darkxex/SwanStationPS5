@@ -226,7 +226,7 @@ index 3741e75c..06c11dc4 100644
    bool m_batch_ubo_dirty = true;
  
 diff --git a/src/core/gpu_hw_vulkan.cpp b/src/core/gpu_hw_vulkan.cpp
-index 39ba4446..e99202a3 100644
+index 39ba4446..5120d832 100644
 --- a/src/core/gpu_hw_vulkan.cpp
 +++ b/src/core/gpu_hw_vulkan.cpp
 @@ -59,6 +59,10 @@ void* LibretroVulkanHostDisplay::GetRenderContext() const
@@ -251,24 +251,23 @@ index 39ba4446..e99202a3 100644
    return true;
  }
  
-@@ -3133,6 +3139,24 @@ void GPU_HW_Vulkan::UpdateDisplay()
+@@ -3133,6 +3139,23 @@ void GPU_HW_Vulkan::UpdateDisplay()
      const uint32_t scaled_display_height = display_height * resolution_scale;
      const InterlacedRenderMode interlaced = GetInterlacedRenderMode();
  
 +    {
-+      // Is the picture the one shown last time? It is when the VRAM area shown is the same and nothing was drawn
-+      // or written into it since (a game that flips two buffers changes the area; one that draws straight into the
-+      // shown buffer touches it). Anything else this code does not draw straight from the VRAM counts as new.
-+      const bool direct = !IsDisplayDisabled() && !m_GPUSTAT.display_area_color_depth_24 &&
-+                          interlaced == InterlacedRenderMode::None && !IsUsingMultisampling() &&
-+                          (scaled_vram_offset_x + scaled_display_width) <= m_vram_texture.GetWidth() &&
-+                          (scaled_vram_offset_y + scaled_display_height) <= m_vram_texture.GetHeight();
-+      const uint32_t area[4] = {vram_offset_x, vram_offset_y, display_width, display_height};
++      // Is the picture the one shown last time? It is when the VRAM area shown (and its colour depth) is the same and
++      // nothing was drawn or written into it since (a game that flips two buffers changes the area; one that draws
++      // straight into the shown buffer touches it). However the picture is made from the VRAM (straight, or read
++      // back: 24-bit colour, MSAA), the same VRAM gives the same picture; an interlaced one changes with its field.
++      const bool comparable = !IsDisplayDisabled() && interlaced == InterlacedRenderMode::None;
++      const uint32_t area[5] = {vram_offset_x, vram_offset_y, display_width, display_height,
++                                m_GPUSTAT.display_area_color_depth_24 ? 1u : 0u};
 +      const Common::Rectangle<uint32_t> shown =
 +        Common::Rectangle<uint32_t>::FromExtents(vram_offset_x, vram_offset_y, display_width, display_height);
-+      s_frame_repeated = direct && m_last_display_area_valid &&
++      s_frame_repeated = comparable && m_last_display_area_valid &&
 +                         std::memcmp(area, m_last_display_area, sizeof(area)) == 0 && !m_frame_touched.Intersects(shown);
-+      m_last_display_area_valid = direct;
++      m_last_display_area_valid = comparable;
 +      std::memcpy(m_last_display_area, area, sizeof(area));
 +      m_frame_touched = Common::Rectangle<uint32_t>();
 +    }
@@ -277,7 +276,7 @@ index 39ba4446..e99202a3 100644
      {
        m_host_display->ClearDisplayTexture();
 diff --git a/src/core/gpu_hw_vulkan.h b/src/core/gpu_hw_vulkan.h
-index fa0d5ef3..1b804518 100644
+index fa0d5ef3..ebd6ef0f 100644
 --- a/src/core/gpu_hw_vulkan.h
 +++ b/src/core/gpu_hw_vulkan.h
 @@ -122,6 +122,9 @@ protected:
@@ -285,7 +284,7 @@ index fa0d5ef3..1b804518 100644
  private:
    static constexpr uint32_t MAX_PUSH_CONSTANTS_SIZE = 64, TEXTURE_REPLACEMENT_BUFFER_SIZE = 64 * 1024 * 1024;
 +  // SwanStationPS5: the VRAM area shown at the last display update, to tell a repeated picture
-+  uint32_t m_last_display_area[4] = {};
++  uint32_t m_last_display_area[5] = {};
 +  bool m_last_display_area_valid = false;
    void SetCapabilities();
    void DestroyResources();

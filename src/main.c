@@ -836,8 +836,8 @@ static void game_screen(PadState *pads)
     emu_frames += runs;
     if (emu_frames >= 240)
     {
-        SwanStationPS5_log("emu: %.1f ms per emulated frame, %.1f fps measured", emu_us / 1000.0 / emu_frames,
-                  app.fps);
+        SwanStationPS5_log("emu: %.1f ms per emulated frame, %.1f fps measured, the game's own frames %u new, %u repeated",
+                  emu_us / 1000.0 / emu_frames, app.fps, host_frames_new(), host_frames_repeated());
         emu_us = 0;
         emu_frames = 0;
     }
