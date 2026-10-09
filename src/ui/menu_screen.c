@@ -637,7 +637,12 @@ void cheats_screen(uint32_t pressed)
     }
     static const int glyphs[] = {GLYPH_CROSS, GLYPH_SQUARE, GLYPH_TRIANGLE, GLYPH_CIRCLE};
     static const char *const labels[] = {"Toggle", "All off", "Find a code", "Back"};
-    app_draw_hints(glyphs, labels, 4, cl->count ? "L1 / R1  Page" : NULL);
+    app_draw_hints(glyphs, labels, 4, NULL);
+    if (cl->count)
+    {
+        const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Page"}};
+        app_draw_hints_right(right, 1);
+    }
     app_draw_toast();
 }
 
@@ -879,6 +884,11 @@ void achievements_screen(uint32_t pressed)
                   tr(ach_tab ? "None unlocked yet" : "All unlocked!"));
     static const int glyphs[] = {GLYPH_CIRCLE};
     static const char *const labels[] = {"Back"};
-    app_draw_hints(glyphs, labels, 1, A.count ? "L1 / R1  Tab   \xc2\xb7   L2 / R2  Page" : NULL);
+    app_draw_hints(glyphs, labels, 1, NULL);
+    if (A.count)
+    {
+        const HintCombo right[2] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tab"}, {{GLYPH_L2, GLYPH_R2}, 2, '/', "Page"}};
+        app_draw_hints_right(right, 2);
+    }
     app_draw_toast();
 }

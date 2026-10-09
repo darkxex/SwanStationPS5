@@ -85,6 +85,19 @@ typedef struct
     int count, base;
 } Row;
 
+/* "Your profile" is for a signed-in account; without one the row signs in. */
+static const char *row_name(const Row *r)
+{
+    return r->special == SP_PROFILE && !ra_user()[0] ? "Sign in" : r->name;
+}
+
+static const char *row_help(const Row *r)
+{
+    return r->special == SP_PROFILE && !ra_user()[0]
+               ? "Sign in to RetroAchievements with your user name and password, typed on the PS5."
+               : r->help;
+}
+
 #define INT_FIELD(f) offsetof(Settings, f), false
 #define BOOL_FIELD(f) offsetof(Settings, f), true
 #define NO_FIELD -1, false
@@ -219,7 +232,7 @@ static const Row SOUND[] = {
 };
 
 static const Row ACHIEVEMENTS[] = {
-    {"Account", "Signed in as", "Sign in on your PC: python tools/psxs5_sync.py ra-login. Only a token reaches the PS5.",
+    {"Account", "Signed in as", "Use Sign in below with your user name and password. Only a token stays on the PS5.",
      K_INFO, APPLY_NOW, SP_ACCOUNT, true, NO_FIELD, NULL, 0, 0},
     {NULL, "Your profile", "Your points, games mastered, what you unlocked lately and the games closest to mastery.",
      K_ACTION, APPLY_NOW, SP_PROFILE, true, NO_FIELD, NULL, 0, 0},
@@ -497,7 +510,7 @@ static void write_value(const Row *r, int v)
     case SP_HARDCORE:
         if (!ra_user()[0])
         {
-            app_toast("Sign in first: psxs5_sync.py ra-login");
+            app_toast("Sign in first: use Sign in under Achievements");
             return;
         }
         ra_set_hardcore(v != 0); /* turning it on restarts the game */
@@ -1128,14 +1141,14 @@ static void draw_help(const Row *r)
     if (!r)
         return;
     icon_draw(tab()->icon, x + 32, top + 32, 40, TH_FOCUS);
-    text_draw_fit(x + 32, top + 92, 30, FONT_BOLD, TH_TEXT, ALIGN_LEFT, w - 64, tr(r->name));
+    text_draw_fit(x + 32, top + 92, 30, FONT_BOLD, TH_TEXT, ALIGN_LEFT, w - 64, tr(row_name(r)));
     float y = top + 150;
     if (r->offset == offsetof(Settings, upscale_filter))
     {
         draw_filter_preview(x + 32, y, w - 64, app.settings.upscale_filter);
         y += (w - 64 - 16) * 0.5f + 56;
     }
-    y += draw_wrapped(x + 32, y, w - 64, 24, TH_TEXT_SOFT, tr(r->help)) + 20;
+    y += draw_wrapped(x + 32, y, w - 64, 24, TH_TEXT_SOFT, tr(row_help(r))) + 20;
     static const char *const notes[] = {"Applies right away", "From the next game you start",
                                         "After SwanStationPS5 restarts"};
     if (r->special == SP_REMOTE)
@@ -1320,9 +1333,9 @@ static void draw_rows(void)
         bool sel = i == S.cursor;
         bool dimmed = r->global_only && S.game_scope && app.game;
         text_draw(x + 30, ry + 21, 28, FONT_REGULAR, dimmed && !sel ? TH_TEXT_DIM : TH_TEXT, ALIGN_LEFT,
-                  tr(r->name));
+                  tr(row_name(r)));
         if (dimmed)
-            icon_draw(ICON_WORLD, x + 40 + text_width(28, FONT_REGULAR, tr(r->name)), ry + 24, 24,
+            icon_draw(ICON_WORLD, x + 40 + text_width(28, FONT_REGULAR, tr(row_name(r))), ry + 24, 24,
                       TH_TEXT_DIM);
         float right = x + w - 28;
         char buf[PSXS5_PATH_MAX + 64];
@@ -1571,13 +1584,17 @@ void settings_screen(uint32_t pressed)
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE, GLYPH_SQUARE};
         static const char *const labels[] = {"Change", "Back", "Default", "Use all-games settings"};
-        app_draw_hints(glyphs, labels, 4, "L1 / R1  Tabs");
+        app_draw_hints(glyphs, labels, 4, NULL);
+        const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};
+        app_draw_hints_right(right, 1);
     }
     else
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE};
         static const char *const labels[] = {"Change", "Back", "Default"};
-        app_draw_hints(glyphs, labels, 3, "L1 / R1  Tabs");
+        app_draw_hints(glyphs, labels, 3, NULL);
+        const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};
+        app_draw_hints_right(right, 1);
     }
     app_draw_toast();
 }
@@ -1631,14 +1648,14 @@ int settings_json(char *out, size_t size)
                 continue; /* menus, pages and SwanStation's long option lists stay on the console */
             PUT("%s{\"key\":\"%d.%d\",\"name\":", first ? "" : ",", t, i);
             first = false;
-            at = json_text(out, size, at, tr(r->name));
+            at = json_text(out, size, at, tr(row_name(r)));
             if (r->group)
             {
                 PUT(",\"group\":");
                 at = json_text(out, size, at, tr(r->group));
             }
             PUT(",\"help\":");
-            at = json_text(out, size, at, tr(r->help));
+            at = json_text(out, size, at, tr(row_help(r)));
             if (r->kind == K_INFO)
             {
                 char buf[PSXS5_PATH_MAX + 64];

@@ -367,6 +367,8 @@ void guide_screen(uint32_t pressed)
 
     static const int glyphs[] = {GLYPH_UP, GLYPH_TRIANGLE, GLYPH_CIRCLE};
     static const char *const labels[] = {"Scroll", "Top", "Back"};
-    app_draw_hints(glyphs, labels, 3, "L1 / R1  Page   L2 / R2  Jump");
+    app_draw_hints(glyphs, labels, 3, NULL);
+    const HintCombo right[2] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Page"}, {{GLYPH_L2, GLYPH_R2}, 2, '/', "Jump"}};
+    app_draw_hints_right(right, 2);
     app_draw_toast();
 }

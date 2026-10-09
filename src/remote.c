@@ -20,6 +20,7 @@
 
 #include "app.h"
 #include "ra/achievements.h"
+#include "ra/login.h"
 #include "net.h"
 #include "i18n.h"
 #include "platform/platform.h"
@@ -517,36 +518,6 @@ static bool form_field(const char *body, const char *name, char *out, size_t siz
     return false;
 }
 
-static void url_encode(char *out, size_t size, const char *s)
-{
-    size_t w = 0;
-    for (const unsigned char *p = (const unsigned char *)s; *p && w + 4 < size; ++p)
-    {
-        if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || strchr("-._~", *p))
-            out[w++] = (char)*p;
-        else
-            w += (size_t)snprintf(out + w, size - w, "%%%02X", *p);
-    }
-    out[w] = '\0';
-}
-
-/* the value of "key":"..." in a JSON reply (no escapes in what we read) */
-static bool json_value(const char *json, const char *key, char *out, size_t size)
-{
-    char pattern[48];
-    snprintf(pattern, sizeof(pattern), "\"%s\":\"", key);
-    const char *p = strstr(json, pattern);
-    if (!p)
-        return false;
-    p += strlen(pattern);
-    const char *end = strchr(p, '"');
-    if (!end || (size_t)(end - p) >= size)
-        return false;
-    memcpy(out, p, (size_t)(end - p));
-    out[end - p] = '\0';
-    return true;
-}
-
 static void serve_ra_login(int fd, const char *req, size_t req_len)
 {
     size_t len = 0;
@@ -566,34 +537,17 @@ static void serve_ra_login(int fd, const char *req, size_t req_len)
         respond(fd, "400 Bad Request", "application/json", bad, strlen(bad));
         return;
     }
-    char post[800], enc_user[200], enc_pass[800];
-    url_encode(enc_user, sizeof(enc_user), name);
-    url_encode(enc_pass, sizeof(enc_pass), password);
-    snprintf(post, sizeof(post), "r=login2&u=%s&p=%s", enc_user, enc_pass);
-    memset(password, 0, sizeof(password));
-    memset(enc_pass, 0, sizeof(enc_pass));
-    char *reply = NULL;
-    size_t reply_len = 0;
-    int status = net_request("https://retroachievements.org/dorequest.php", post,
-                             "application/x-www-form-urlencoded", PSXS5_NAME "/" PSXS5_VERSION, &reply, &reply_len);
-    memset(post, 0, sizeof(post));
     char token[128] = "", who[64] = "", error[160] = "";
-    bool ok = reply && strstr(reply, "\"Success\":true") && json_value(reply, "Token", token, sizeof(token));
+    bool ok = ra_password_login(name, password, token, sizeof(token), who, sizeof(who), error, sizeof(error));
+    memset(password, 0, sizeof(password));
     if (ok)
     {
-        if (!json_value(reply, "User", who, sizeof(who)))
-            str_copy(who, sizeof(who), name);
         SDL_LockMutex(lock);
         str_copy(login_user, sizeof(login_user), who);
         str_copy(login_token, sizeof(login_token), token);
         login_ready = true;
         SDL_UnlockMutex(lock);
     }
-    else if (reply && json_value(reply, "Error", error, sizeof(error)))
-        ;
-    else
-        snprintf(error, sizeof(error), status < 0 ? "Couldn't reach RetroAchievements" : "Sign-in failed (%d)", status);
-    free(reply);
     memset(token, 0, sizeof(token));
     psxs5_log("remote: RetroAchievements sign-in from the phone: %s", ok ? "ok" : "failed");
     char answer[400];

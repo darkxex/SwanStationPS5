@@ -23,6 +23,7 @@ enum Screen
     SCREEN_CHEAT_SEARCH,
     SCREEN_GUIDE,
     SCREEN_PROFILE,
+    SCREEN_RA_LOGIN,
     SCREEN_COUNT
 };
 
@@ -91,6 +92,8 @@ void guide_open(void);
 void guide_screen(uint32_t pressed);
 /* Your RetroAchievements profile. */
 void profile_open(enum Screen back_to);
+void login_open(enum Screen back_to);   /* RetroAchievements sign-in, typed on the console */
+void login_screen(uint32_t pressed);
 void profile_screen(uint32_t pressed);
 void cheat_search_screen(uint32_t pressed);
 void menu_open(void);
@@ -101,5 +104,14 @@ void shelf_library_changed(void); /* after a rescan */
 
 /* Bottom hint bar: pairs of (PadGlyph, label), then an optional right-hand text. */
 void app_draw_hints(const int *glyphs, const char *const *labels, int count, const char *right);
+/* The same bar's right-hand side, with button icons: each item is glyphs joined by sep, then a label. */
+typedef struct
+{
+    int glyphs[3];
+    int count;
+    char sep;
+    const char *label;
+} HintCombo;
+void app_draw_hints_right(const HintCombo *items, int count);
 
 #endif

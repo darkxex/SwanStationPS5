@@ -48,6 +48,12 @@ float pad_glyph_width(enum PadGlyph glyph, float size);
 float draw_hint(float x, float y, enum PadGlyph glyph, const char *label, float size,
                 uint32_t argb);
 
+/* Several glyphs joined by `sep` ('+' held together, '/' alternatives) and a label: "[L1]/[R1] label".
+ * hint_combo_width gives the width draw_hint_combo will use. */
+float hint_combo_width(const int *glyphs, int count, const char *label, float size);
+float draw_hint_combo(float x, float y, const int *glyphs, int count, char sep, const char *label,
+                      float size, uint32_t argb);
+
 uint32_t argb_alpha(uint32_t argb, float alpha); /* scales the alpha channel */
 uint32_t argb_lerp(uint32_t a, uint32_t b, float t);
 

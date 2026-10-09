@@ -1576,11 +1576,14 @@ void shelf_screen(uint32_t pressed)
     const char *const labels[] = {"Play", "Details", S.details ? "Choose a cover" : "Settings",
                                   S.details ? (hint_st && hint_st->hidden ? "Unhide" : "Hide") : "Reload",
                                   "Favorite", "M.Card"};
-    char right[128];
-    snprintf(right, sizeof(right), "%s   \xc2\xb7   %s: %s", tr("L1 / R1  Category"), tr("OPTIONS  Sort"),
-             shelf_sort_name(app.global.sort_mode));
-    app_draw_hints(glyphs, labels, S.view_count ? (!S.details ? 6 : 4) : 1,
-                   S.view_count ? right : NULL);
+    app_draw_hints(glyphs, labels, S.view_count ? (!S.details ? 6 : 4) : 1, NULL);
+    if (S.view_count)
+    {
+        char sort[64];
+        snprintf(sort, sizeof(sort), "%s: %s", tr("Sort"), shelf_sort_name(app.global.sort_mode));
+        const HintCombo right[2] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Category"}, {{GLYPH_START}, 1, '+', sort}};
+        app_draw_hints_right(right, 2);
+    }
     plat_profile("hints");
 
     /* the continue dialog */

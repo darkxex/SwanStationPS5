@@ -380,6 +380,37 @@ float draw_pad_glyph(enum PadGlyph glyph, float cx, float cy, float size)
     return w;
 }
 
+float hint_combo_width(const int *glyphs, int count, const char *label, float size)
+{
+    float w = 0;
+    for (int i = 0; i < count; ++i)
+        w += pad_glyph_width((enum PadGlyph)glyphs[i], size) + (i < count - 1 ? size * 0.9f : 0);
+    if (label && *label)
+        w += size * 0.35f + text_width(size, FONT_REGULAR, tr(label));
+    return w;
+}
+
+float draw_hint_combo(float x, float y, const int *glyphs, int count, char sep, const char *label,
+                      float size, uint32_t argb)
+{
+    float start = x;
+    for (int i = 0; i < count; ++i)
+    {
+        float gw = pad_glyph_width((enum PadGlyph)glyphs[i], size);
+        draw_pad_glyph((enum PadGlyph)glyphs[i], x + gw * 0.5f, y + size * 0.6f, size);
+        x += gw;
+        if (i < count - 1)
+        {
+            char mark[2] = {sep, '\0'};
+            text_draw(x + size * 0.45f, y, size, FONT_REGULAR, argb, ALIGN_CENTER, mark);
+            x += size * 0.9f;
+        }
+    }
+    if (label && *label)
+        text_draw(x + size * 0.35f, y, size, FONT_REGULAR, argb, ALIGN_LEFT, tr(label));
+    return x - start + (label && *label ? size * 0.35f + text_width(size, FONT_REGULAR, tr(label)) : 0);
+}
+
 float draw_hint(float x, float y, enum PadGlyph glyph, const char *label, float size,
                 uint32_t argb)
 {

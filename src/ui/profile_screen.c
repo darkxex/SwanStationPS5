@@ -21,11 +21,13 @@
 #include "text.h"
 #include "theme.h"
 #include <SDL2/SDL.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #define RECENT 8
 #define CLOSEST 6
+#define SIGNOUT_HOLD 3.0f /* seconds L2 + R2 are held to sign out */
 
 static struct
 {
@@ -36,6 +38,7 @@ static struct
     int closest[CLOSEST], closest_count;
     PlatTexture *avatar;
     bool avatar_tried;
+    float signout_hold; /* seconds L2 + R2 have been held */
 } P;
 
 static SDL_atomic_t avatar_state; /* 0 idle, 1 downloading, 2 arrived */
@@ -102,7 +105,7 @@ void profile_open(enum Screen back_to)
 {
     if (!ra_user()[0])
     {
-        app_toast("Sign in first: psxs5_sync.py ra-login");
+        login_open(back_to); /* not signed in: type the account on the console */
         return;
     }
     P.back_to = back_to;
@@ -144,6 +147,28 @@ static void tile(float x, float y, float w, int icon, uint32_t tint, const char 
 
 void profile_screen(uint32_t pressed)
 {
+    /* holding L2 + R2 for a few seconds signs out */
+    {
+        uint32_t held = 0;
+        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+            held |= app.pads[i].buttons;
+        if ((held & BIT(BTN_L2)) && (held & BIT(BTN_R2)))
+            P.signout_hold += app.dt;
+        else
+            P.signout_hold = 0.0f;
+        if (P.signout_hold >= SIGNOUT_HOLD)
+        {
+            P.signout_hold = 0.0f;
+            ra_sign_out();
+            P.avatar_tried = false;
+            plat_texture_free(P.avatar);
+            P.avatar = NULL;
+            sfx_play(SFX_BACK);
+            app.screen = P.back_to;
+            app_toast("Signed out");
+            return;
+        }
+    }
     if (pressed & (BIT(BTN_CIRCLE) | BIT(BTN_CROSS)))
     {
         sfx_play(SFX_BACK);
@@ -240,5 +265,20 @@ void profile_screen(uint32_t pressed)
     static const int glyphs[] = {GLYPH_CIRCLE};
     static const char *const labels[] = {"Back"};
     app_draw_hints(glyphs, labels, 1, NULL);
+    const HintCombo right[1] = {{{GLYPH_L2, GLYPH_R2}, 2, '+', "Hold to sign out"}};
+    app_draw_hints_right(right, 1);
+    if (P.signout_hold > 0.4f)
+    {
+        /* the bar fills up to the sign-out */
+        const int pad[2] = {GLYPH_L2, GLYPH_R2};
+        const char *msg = "Keep holding to sign out...";
+        float gw = hint_combo_width(pad, 2, msg, 26), w = gw + 96, h = 84;
+        float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
+        draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
+        draw_hint_combo(plat_width() * 0.5f - gw * 0.5f, y + 12, pad, 2, '+', msg, 26, TH_TEXT);
+        draw_rrect(x + 32, y + 56, w - 64, 12, 6, TH_DIVIDER);
+        draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(P.signout_hold / SIGNOUT_HOLD, 1.0f)), 12, 6,
+                   TH_DANGER);
+    }
     app_draw_toast();
 }

@@ -120,6 +120,22 @@ void app_draw_hints(const int *glyphs, const char *const *labels, int count, con
                   tr(right));
 }
 
+void app_draw_hints_right(const HintCombo *items, int count)
+{
+    const float size = 26, gap = size * 1.4f;
+    float total = 0;
+    for (int i = 0; i < count; ++i)
+        total += hint_combo_width(items[i].glyphs, items[i].count, items[i].label, size) +
+                 (i < count - 1 ? gap : 0);
+    float x = plat_width() - TH_MARGIN - total;
+    for (int i = 0; i < count; ++i)
+    {
+        draw_hint_combo(x, TH_HINT_Y, items[i].glyphs, items[i].count, items[i].sep,
+                        items[i].label, size, TH_HINT);
+        x += hint_combo_width(items[i].glyphs, items[i].count, items[i].label, size) + gap;
+    }
+}
+
 /* ---------------------------------------------------------------- input edges */
 
 /* Button presses for menus, with auto-repeat on directions and shoulders. */
@@ -970,7 +986,7 @@ int main(void)
         static const char *const screen_names[] = {"library", "game",         "menu",
                                                    "settings", "cheats", "achievements",
                                                    "memory cards", "library stats", "manual",
-                                                   "cheat search", "guide", "profile"};
+                                                   "cheat search", "guide", "profile", "sign in"};
         ps5_crash_step(screen_names[app.screen]);
         static enum Screen last_screen = SCREEN_LIBRARY;
         enum Screen this_screen = app.screen;
@@ -993,6 +1009,7 @@ int main(void)
         case SCREEN_CHEAT_SEARCH: cheat_search_screen(pressed); break;
         case SCREEN_GUIDE: guide_screen(pressed); break;
         case SCREEN_PROFILE: profile_screen(pressed); break;
+        case SCREEN_RA_LOGIN: login_screen(pressed); break;
         default: break;
         }
         last_screen = this_screen;

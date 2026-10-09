@@ -285,7 +285,9 @@ void cheat_search_screen(uint32_t pressed)
     {
         static const int g[] = {GLYPH_LEFT, GLYPH_RIGHT, GLYPH_CROSS, GLYPH_CIRCLE};
         static const char *const l[] = {"-1", "+1", "Save the code", "Back"};
-        app_draw_hints(g, l, 4, "L1 / R1  -10 / +10");
+        app_draw_hints(g, l, 4, NULL);
+        const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "-10 / +10"}};
+        app_draw_hints_right(right, 1);
     }
     else if (K.running)
     {
