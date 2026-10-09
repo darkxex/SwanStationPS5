@@ -1,9 +1,9 @@
 /*
- * PSXS5 - your RetroAchievements profile: points, games mastered, what you
+ * SwanStationPS5 - your RetroAchievements profile: points, games mastered, what you
  * unlocked lately and the games closest to mastery.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * The points come from the server (sign-in); the rest from what PSXS5 keeps:
+ * The points come from the server (sign-in); the rest from what SwanStationPS5 keeps:
  * stats.txt (each game's progress, saved when you quit it) and its log of
  * unlocks. The avatar is downloaded once to <root>/art/avatar-<user>.png.
  */
@@ -42,12 +42,12 @@ static struct
 } P;
 
 static SDL_atomic_t avatar_state; /* 0 idle, 1 downloading, 2 arrived */
-static char avatar_url[256], avatar_file[PSXS5_PATH_MAX];
+static char avatar_url[256], avatar_file[SwanStationPS5_PATH_MAX];
 
 static int fetch_avatar(void *unused)
 {
     (void)unused;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.part", avatar_file);
     bool ok = net_download(avatar_url, temp) == NET_OK && rename(temp, avatar_file) == 0;
     if (!ok)
@@ -113,7 +113,7 @@ void profile_open(enum Screen back_to)
     if (!P.avatar_tried)
     {
         P.avatar_tried = true;
-        char dir[PSXS5_PATH_MAX], file[160];
+        char dir[SwanStationPS5_PATH_MAX], file[160];
         path_join(dir, sizeof(dir), app.paths.root, "art");
         make_dirs(dir);
         snprintf(file, sizeof(file), "avatar-%.60s.png", ra_user());
@@ -150,7 +150,7 @@ void profile_screen(uint32_t pressed)
     /* holding L2 + R2 for a few seconds signs out */
     {
         uint32_t held = 0;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
             held |= app.pads[i].buttons;
         if ((held & BIT(BTN_L2)) && (held & BIT(BTN_R2)))
             P.signout_hold += app.dt;

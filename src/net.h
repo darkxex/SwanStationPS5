@@ -1,11 +1,11 @@
 /*
- * PSXS5 - minimal HTTPS download (libcurl).
+ * SwanStationPS5 - minimal HTTPS download (libcurl).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_NET_H
-#define PSXS5_NET_H
+#ifndef SwanStationPS5_NET_H
+#define SwanStationPS5_NET_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 typedef enum
 {

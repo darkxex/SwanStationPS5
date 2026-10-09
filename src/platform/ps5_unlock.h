@@ -1,9 +1,9 @@
 /*
- * PSXS5 - asking the HEN to let PSXS5 list /data.
+ * SwanStationPS5 - asking the HEN to let SwanStationPS5 list /data.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_PS5_UNLOCK_H
-#define PSXS5_PS5_UNLOCK_H
+#ifndef SwanStationPS5_PS5_UNLOCK_H
+#define SwanStationPS5_PS5_UNLOCK_H
 
 #include <stdbool.h>
 

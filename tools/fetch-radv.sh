@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PSXS5 v2 - fetches the RADV Vulkan driver build (made by the "Build RADV"
+# SwanStationPS5 v2 - fetches the RADV Vulkan driver build (made by the "Build RADV"
 # workflow, .github/workflows/radv.yml) and installs it for tools/build.sh:
 #   .deps/native/radv-release/                 the driver archive and Vulkan headers
 #   .deps/native/ps5-payload-sdk/target/...    + the SDK fork's platform layer
@@ -21,7 +21,7 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 echo "==> [vulkan] downloading $tag"
-gh release download "$tag" -R "${GITHUB_REPOSITORY:-SynoPiia/PSXS5}" -p '*.tar.zst' -D "$work"
+gh release download "$tag" -R "${GITHUB_REPOSITORY:-SynoPiia/SwanStationPS5}" -p '*.tar.zst' -D "$work"
 
 rm -rf "$native/radv-release"
 tar --zstd -xf "$work/radv-release.tar.zst" -C "$native"

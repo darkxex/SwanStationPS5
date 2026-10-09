@@ -1,5 +1,5 @@
 /*
- * PSXS5 - settings: tabs down the left, grouped rows, a help panel, and
+ * SwanStationPS5 - settings: tabs down the left, grouped rows, a help panel, and
  * per-game settings (L2 / R2 switch between this game and all games).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -56,6 +56,7 @@ enum Special
     SP_BIOS,
     SP_GAMES,
     SP_DATA,
+    SP_CREDITS,
     SP_VERSION,
     SP_REMAP,
     SP_RESCAN,
@@ -111,7 +112,6 @@ static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 static const __attribute__((unused)) char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
 static const char *const FILTERS[] = {"Sharp pixels", "Smooth pixels (Scale2x)", "xBR (smoothest)"};
 static const char *const REGIONS[] = {"Auto", "NTSC (60 Hz)", "PAL (50 Hz)"};
-static const char *const __attribute__((unused)) BIOS[] = {"Real BIOS if present", "Built-in HLE"};
 static const char *const PADS[] = {"Digital pad", "DualShock (analog)"};
 static const char *const COVER_STYLES[] = {"Flat", "3D box"};
 static const char *const SOUND_STYLES[] = {"Soft", "Wood", "Pop", "Chime", "Classic", "Off"};
@@ -263,7 +263,7 @@ static const Row LIBRARY[] = {
      APPLY_NOW, SP_STATS, true, NO_FIELD, NULL, 0, 0},
     {NULL, "Memory cards", "Every game's memory card: see the saves, export a card, import one.", K_ACTION,
      APPLY_NOW, SP_MEMCARDS, true, NO_FIELD, NULL, 0, 0},
-    {NULL, "Rescan library", "Looks for games added to /data/PSXS5/games or a USB drive.", K_ACTION,
+    {NULL, "Rescan library", "Looks for games added to /data/SwanStationPS5/games or a USB drive.", K_ACTION,
      APPLY_NOW, SP_RESCAN, true, NO_FIELD, NULL, 0, 0},
 };
 
@@ -301,10 +301,12 @@ static const Row ABOUT[] = {
      K_INFO, APPLY_NOW, SP_VERSION, true, NO_FIELD, NULL, 0, 0},
     {NULL, "BIOS", "SwanStationPS5 never includes a BIOS: use a dump of your own console, or the built-in one.",
      K_INFO, APPLY_NOW, SP_BIOS, true, NO_FIELD, NULL, 0, 0},
-    {NULL, "Games", "Games are your own backups, in /data/PSXS5/games.", K_INFO, APPLY_NOW, SP_GAMES,
+    {NULL, "Games", "Games are your own backups, in /data/SwanStationPS5/games.", K_INFO, APPLY_NOW, SP_GAMES,
      true, NO_FIELD, NULL, 0, 0},
     {NULL, "Data folder", "Saves, states, covers and settings live here.", K_INFO, APPLY_NOW, SP_DATA,
      true, NO_FIELD, NULL, 0, 0},
+    {NULL, "Created by", "The person behind SwanStationPS5.", K_INFO, APPLY_NOW, SP_CREDITS, true, NO_FIELD, NULL, 0,
+     0},
     {"Updates", "Check for updates", "Looks for a newer SwanStationPS5 on GitHub and installs it.", K_ACTION, APPLY_NOW,
      SP_UPDATE, true, NO_FIELD, NULL, 0, 0},
     {NULL, "Check when SwanStationPS5 starts", "Tells you on the shelf when a new version is out.", K_TOGGLE, APPLY_NOW,
@@ -442,8 +444,8 @@ static struct
     bool who;        /* the profiles page */
     int who_cursor;
     float who_y;
-    int order[PSXS5_MAX_PADS], assigned; /* controllers chosen so far, in player order */
-    uint32_t pad_prev[PSXS5_MAX_PADS];
+    int order[SwanStationPS5_MAX_PADS], assigned; /* controllers chosen so far, in player order */
+    uint32_t pad_prev[SwanStationPS5_MAX_PADS];
     int remap_cursor;
     float tab_x, tab_w, sel_y, scroll, scope_x, remap_y;
     float switch_t[16];
@@ -564,10 +566,11 @@ static const char *value_label(const Row *r, char *buf, size_t size)
             return tr("Not signed in");
         snprintf(buf, size, "%s%s", ra_user(), ra_signed_in() ? "" : tr(" (not signed in)"));
         return buf;
-    case SP_VERSION: return PSXS5_VERSION;
+    case SP_VERSION: return SwanStationPS5_VERSION;
     case SP_BIOS: app_describe_bios(buf, size); return buf;
     case SP_GAMES: snprintf(buf, size, "%d", app.library.count); return buf;
     case SP_DATA: return app.paths.root;
+    case SP_CREDITS: return "AngelXex";
     case SP_HOTKEYS: return tr("Touchpad + R2 / L2");
     case SP_UPDATE:
         switch (update_state())
@@ -578,7 +581,7 @@ static const char *value_label(const Row *r, char *buf, size_t size)
         case UPDATE_INSTALLING: return tr("Installing...");
         case UPDATE_INSTALLED: return tr("Installed: restart SwanStationPS5");
         case UPDATE_FAILED: return update_message();
-        default: return PSXS5_VERSION;
+        default: return SwanStationPS5_VERSION;
         }
     default: break;
     }
@@ -792,11 +795,11 @@ static void remap_page(uint32_t pressed)
 /* Each controller presses Cross in turn: the first is player 1, and so on. */
 static void players_page(uint32_t pressed)
 {
-    int current[PSXS5_MAX_PADS], connected = 0;
+    int current[SwanStationPS5_MAX_PADS], connected = 0;
     plat_player_order(current);
-    for (int k = 0; k < PSXS5_MAX_PADS; ++k)
+    for (int k = 0; k < SwanStationPS5_MAX_PADS; ++k)
         connected += app.pads[k].connected;
-    for (int k = 0; k < PSXS5_MAX_PADS; ++k)
+    for (int k = 0; k < SwanStationPS5_MAX_PADS; ++k)
     {
         uint32_t now = app.pads[k].buttons, newly = now & ~S.pad_prev[k];
         S.pad_prev[k] = now;
@@ -806,7 +809,7 @@ static void players_page(uint32_t pressed)
         bool taken = false;
         for (int i = 0; i < S.assigned; ++i)
             taken |= S.order[i] == controller;
-        if (!taken && S.assigned < PSXS5_MAX_PADS)
+        if (!taken && S.assigned < SwanStationPS5_MAX_PADS)
         {
             S.order[S.assigned++] = controller;
             sfx_play(SFX_SELECT);
@@ -815,9 +818,9 @@ static void players_page(uint32_t pressed)
     if (S.assigned > 0 && S.assigned >= connected)
     {
         /* the controllers that aren't here take the places left */
-        int order[PSXS5_MAX_PADS], n = S.assigned;
+        int order[SwanStationPS5_MAX_PADS], n = S.assigned;
         memcpy(order, S.order, sizeof(order));
-        for (int c = 0; c < PSXS5_MAX_PADS && n < PSXS5_MAX_PADS; ++c)
+        for (int c = 0; c < SwanStationPS5_MAX_PADS && n < SwanStationPS5_MAX_PADS; ++c)
         {
             bool used = false;
             for (int i = 0; i < n; ++i)
@@ -832,7 +835,7 @@ static void players_page(uint32_t pressed)
     }
     if (pressed & BIT(BTN_SQUARE))
     {
-        static const int standard[PSXS5_MAX_PADS] = {0, 1, 2, 3};
+        static const int standard[SwanStationPS5_MAX_PADS] = {0, 1, 2, 3};
         plat_set_player_order(standard);
         S.players = false;
         app_toast("Players back in the console's order");
@@ -846,11 +849,11 @@ static void players_page(uint32_t pressed)
         return;
     }
 
-    static const uint32_t colours[PSXS5_MAX_PADS] = {0xff2050ffu, 0xffff2030u, 0xff20d040u, 0xffff40c0u};
+    static const uint32_t colours[SwanStationPS5_MAX_PADS] = {0xff2050ffu, 0xffff2030u, 0xff20d040u, 0xffff40c0u};
     const float w = 900, x = (plat_width() - w) * 0.5f, top = 250, row_h = 120;
     text_draw(plat_width() * 0.5f, 170, 30, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("Player order"));
-    draw_rrect(x - 16, top - 16, w + 32, PSXS5_MAX_PADS * row_h + 32, TH_RADIUS, TH_CARD);
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    draw_rrect(x - 16, top - 16, w + 32, SwanStationPS5_MAX_PADS * row_h + 32, TH_RADIUS, TH_CARD);
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         float y = top + i * row_h;
         bool done = i < S.assigned, next = i == S.assigned;
@@ -862,7 +865,7 @@ static void players_page(uint32_t pressed)
         text_draw(x + 100, y + 26, 28, FONT_BOLD, done || next ? TH_TEXT : TH_TEXT_DIM, ALIGN_LEFT, label);
         const char *who = NULL;
         if (done)
-            for (int k = 0; k < PSXS5_MAX_PADS; ++k)
+            for (int k = 0; k < SwanStationPS5_MAX_PADS; ++k)
                 if (current[k] == S.order[i])
                     who = plat_pad_name(k);
         text_draw_fit(x + 100, y + 66, 22, FONT_REGULAR, next ? TH_FOCUS : TH_TEXT_SOFT, ALIGN_LEFT, w - 140,
@@ -880,7 +883,7 @@ static void players_page(uint32_t pressed)
 static int who_rows(char adds[][PROFILE_NAME_LEN], int *add_count)
 {
     *add_count = 0;
-    for (int k = 0; k < PSXS5_MAX_PADS && *add_count < 5; ++k)
+    for (int k = 0; k < SwanStationPS5_MAX_PADS && *add_count < 5; ++k)
     {
         const char *name = app.pads[k].connected ? plat_pad_name(k) : NULL;
         if (!name || !name[0] || profiles_find(name) >= 0)
@@ -1073,7 +1076,7 @@ static void draw_project_qr(float x, float y, float size)
     if (!tried)
     {
         tried = true;
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         plat_asset_path(path, sizeof(path), "qr-github.png");
         int w = 0, h = 0, comp = 0;
         unsigned char *px = stbi_load(path, &w, &h, &comp, 4);
@@ -1137,7 +1140,7 @@ static void draw_help(const Row *r)
     const float w = 476, x = plat_width() - TH_MARGIN - w, top = 236;
     draw_rrect(x, top, w, 724, TH_RADIUS, TH_CARD);
     if (!r && tab()->rows == ABOUT)
-        r = &ABOUT[0]; /* nothing to select on About: describe PSXS5 */
+        r = &ABOUT[0]; /* nothing to select on About: describe SwanStationPS5 */
     if (!r)
         return;
     icon_draw(tab()->icon, x + 32, top + 32, 40, TH_FOCUS);
@@ -1338,7 +1341,7 @@ static void draw_rows(void)
             icon_draw(ICON_WORLD, x + 40 + text_width(28, FONT_REGULAR, tr(row_name(r))), ry + 24, 24,
                       TH_TEXT_DIM);
         float right = x + w - 28;
-        char buf[PSXS5_PATH_MAX + 64];
+        char buf[SwanStationPS5_PATH_MAX + 64];
         switch (r->kind)
         {
         case K_CHOICE:
@@ -1394,7 +1397,7 @@ static void activate(const Row *r)
     case SP_PLAYERS:
         S.players = true;
         S.assigned = 0;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
             S.pad_prev[i] = app.pads[i].buttons; /* the Cross that opened the page doesn't count */
         sfx_play(SFX_SELECT);
         return;
@@ -1426,7 +1429,7 @@ static void activate(const Row *r)
             size_t n = strlen(line);
             ends_newline = n && line[n - 1] == '\n';
             line[strcspn(line, "\r\n")] = '\0';
-            present |= strcmp(line, PSXS5_TITLE_ID) == 0;
+            present |= strcmp(line, SwanStationPS5_TITLE_ID) == 0;
         }
         fclose(f);
         if (present)
@@ -1435,10 +1438,10 @@ static void activate(const Row *r)
             return;
         }
         f = fopen(list, "a");
-        bool ok = f && fprintf(f, "%s%s\n", ends_newline ? "" : "\n", PSXS5_TITLE_ID) > 0;
+        bool ok = f && fprintf(f, "%s%s\n", ends_newline ? "" : "\n", SwanStationPS5_TITLE_ID) > 0;
         if (f && fclose(f) != 0)
             ok = false;
-        psxs5_log("whitelist: %s %s", PSXS5_TITLE_ID, ok ? "added to /data/whitelist.txt" : "could not be added");
+        SwanStationPS5_log("whitelist: %s %s", SwanStationPS5_TITLE_ID, ok ? "added to /data/whitelist.txt" : "could not be added");
         app_toast(ok ? "Added: reload PS5SX2 Helper or restart the console" : "Could not write /data/whitelist.txt");
         sfx_play(ok ? SFX_SELECT : SFX_BACK);
         return;
@@ -1561,7 +1564,7 @@ void settings_screen(uint32_t pressed)
     if ((pressed & BIT(BTN_SQUARE)) && app.game && app.game_has_own)
     {
         /* back to the console-wide settings for this game */
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         app_game_config_path(path, sizeof(path), app.game);
         remove(path);
         app.game_has_own = false;
@@ -1658,7 +1661,7 @@ int settings_json(char *out, size_t size)
             at = json_text(out, size, at, tr(row_help(r)));
             if (r->kind == K_INFO)
             {
-                char buf[PSXS5_PATH_MAX + 64];
+                char buf[SwanStationPS5_PATH_MAX + 64];
                 PUT(",\"kind\":\"info\",\"text\":");
                 at = json_text(out, size, at, value_label(r, buf, sizeof(buf)));
             }

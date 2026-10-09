@@ -1,5 +1,5 @@
 /*
- * PSXS5 v2 - the screen through Vulkan (RADV, VK_KHR_display on VideoOut).
+ * SwanStationPS5 v2 - the screen through Vulkan (RADV, VK_KHR_display on VideoOut).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * RADV's PS5 window system presents through VK_KHR_display: a display plane
@@ -19,9 +19,9 @@
 #include "vk_present.h"
 #include "vk_present_hw.h"
 
-#if defined(PSXS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN)
 
-#include "../../psxs5.h"
+#include "../../SwanStationPS5.h"
 #include "shaders_royale.h"
 #include "shaders_spv.h"
 
@@ -196,8 +196,8 @@ static bool create_instance(char *error, size_t size)
     }
     const char *extensions[] = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_DISPLAY_EXTENSION_NAME};
     VkApplicationInfo app = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-    app.pApplicationName = PSXS5_NAME;
-    app.pEngineName = PSXS5_NAME;
+    app.pApplicationName = SwanStationPS5_NAME;
+    app.pEngineName = SwanStationPS5_NAME;
     app.apiVersion = VK_API_VERSION_1_3;
     VkInstanceCreateInfo info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     info.pApplicationInfo = &app;
@@ -241,7 +241,7 @@ static bool create_surface(char *error, size_t size)
     for (uint32_t i = 0; i < mode_count; ++i)
     {
         const VkDisplayModeParametersKHR *p = &modes[i].parameters;
-        psxs5_log("vulkan: display mode %ux%u @ %.2f Hz", p->visibleRegion.width,
+        SwanStationPS5_log("vulkan: display mode %ux%u @ %.2f Hz", p->visibleRegion.width,
                   p->visibleRegion.height, p->refreshRate / 1000.0);
         bool size_ok = p->visibleRegion.width == (uint32_t)V.cw && p->visibleRegion.height == (uint32_t)V.ch;
         bool rate_ok = p->refreshRate >= 59000 && p->refreshRate <= 61000;
@@ -402,7 +402,7 @@ static bool create_swapchain(char *error, size_t size)
     CHECK(vkCreateSwapchainKHR(V.device, &info, NULL, &V.swapchain), "vkCreateSwapchainKHR");
     V.image_count = MAX_IMAGES;
     CHECK(vkGetSwapchainImagesKHR(V.device, V.swapchain, &V.image_count, V.images), "swapchain images");
-    psxs5_log("vulkan: swapchain %ux%u, %u images, format %d", V.extent.width, V.extent.height,
+    SwanStationPS5_log("vulkan: swapchain %ux%u, %u images, format %d", V.extent.width, V.extent.height,
               V.image_count, (int)V.format);
     return true;
 }
@@ -679,11 +679,11 @@ bool vkp_open(int canvas_w, int canvas_h, char *error, size_t size)
               create_pipeline(error, size) && create_canvas(error, size);
     if (!ok)
     {
-        psxs5_log("vulkan: screen not available: %s", error);
+        SwanStationPS5_log("vulkan: screen not available: %s", error);
         vkp_close();
         return false;
     }
-    psxs5_log("vulkan: the screen is drawn through Vulkan, %s", V.description);
+    SwanStationPS5_log("vulkan: the screen is drawn through Vulkan, %s", V.description);
     return true;
 }
 
@@ -1107,7 +1107,7 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
         R.ok = royale_init();
         if (!R.ok)
         {
-            psxs5_log("vulkan: CRT Royale could not be set up");
+            SwanStationPS5_log("vulkan: CRT Royale could not be set up");
             royale_free();
             R.tried = true;
         }
@@ -1174,7 +1174,7 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
         }
         if (!ok)
         {
-            psxs5_log("vulkan: CRT Royale: no memory for its images");
+            SwanStationPS5_log("vulkan: CRT Royale: no memory for its images");
             royale_free_images();
             R.ok = false;
             return false;
@@ -1182,7 +1182,7 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
     }
     memcpy(R.built, key, sizeof(key));
     R.have_images = true;
-    psxs5_log("vulkan: CRT Royale: PS1 %dx%d, viewport %dx%d", native_w, native_h, viewport_w, viewport_h);
+    SwanStationPS5_log("vulkan: CRT Royale: PS1 %dx%d, viewport %dx%d", native_w, native_h, viewport_w, viewport_h);
     return true;
 }
 
@@ -1350,7 +1350,7 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     {
         static int warned;
         if (!warned++)
-            psxs5_log("vulkan: acquire failed (%d)", (int)r);
+            SwanStationPS5_log("vulkan: acquire failed (%d)", (int)r);
         return;
     }
     vkResetFences(V.device, 1, &V.done[f]);
@@ -1603,7 +1603,7 @@ bool vkp_adopt_device(VkDevice device, VkQueue queue, uint32_t family, char *err
     V.family = family;
     bool ok = load_device(error, size) && create_swapchain(error, size) &&
               create_pipeline(error, size) && create_canvas(error, size);
-    psxs5_log("vulkan: the screen moved to the core's device%s%s", ok ? "" : ": ", ok ? "" : error);
+    SwanStationPS5_log("vulkan: the screen moved to the core's device%s%s", ok ? "" : ": ", ok ? "" : error);
     return ok;
 }
 

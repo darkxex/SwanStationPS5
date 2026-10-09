@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""PSXS5 - writes assets/cheats-index.txt: the names of libretro-database's
-PlayStation cheat files (cht/Sony - PlayStation). PSXS5 matches a game against
+"""SwanStationPS5 - writes assets/cheats-index.txt: the names of libretro-database's
+PlayStation cheat files (cht/Sony - PlayStation). SwanStationPS5 matches a game against
 this list and downloads just that one file, so cheats work with no library on
-the console and without listing folders (which a sandboxed PSXS5 can't).
+the console and without listing folders (which a sandboxed SwanStationPS5 can't).
 
     python tools/make-cheat-index.py        (rerun now and then for new files)
 
@@ -17,7 +17,7 @@ FOLDER = "cht/Sony - PlayStation/"
 
 
 def get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "PSXS5", "Accept": "application/vnd.github+json"})
+    req = urllib.request.Request(url, headers={"User-Agent": "SwanStationPS5", "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 

@@ -1,5 +1,5 @@
 /*
- * PSXS5 - things around the running game: quick resume, state thumbnails,
+ * SwanStationPS5 - things around the running game: quick resume, state thumbnails,
  * rewind, fast forward, widescreen codes and fan-translation patches.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -26,7 +26,7 @@
  * Players drop any *.ppf next to the game; it is copied under that name. */
 bool play_prepare_patch(const Game *g)
 {
-    char dir[PSXS5_PATH_MAX], none[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX], none[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "cache/ppf");
     path_join(none, sizeof(none), app.paths.root, "cache/ppf-none");
     host_set_patches_dir(none);
@@ -45,7 +45,7 @@ bool play_prepare_patch(const Game *g)
     DIR *d = opendir(g->folder);
     if (!d)
         return false;
-    char found[PSXS5_PATH_MAX] = "";
+    char found[SwanStationPS5_PATH_MAX] = "";
     struct dirent *e;
     while ((e = readdir(d)))
         if (str_icmp(path_ext(e->d_name), "ppf") == 0)
@@ -56,7 +56,7 @@ bool play_prepare_patch(const Game *g)
     closedir(d);
     if (!found[0])
         return false;
-    char name[16], target[PSXS5_PATH_MAX];
+    char name[16], target[SwanStationPS5_PATH_MAX];
     snprintf(name, sizeof(name), "%s_%.3s.%.2s", letters, digits, digits + 3);
     make_dirs(dir);
     path_join(target, sizeof(target), dir, name);
@@ -72,10 +72,10 @@ bool play_prepare_patch(const Game *g)
         ok = fclose(out) == 0 && ok;
     if (!ok)
         return false;
-    char with_slash[PSXS5_PATH_MAX];
+    char with_slash[SwanStationPS5_PATH_MAX];
     snprintf(with_slash, sizeof(with_slash), "%s/", dir);
     host_set_patches_dir(with_slash);
-    psxs5_log("patch: %s as %s", found, name);
+    SwanStationPS5_log("patch: %s as %s", found, name);
     return true;
 }
 
@@ -164,7 +164,7 @@ bool play_screenshot(void)
     free(rgba);
     if (!png)
         return false;
-    char dir[PSXS5_PATH_MAX], name[160], path[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX], name[160], path[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "screenshots");
     make_dirs(dir);
     struct tm tm;
@@ -181,7 +181,7 @@ bool play_screenshot(void)
     if (f)
         ok = fclose(f) == 0 && ok;
     mz_free(png);
-    psxs5_log("screenshot: %s %s", path, ok ? "saved" : "could not be saved");
+    SwanStationPS5_log("screenshot: %s %s", path, ok ? "saved" : "could not be saved");
     return ok;
 }
 
@@ -192,7 +192,7 @@ void play_save_thumb(const char *state_path)
     static uint8_t rgba[THUMB_W * THUMB_H * 4];
     if (!host_capture(rgba, THUMB_W, THUMB_H))
         return;
-    char path[PSXS5_PATH_MAX + 8];
+    char path[SwanStationPS5_PATH_MAX + 8];
     snprintf(path, sizeof(path), "%s.thumb", state_path);
     FILE *f = fopen(path, "wb");
     if (!f)
@@ -206,7 +206,7 @@ void play_save_thumb(const char *state_path)
 
 bool play_load_thumb(const char *state_path, uint8_t *rgba)
 {
-    char path[PSXS5_PATH_MAX + 8];
+    char path[SwanStationPS5_PATH_MAX + 8];
     snprintf(path, sizeof(path), "%s.thumb", state_path);
     FILE *f = fopen(path, "rb");
     if (!f)
@@ -230,7 +230,7 @@ void play_resume_path(const Game *g, char *out, size_t size)
 
 bool play_has_resume(const Game *g, long *age_seconds)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     play_resume_path(g, path, sizeof(path));
     struct stat st;
     if (stat(path, &st) != 0)
@@ -242,7 +242,7 @@ bool play_has_resume(const Game *g, long *age_seconds)
 
 typedef struct
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     void *data;
     size_t size;
 } Writer;
@@ -253,7 +253,7 @@ static SDL_atomic_t writing;
 static int write_thread(void *arg)
 {
     Writer *w = arg;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.tmp", w->path);
     FILE *f = fopen(temp, "wb");
     bool ok = f && fwrite(w->data, 1, w->size, f) == w->size;
@@ -273,7 +273,7 @@ void play_save_resume(bool background)
 {
     if (!app.game || !app.settings.quick_resume || ra_hardcore())
         return;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     play_resume_path(app.game, path, sizeof(path));
     save_state_to(path, background);
 }
@@ -291,7 +291,7 @@ int play_auto_list(int slots[AUTO_SLOTS], long ages[AUTO_SLOTS])
     time_t now = time(NULL);
     for (int s = 0; s < AUTO_SLOTS; ++s)
     {
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         play_auto_path(s, path, sizeof(path));
         struct stat st;
         if (stat(path, &st) != 0)
@@ -329,7 +329,7 @@ bool play_save_auto(void)
             if (used)
                 ++slot;
         }
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     play_auto_path(slot, path, sizeof(path));
     return save_state_to(path, true);
 }
@@ -369,7 +369,7 @@ bool play_load_resume(void)
 {
     if (!app.game || ra_hardcore())
         return false;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     play_resume_path(app.game, path, sizeof(path));
     return host_load_state(path);
 }
@@ -409,7 +409,7 @@ void play_rewind_record(void)
         ring = state_size ? malloc(state_size * SLOTS) : NULL;
         if (!ring)
         {
-            psxs5_log("rewind: no memory for %d x %zu bytes", SLOTS, state_size);
+            SwanStationPS5_log("rewind: no memory for %d x %zu bytes", SLOTS, state_size);
             app.settings.rewind = false;
             return;
         }

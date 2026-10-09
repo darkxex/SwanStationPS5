@@ -1,10 +1,10 @@
-# PSXS5 - cloud build: the PS5 app folder.
+# SwanStationPS5 - cloud build: the PS5 app folder.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Download the result from the run's page: Artifacts > PSXS5-PPSA98510.
+# Download the result from the run's page: Artifacts > SwanStationPS5-PPSA98510.
 # Unzip it and copy the PPSA98510 folder to /data/homebrew/ on the PS5.
 
-name: Build PSXS5
+name: Build SwanStationPS5
 
 on:
   push:
@@ -59,21 +59,21 @@ jobs:
       - name: Check system module imports
         run: python3 tools/check-imports.py dist/PPSA98510/eboot.bin
 
-      # Crash reports in psxs5.log give addresses as offsets from main();
+      # Crash reports in SwanStationPS5.log give addresses as offsets from main();
       # this map turns them into function names.
       - name: Write the symbol map
-        run: llvm-nm-18 -n --defined-only build/llvm-pie.elf > PSXS5-symbols.txt
+        run: llvm-nm-18 -n --defined-only build/llvm-pie.elf > SwanStationPS5-symbols.txt
 
       - name: Upload the symbol map
         uses: actions/upload-artifact@v4
         with:
-          name: PSXS5-symbols
-          path: PSXS5-symbols.txt
+          name: SwanStationPS5-symbols
+          path: SwanStationPS5-symbols.txt
 
       - name: Upload the app folder
         uses: actions/upload-artifact@v4
         with:
-          name: PSXS5-PPSA98510
+          name: SwanStationPS5-PPSA98510
           path: |
             dist/
             !dist/*.zip
@@ -90,18 +90,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: PSXS5-PPSA98510
+          name: SwanStationPS5-PPSA98510
           path: app
       - uses: actions/download-artifact@v4
         with:
-          name: PSXS5-symbols
+          name: SwanStationPS5-symbols
           path: .
       - name: Package
         run: |
-          name=PSXS5-${GITHUB_REF_NAME}
+          name=SwanStationPS5-${GITHUB_REF_NAME}
           mkdir -p "$name/tools"
           cp -r app/PPSA98510 "$name/"
-          cp tools/psxs5_sync.py tools/psx_disc.py "$name/tools/"
+          cp tools/SwanStationPS5_sync.py tools/psx_disc.py "$name/tools/"
           cp README.md LICENSE THIRD_PARTY_NOTICES.md "$name/"
           zip -qr "$name.zip" "$name"
           echo "ZIP=$name.zip" >> "$GITHUB_ENV"
@@ -109,7 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # --latest=false: PSXS5 2.0.0 updates from the release marked Latest and its
+          # --latest=false: SwanStationPS5 2.0.0 updates from the release marked Latest and its
           # updater leaves the app unable to start, so v2.0.0 stays Latest; 2.1.1 and
           # later read the whole list of releases.
-          gh release create "$GITHUB_REF_NAME" "$ZIP" PSXS5-symbols.txt --title "PSXS5 ${GITHUB_REF_NAME#v}" --generate-notes --latest=false
+          gh release create "$GITHUB_REF_NAME" "$ZIP" SwanStationPS5-symbols.txt --title "SwanStationPS5 ${GITHUB_REF_NAME#v}" --generate-notes --latest=false

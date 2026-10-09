@@ -8,7 +8,7 @@
 
 The zip holds just the app folder, PPSA98510/, as the releases have since 1.0.0: that is what the
 in-app updater installs, and what you copy to /data/homebrew. The release tag is the version from
-PSXS5_VERSION in src/psxs5.h, without a "v" (1.0.1).
+SwanStationPS5_VERSION in src/SwanStationPS5.h, without a "v" (1.0.1).
 
 SPDX-License-Identifier: GPL-3.0-or-later
 """
@@ -26,21 +26,21 @@ APP = "PPSA98510"
 
 
 def read_version():
-    text = (ROOT / "src/psxs5.h").read_text()
-    m = re.search(r'#define\s+PSXS5_VERSION\s+"([^"]+)"', text)
+    text = (ROOT / "src/SwanStationPS5.h").read_text()
+    m = re.search(r'#define\s+SwanStationPS5_VERSION\s+"([^"]+)"', text)
     if not m:
-        sys.exit("error: PSXS5_VERSION not found in src/psxs5.h")
+        sys.exit("error: SwanStationPS5_VERSION not found in src/SwanStationPS5.h")
     return m.group(1)
 
 
 def sync_content_version(version):
-    """Writes PSXS5_VERSION into sce_sys/param.json as contentVersion: 1.0.2 -> 01.000.002."""
+    """Writes SwanStationPS5_VERSION into sce_sys/param.json as contentVersion: 1.0.2 -> 01.000.002."""
     m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
     if not m:
-        sys.exit(f'error: PSXS5_VERSION "{version}" is not X.Y.Z')
+        sys.exit(f'error: SwanStationPS5_VERSION "{version}" is not X.Y.Z')
     major, minor, patch = (int(g) for g in m.groups())
     if major > 99 or minor > 999 or patch > 999:
-        sys.exit(f'error: PSXS5_VERSION "{version}" does not fit contentVersion (00-99.000-999.000-999)')
+        sys.exit(f'error: SwanStationPS5_VERSION "{version}" does not fit contentVersion (00-99.000-999.000-999)')
     content = f"{major:02d}.{minor:03d}.{patch:03d}"
     path = ROOT / "sce_sys/param.json"
     text = path.read_text()
@@ -110,7 +110,7 @@ def main():
     print(f"    publish: gh release create {version} {out.name} --repo darkxex/SwanStationPS5 "
           f"--title \"SwanStationPS5 {version}\" --generate-notes --latest")
     if args.ip:
-        print(f"    live log (open the app first): nc {args.ip} 3232 | grep --line-buffered psxs5")
+        print(f"    live log (open the app first): nc {args.ip} 3232 | grep --line-buffered SwanStationPS5")
 
 
 main()

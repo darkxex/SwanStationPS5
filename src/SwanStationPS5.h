@@ -1,23 +1,23 @@
 /*
- * PSXS5 - PlayStation X Super 5
+ * SwanStationPS5 - PlayStation X Super 5
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Shared types for the frontend. Everything here is plain C11 so the same
  * sources build for the PS5 (no full libc++) and for the desktop test build.
  */
-#ifndef PSXS5_H
-#define PSXS5_H
+#ifndef SwanStationPS5_H
+#define SwanStationPS5_H
 
 #include <stdbool.h>
 #include "core/swanstation_options.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#define PSXS5_NAME "PSXS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
-#define PSXS5_TITLE "SwanStationPS5" /* what is shown on screen */
-#define PSXS5_TITLE_ID "PPSA98510"
-#define PSXS5_VERSION "1.0.6"
-#define PSXS5_PATH_MAX 512
+#define SwanStationPS5_NAME "SwanStationPS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
+#define SwanStationPS5_TITLE "SwanStationPS5" /* what is shown on screen */
+#define SwanStationPS5_TITLE_ID "PPSA98510"
+#define SwanStationPS5_VERSION "1.0.6"
+#define SwanStationPS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core
  * unchanged. PlayStation names: Cross = B, Circle = A, Square = Y, Triangle = X. */
@@ -39,10 +39,10 @@ enum
     BTN_R2 = 13,
     BTN_L3 = 14,
     BTN_R3 = 15,
-    BTN_MENU = 16, /* touchpad click: opens the PSXS5 in-game menu */
+    BTN_MENU = 16, /* touchpad click: opens the SwanStationPS5 in-game menu */
 };
 #define BIT(b) (1u << (b))
-#define PSXS5_MAX_PADS 4 /* 3 and 4 play through a multitap */
+#define SwanStationPS5_MAX_PADS 4 /* 3 and 4 play through a multitap */
 
 typedef struct
 {
@@ -52,7 +52,7 @@ typedef struct
     uint8_t l2, r2;    /* how far the triggers are pressed, 0..255 */
     bool motion;       /* quat holds the controller's orientation */
     float quat[4];     /* x, y, z, w */
-    /* the light gun (filled in by PSXS5): -32767..32767 across the picture */
+    /* the light gun (filled in by SwanStationPS5): -32767..32767 across the picture */
     int16_t gun_x, gun_y;
     bool gun_offscreen;
     /* the touchpad (one finger) and, for mouse games, the pointer's move this frame */
@@ -99,7 +99,6 @@ typedef struct
     int upscale_filter; /* enum UpscaleFilter */
     bool show_fps;
     int region;       /* enum RegionMode */
-    bool force_hle;   /* ignore BIOS files and use the built-in HLE BIOS */
     bool dithering;
     bool cd_fast;     /* faster CD reads (shorter loads, rare glitches) */
     bool analog;      /* DualShock instead of digital pad */
@@ -125,7 +124,7 @@ typedef struct
     int crt;              /* scanlines: 0 off, 1 light, 2 strong */
     int border;           /* around the picture: 0 black, 1 glow, 2 TV frame */
     bool remote;          /* settings page for phones on the local network */
-    bool update_check;    /* look for new PSXS5 releases at start */
+    bool update_check;    /* look for new SwanStationPS5 releases at start */
     int emulator;         /* enum Emulator */
     bool pgxp;            /* Beetle: precise geometry, no wobbling polygons */
     int shader;           /* Beetle on the GPU: 0 off, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear */
@@ -185,29 +184,29 @@ enum StickDpad
 
 enum CoverStyle
 {
-    COVER_FLAT = 0, /* front art, shown in perspective by PSXS5 */
+    COVER_FLAT = 0, /* front art, shown in perspective by SwanStationPS5 */
     COVER_BOX3D,    /* pre-rendered 3D jewel case */
     COVER_STYLE_COUNT
 };
 
-/* Data layout below the PSXS5 root (default /data/PSXS5 on PS5). */
+/* Data layout below the SwanStationPS5 root (default /data/SwanStationPS5 on PS5). */
 typedef struct
 {
-    char root[PSXS5_PATH_MAX];
-    char games[PSXS5_PATH_MAX];
-    char bios[PSXS5_PATH_MAX];
-    char saves[PSXS5_PATH_MAX];
-    char states[PSXS5_PATH_MAX];
-    char cheats[PSXS5_PATH_MAX];
-    char covers[PSXS5_PATH_MAX]; /* covers/default/<serial>.jpg, covers/3d/<serial>.png */
-    char logs[PSXS5_PATH_MAX];
-    char cache[PSXS5_PATH_MAX];  /* downloads and the emulator's shader cache (cache/swanstation) */
-    char config[PSXS5_PATH_MAX];
-    char user[PSXS5_PATH_MAX];   /* the profile's folder (saves, states, settings, stats): root for the main one */
+    char root[SwanStationPS5_PATH_MAX];
+    char games[SwanStationPS5_PATH_MAX];
+    char bios[SwanStationPS5_PATH_MAX];
+    char saves[SwanStationPS5_PATH_MAX];
+    char states[SwanStationPS5_PATH_MAX];
+    char cheats[SwanStationPS5_PATH_MAX];
+    char covers[SwanStationPS5_PATH_MAX]; /* covers/default/<serial>.jpg, covers/3d/<serial>.png */
+    char logs[SwanStationPS5_PATH_MAX];
+    char cache[SwanStationPS5_PATH_MAX];  /* downloads and the emulator's shader cache (cache/swanstation) */
+    char config[SwanStationPS5_PATH_MAX];
+    char user[SwanStationPS5_PATH_MAX];   /* the profile's folder (saves, states, settings, stats): root for the main one */
 } Paths;
 
-void psxs5_log(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void psxs5_log_open(const char *path);
+void SwanStationPS5_log(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void SwanStationPS5_log_open(const char *path);
 
 /* Small string helpers shared by the frontend. */
 void str_copy(char *dst, size_t size, const char *src);

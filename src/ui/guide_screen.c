@@ -1,10 +1,10 @@
 /*
- * PSXS5 - text guides: walkthroughs and FAQs (.txt) you put beside a game,
- * read in the game from the PSXS5 menu.
+ * SwanStationPS5 - text guides: walkthroughs and FAQs (.txt) you put beside a game,
+ * read in the game from the SwanStationPS5 menu.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Every .txt in the game's folder (but serial.txt) or in its guides/ folder
- * is a guide; a sandboxed PSXS5 can't list folders, so it looks for guide.txt
+ * is a guide; a sandboxed SwanStationPS5 can't list folders, so it looks for guide.txt
  * and guide1.txt to guide9.txt. Text is shown in a monospace face so the ASCII
  * tables of GameFAQs-style guides line up, and the place you were reading is
  * kept per guide (<guide>.txt.pos beside it, or in the states folder).
@@ -30,7 +30,7 @@ static struct
 {
     const Game *scanned_for;
     int count;
-    char paths[MAX_GUIDES][PSXS5_PATH_MAX];
+    char paths[MAX_GUIDES][SwanStationPS5_PATH_MAX];
     int chosen;           /* -1: the list of guides */
     int list_cursor;
     char *text;           /* the open guide, wrapped: lines end in '\0' */
@@ -62,7 +62,7 @@ static void scan_dir(const char *dir)
     while ((e = readdir(d)) != NULL)
         if (!str_icmp(path_ext(e->d_name), "txt") && str_icmp(e->d_name, "serial.txt") != 0 && e->d_name[0] != '.')
         {
-            char path[PSXS5_PATH_MAX];
+            char path[SwanStationPS5_PATH_MAX];
             path_join(path, sizeof(path), dir, e->d_name);
             add(path);
         }
@@ -82,7 +82,7 @@ static void scan(void)
     G.count = 0;
     if (!app.game || !app.game->folder[0])
         return;
-    char guides[PSXS5_PATH_MAX];
+    char guides[SwanStationPS5_PATH_MAX];
     path_join(guides, sizeof(guides), app.game->folder, "guides");
     if (!app.sandboxed)
     {
@@ -92,7 +92,7 @@ static void scan(void)
     else
         for (int i = 0; i <= 9; ++i)
         {
-            char name[32], path[PSXS5_PATH_MAX];
+            char name[32], path[SwanStationPS5_PATH_MAX];
             snprintf(name, sizeof(name), i ? "guide%d.txt" : "guide.txt", i);
             path_join(path, sizeof(path), app.game->folder, name);
             if (opens(path))
@@ -125,7 +125,7 @@ static void save_position(void)
 {
     if (G.chosen < 0 || !G.text)
         return;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     pos_path(G.chosen, path, sizeof(path));
     make_dirs(app.paths.states);
     FILE *f = fopen(path, "w");
@@ -225,7 +225,7 @@ static bool open_guide(int guide)
     free(raw);
     G.chosen = guide;
     G.top = G.top_target = 0;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     pos_path(guide, path, sizeof(path));
     FILE *pf = fopen(path, "r");
     if (pf)

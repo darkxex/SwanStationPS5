@@ -1,11 +1,11 @@
 /*
- * PSXS5 - what DuckStation's game database knows about each disc: genre,
+ * SwanStationPS5 - what DuckStation's game database knows about each disc: genre,
  * release, players, the controllers it takes, and the settings it's known to
  * break with.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The database (data/resources/gamedb.yaml in github.com/stenzek/duckstation)
- * isn't part of PSXS5: the console downloads it once and keeps a compact
+ * isn't part of SwanStationPS5: the console downloads it once and keeps a compact
  * index, <root>/cache/gamedb-3.txt (one line per serial, sorted), refreshed
  * after a month. Until it's there, every lookup simply finds nothing.
  */
@@ -26,7 +26,7 @@
 #define REFRESH_DAYS 30
 
 static SDL_atomic_t state; /* 0 idle, 1 downloading, 2 a new index is there */
-static char yaml_path[PSXS5_PATH_MAX], index_path[PSXS5_PATH_MAX];
+static char yaml_path[SwanStationPS5_PATH_MAX], index_path[SwanStationPS5_PATH_MAX];
 
 static GameInfo *games;
 static int game_count;
@@ -115,7 +115,7 @@ static bool build_index(const char *yaml, const char *index)
     FILE *in = fopen(yaml, "r");
     if (!in)
         return false;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.tmp", index);
     FILE *out = fopen(temp, "w");
     if (!out)
@@ -256,12 +256,12 @@ static bool build_index(const char *yaml, const char *index)
 static int fetch_main(void *unused)
 {
     (void)unused;
-    char part[PSXS5_PATH_MAX + 8];
+    char part[SwanStationPS5_PATH_MAX + 8];
     snprintf(part, sizeof(part), "%s.part", yaml_path);
     NetResult r = net_download(GAMEDB_URL, part);
     bool ok = r == NET_OK && build_index(part, index_path);
     remove(part);
-    psxs5_log("gamedb: %s", ok ? "index written" : r == NET_OK ? "could not read the database" : "download failed");
+    SwanStationPS5_log("gamedb: %s", ok ? "index written" : r == NET_OK ? "could not read the database" : "download failed");
     SDL_AtomicSet(&state, ok ? 2 : 0);
     return 0;
 }
@@ -315,14 +315,14 @@ static void load(void)
         g->flags = (unsigned)strtoul(field[8], NULL, 16);
     }
     fclose(f);
-    psxs5_log("gamedb: %d discs known", game_count);
+    SwanStationPS5_log("gamedb: %d discs known", game_count);
 }
 
 void gamedb_start(void)
 {
     path_join(index_path, sizeof(index_path), app.paths.root, "cache/gamedb-3.txt");
     path_join(yaml_path, sizeof(yaml_path), app.paths.root, "cache/gamedb.yaml");
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "cache");
     make_dirs(dir);
     struct stat st;

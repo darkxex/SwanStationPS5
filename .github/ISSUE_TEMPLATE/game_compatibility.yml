@@ -28,7 +28,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: PSXS5 version
+      label: SwanStationPS5 version
       placeholder: 1.2.0
     validations:
       required: true

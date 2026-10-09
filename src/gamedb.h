@@ -1,12 +1,12 @@
 /*
- * PSXS5 - what DuckStation's game database knows about each disc (downloaded
- * once on the console, never part of PSXS5).
+ * SwanStationPS5 - what DuckStation's game database knows about each disc (downloaded
+ * once on the console, never part of SwanStationPS5).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_GAMEDB_H
-#define PSXS5_GAMEDB_H
+#ifndef SwanStationPS5_GAMEDB_H
+#define SwanStationPS5_GAMEDB_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 enum
 {

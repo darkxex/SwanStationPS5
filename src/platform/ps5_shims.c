@@ -1,12 +1,12 @@
 /*
- * PSXS5 - small stand-ins for symbols the PS5 libraries don't export.
+ * SwanStationPS5 - small stand-ins for symbols the PS5 libraries don't export.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #if defined(__PROSPERO__)
 #include <stddef.h>
 
 /* libiconv (pulled in by SDL2) expects FreeBSD's MB_CUR_MAX function and
- * nl_langinfo(CODESET). PSXS5 runs in the C locale with UTF-8 text. */
+ * nl_langinfo(CODESET). SwanStationPS5 runs in the C locale with UTF-8 text. */
 size_t ___mb_cur_max(void)
 {
     return 1;
@@ -57,7 +57,7 @@ char *strcasestr(const char *haystack, const char *needle)
 
 /* PacBrew's SDL2 supports USB keyboards and the on-screen keyboard through
  * libSceKeyboard and libSceImeDialog. Importing those modules stops the title
- * from launching at all ("Can't start the game or app"), and PSXS5 needs
+ * from launching at all ("Can't start the game or app"), and SwanStationPS5 needs
  * neither. Defining the functions here keeps the linker from importing them;
  * each reports failure, so SDL simply runs without a keyboard. */
 #define SCE_UNAVAILABLE ((int)0x80020016) /* generic "not supported" */
@@ -75,9 +75,9 @@ int sceImeDialogGetStatus(void) { return 0; /* SCE_IME_DIALOG_STATUS_NONE */ }
 int sceImeDialogGetResult(void *result) { (void)result; return SCE_UNAVAILABLE; }
 int sceImeDialogTerm(void) { return SCE_UNAVAILABLE; }
 
-#if defined(PSXS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN)
 /* RADV (its shader cache) calls dirfd, which the PS5's libc doesn't export.
- * PSXS5 keeps libc's opendir, whose DIR is FreeBSD's struct _dirdesc: the
+ * SwanStationPS5 keeps libc's opendir, whose DIR is FreeBSD's struct _dirdesc: the
  * descriptor is its first member. */
 #include <dirent.h>
 int dirfd(DIR *dir)

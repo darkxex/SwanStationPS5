@@ -1,5 +1,5 @@
 /*
- * PSXS5 - reads a game's serial (SLUS-01041 ...) from its disc image.
+ * SwanStationPS5 - reads a game's serial (SLUS-01041 ...) from its disc image.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Every PS1 disc has SYSTEM.CNF in its root with "BOOT = cdrom:\SLUS_010.41;1".
@@ -243,7 +243,7 @@ static bool first_referenced(const char *path, bool cue, char *out, size_t size)
     fclose(f);
     if (!name[0])
         return false;
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     str_copy(dir, sizeof(dir), path);
     char *slash = strrchr(dir, '/');
     if (slash)
@@ -257,7 +257,7 @@ static bool first_referenced(const char *path, bool cue, char *out, size_t size)
 bool disc_read_serial(const char *path, char *serial, size_t size)
 {
     const char *ext = path_ext(path);
-    char next[PSXS5_PATH_MAX];
+    char next[SwanStationPS5_PATH_MAX];
     if (str_icmp(ext, "m3u") == 0)
         return first_referenced(path, false, next, sizeof(next)) &&
                disc_read_serial(next, serial, size);
@@ -267,7 +267,7 @@ bool disc_read_serial(const char *path, char *serial, size_t size)
             return true;
         /* the cue names a file that isn't there as written (a different case, a
          * renamed .bin): try a .bin of the same name, then the folder's only one */
-        char dir[PSXS5_PATH_MAX], base[256];
+        char dir[SwanStationPS5_PATH_MAX], base[256];
         str_copy(dir, sizeof(dir), path);
         char *slash = strrchr(dir, '/');
         if (!slash)
@@ -280,7 +280,7 @@ bool disc_read_serial(const char *path, char *serial, size_t size)
         DIR *d = opendir(dir);
         if (!d)
             return false;
-        char same[PSXS5_PATH_MAX] = "", only[PSXS5_PATH_MAX] = "";
+        char same[SwanStationPS5_PATH_MAX] = "", only[SwanStationPS5_PATH_MAX] = "";
         int bins = 0;
         struct dirent *e;
         while ((e = readdir(d)) != NULL)

@@ -1,9 +1,9 @@
 /*
- * PSXS5 - updates from the project's GitHub releases.
+ * SwanStationPS5 - updates from the project's GitHub releases.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Checks api.github.com for the latest release; installing downloads its
- * PSXS5-vX.Y.Z.zip and writes the PPSA98510 folder inside it over the
+ * SwanStationPS5-vX.Y.Z.zip and writes the PPSA98510 folder inside it over the
  * installed app. Each file goes to <name>.new and is renamed into place:
  * a running eboot.bin can't be overwritten, but it can be replaced by name,
  * and the new one runs from the next start.
@@ -77,7 +77,7 @@ static bool json_string(const char *from, const char *key, char *out, size_t siz
 static void fail(const char *why)
 {
     str_copy(message, sizeof(message), why);
-    psxs5_log("update: %s", why);
+    SwanStationPS5_log("update: %s", why);
     SDL_AtomicSet(&state, UPDATE_FAILED);
 }
 
@@ -90,7 +90,7 @@ static int check_thread(void *unused)
      * aren't marked Latest, so that 2.0.0 (whose updater left the app unable to
      * start) never offers them */
     int status = net_request("https://api.github.com/repos/" UPDATE_REPO "/releases?per_page=15", NULL, NULL,
-                             PSXS5_NAME "/" PSXS5_VERSION, &body, &len);
+                             SwanStationPS5_NAME "/" SwanStationPS5_VERSION, &body, &len);
     if (status == 404)
     {
         free(body);
@@ -139,8 +139,8 @@ static int check_thread(void *unused)
     }
     free(body);
     const char *v = version;
-    bool available = v[0] && newer(v, PSXS5_VERSION) && zip_url[0];
-    psxs5_log("update: latest %s, this %s%s", v[0] ? v : "?", PSXS5_VERSION, available ? ", available" : "");
+    bool available = v[0] && newer(v, SwanStationPS5_VERSION) && zip_url[0];
+    SwanStationPS5_log("update: latest %s, this %s%s", v[0] ? v : "?", SwanStationPS5_VERSION, available ? ", available" : "");
     SDL_AtomicSet(&state, available ? UPDATE_AVAILABLE : UPDATE_NONE);
     return 0;
 }
@@ -161,9 +161,9 @@ void update_check(void)
 static int install_thread(void *unused)
 {
     (void)unused;
-    char zip[PSXS5_PATH_MAX];
+    char zip[SwanStationPS5_PATH_MAX];
     path_join(zip, sizeof(zip), app.paths.root, "cache/update.zip");
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "cache");
     make_dirs(dir);
     if (net_download(zip_url, zip) != NET_OK)
@@ -186,12 +186,12 @@ static int install_thread(void *unused)
         mz_zip_archive_file_stat st;
         if (!mz_zip_reader_file_stat(&archive, i, &st) || st.m_is_directory)
             continue;
-        /* PSXS5-v1.2.0/PPSA98510/<path> -> APP_DIR/<path> */
+        /* SwanStationPS5-v1.2.0/PPSA98510/<path> -> APP_DIR/<path> */
         const char *inside = strstr(st.m_filename, "PPSA98510/");
         if (!inside || strstr(inside, ".."))
             continue;
         inside += strlen("PPSA98510/");
-        char target[PSXS5_PATH_MAX], temp[PSXS5_PATH_MAX + 8], parent[PSXS5_PATH_MAX];
+        char target[SwanStationPS5_PATH_MAX], temp[SwanStationPS5_PATH_MAX + 8], parent[SwanStationPS5_PATH_MAX];
         path_join(target, sizeof(target), APP_DIR, inside);
         str_copy(parent, sizeof(parent), target);
         char *slash = strrchr(parent, '/');
@@ -217,7 +217,7 @@ static int install_thread(void *unused)
         return 0;
     }
     snprintf(message, sizeof(message), tr("SwanStationPS5 %s is installed: restart SwanStationPS5 to use it"), version);
-    psxs5_log("update: installed %s (%d files)", version, files);
+    SwanStationPS5_log("update: installed %s (%d files)", version, files);
     SDL_AtomicSet(&state, UPDATE_INSTALLED);
     return 0;
 }

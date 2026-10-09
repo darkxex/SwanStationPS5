@@ -1,9 +1,9 @@
-PSXS5 - PlayStation X Super 5
-Copyright (C) 2026 the PSXS5 authors. GNU General Public License v3 or later (LICENSE-PSXS5.txt).
-Source code: https://github.com/SynoPiia/PSXS5 (the release's tag holds the exact source,
+SwanStationPS5 - PlayStation X Super 5
+Copyright (C) 2026 the SwanStationPS5 authors. GNU General Public License v3 or later (LICENSE-SwanStationPS5.txt).
+Source code: https://github.com/SynoPiia/SwanStationPS5 (the release's tag holds the exact source,
 with every component below as a submodule or in third_party/).
 
-PSXS5 contains, built into eboot.bin:
+SwanStationPS5 contains, built into eboot.bin:
 
 
 SwanStation (DuckStation's libretro core)
@@ -31,10 +31,10 @@ Cheat codes are downloaded on the console from libretro-database
   (https://github.com/libretro/libretro-database) and DuckStation's chtdb
   (https://github.com/duckstation/chtdb; copyright of the codes is held by their authors).
 DuckStation's game database (https://github.com/stenzek/duckstation, CC BY-NC-ND 4.0) is
-  downloaded on the console for game information and known fixes; PSXS5 doesn't include it.
+  downloaded on the console for game information and known fixes; SwanStationPS5 doesn't include it.
 Game artwork borders (The Bezel Project, https://github.com/thebezelproject), title
   screens and gameplay pictures (libretro-thumbnails, https://github.com/libretro-thumbnails)
-  are downloaded on the console, as covers are; PSXS5 doesn't include them.
+  are downloaded on the console, as covers are; SwanStationPS5 doesn't include them.
 dlmalloc (Doug Lea) - public domain (CC0)
 miniz - MIT License - https://github.com/richgel999/miniz
 QR Code generator (Nayuki) - MIT License - https://github.com/nayuki/QR-Code-generator

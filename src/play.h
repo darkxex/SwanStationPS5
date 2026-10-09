@@ -1,10 +1,10 @@
 /*
- * PSXS5 - things around the running game: quick resume, state thumbnails,
+ * SwanStationPS5 - things around the running game: quick resume, state thumbnails,
  * rewind, fast forward, widescreen codes and fan-translation patches.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_PLAY_H
-#define PSXS5_PLAY_H
+#ifndef SwanStationPS5_PLAY_H
+#define SwanStationPS5_PLAY_H
 
 #include "library.h"
 

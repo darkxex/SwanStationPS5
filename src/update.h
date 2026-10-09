@@ -1,11 +1,11 @@
 /*
- * PSXS5 - updates from the project's GitHub releases.
+ * SwanStationPS5 - updates from the project's GitHub releases.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_UPDATE_H
-#define PSXS5_UPDATE_H
+#ifndef SwanStationPS5_UPDATE_H
+#define SwanStationPS5_UPDATE_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 enum UpdateState
 {
@@ -14,7 +14,7 @@ enum UpdateState
     UPDATE_NONE,      /* this is the newest version */
     UPDATE_AVAILABLE, /* update_version() is newer */
     UPDATE_INSTALLING,
-    UPDATE_INSTALLED, /* restart PSXS5 to use it */
+    UPDATE_INSTALLED, /* restart SwanStationPS5 to use it */
     UPDATE_FAILED,    /* update_message() says why */
 };
 

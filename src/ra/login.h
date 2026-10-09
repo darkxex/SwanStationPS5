@@ -1,12 +1,12 @@
 /*
- * PSXS5 - RetroAchievements password sign-in (shared by the console's own
+ * SwanStationPS5 - RetroAchievements password sign-in (shared by the console's own
  * sign-in screen and the phone page).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_RA_LOGIN_H
-#define PSXS5_RA_LOGIN_H
+#ifndef SwanStationPS5_RA_LOGIN_H
+#define SwanStationPS5_RA_LOGIN_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 /* Exchanges the password for a login token (one HTTPS request to
  * retroachievements.org, blocking: call it from a thread). The password is not

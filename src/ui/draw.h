@@ -1,11 +1,11 @@
 /*
- * PSXS5 - shape helpers built on plat_draw_mesh.
+ * SwanStationPS5 - shape helpers built on plat_draw_mesh.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_DRAW_H
-#define PSXS5_DRAW_H
+#ifndef SwanStationPS5_DRAW_H
+#define SwanStationPS5_DRAW_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 enum PadGlyph
 {

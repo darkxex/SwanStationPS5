@@ -1,12 +1,12 @@
 /*
- * PSXS5 - profiles: each person's memory cards, states, settings, play time
+ * SwanStationPS5 - profiles: each person's memory cards, states, settings, play time
  * and RetroAchievements sign-in. Profile 0 is the main one (the data root).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_PROFILES_H
-#define PSXS5_PROFILES_H
+#ifndef SwanStationPS5_PROFILES_H
+#define SwanStationPS5_PROFILES_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 #define PROFILES_MAX 12
 #define PROFILE_NAME_LEN 48

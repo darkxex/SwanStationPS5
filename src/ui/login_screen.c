@@ -1,5 +1,5 @@
 /*
- * PSXS5 - RetroAchievements sign-in on the console: user name and password
+ * SwanStationPS5 - RetroAchievements sign-in on the console: user name and password
  * typed with an on-screen keyboard drawn by the app (the system keyboard
  * module stops the title from launching, see platform/ps5_shims.c).
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -307,7 +307,7 @@ void login_screen(uint32_t pressed)
     {
         text_draw_fit(CENTER_X, ky + 20, 30, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, plat_width() - 160,
                       tr("If your language can't be typed with this keyboard, sign in from your PC:"));
-        text_draw(CENTER_X, ky + 60, 30, FONT_BOLD, TH_TEXT_DIM, ALIGN_CENTER, "python tools/psxs5_sync.py ra-login");
+        text_draw(CENTER_X, ky + 60, 30, FONT_BOLD, TH_TEXT_DIM, ALIGN_CENTER, "python tools/SwanStationPS5_sync.py ra-login");
     }
 
     static const int glyphs[] = {GLYPH_CROSS, GLYPH_SQUARE, GLYPH_TRIANGLE, GLYPH_START, GLYPH_CIRCLE};

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# PSXS5 - converts the home-screen backgrounds to the BC7 DDS files the PS5 shell reads.
+# SwanStationPS5 - converts the home-screen backgrounds to the BC7 DDS files the PS5 shell reads.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Converts the two 3840x2160 backgrounds to pic0.dds / pic1.dds:
 

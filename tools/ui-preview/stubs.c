@@ -1,6 +1,6 @@
 #include <stdio.h>
 /*
- * PSXS5 interface preview - stand-ins for the emulator and RetroAchievements,
+ * SwanStationPS5 interface preview - stand-ins for the emulator and RetroAchievements,
  * so the screens run on a PC with a fake game picture.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -42,7 +42,7 @@ bool host_hash_disc_begin(const char *p) { (void)p; return false; }
 void host_hash_disc_end(void) {}
 void *host_memory_data(unsigned id) { (void)id; return NULL; }
 size_t host_memory_size(unsigned id) { (void)id; return 0; }
-void host_set_pads(const PadState pads[PSXS5_MAX_PADS]) { (void)pads; }
+void host_set_pads(const PadState pads[SwanStationPS5_MAX_PADS]) { (void)pads; }
 void host_set_gun(int device) { (void)device; }
 void host_set_special(int device) { (void)device; }
 void host_set_fixes(unsigned flags) { (void)flags; }
@@ -125,7 +125,7 @@ void ra_game_summary(char *out, size_t size) { if (size) out[0] = '\0'; }
 bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail_size)
 {
     static bool shown;
-    const char *banner = getenv("PSXS5_BANNER");
+    const char *banner = getenv("SwanStationPS5_BANNER");
     if (shown || !loaded || !banner)
         return false;
     shown = true;

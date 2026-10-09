@@ -1,9 +1,9 @@
 /*
- * PSXS5 - interface languages.
+ * SwanStationPS5 - interface languages.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_I18N_H
-#define PSXS5_I18N_H
+#ifndef SwanStationPS5_I18N_H
+#define SwanStationPS5_I18N_H
 
 enum Lang
 {

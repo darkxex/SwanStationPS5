@@ -1,5 +1,5 @@
 /*
- * PSXS5 - per-game records: play time, last played, favorite, achievements.
+ * SwanStationPS5 - per-game records: play time, last played, favorite, achievements.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * stats.txt: id<TAB>seconds<TAB>last played (unix)<TAB>favorite<TAB>unlocked<TAB>total<TAB>hidden
@@ -14,7 +14,7 @@
 
 static GameStats *records;
 static int count, capacity;
-static char path[PSXS5_PATH_MAX];
+static char path[SwanStationPS5_PATH_MAX];
 
 GameStats *stats_get(const char *id)
 {
@@ -83,12 +83,12 @@ void stats_save(void)
 {
     if (!path[0])
         return;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.tmp", path);
     FILE *f = fopen(temp, "w");
     if (!f)
         return;
-    fprintf(f, "# PSXS5 play records: id, seconds played, last played, favorite, achievements\n");
+    fprintf(f, "# SwanStationPS5 play records: id, seconds played, last played, favorite, achievements\n");
     for (int i = 0; i < count; ++i)
     {
         const GameStats *g = &records[i];

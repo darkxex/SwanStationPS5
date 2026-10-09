@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# PSXS5 - lists interface strings that src/i18n.c has no translation row for.
+# SwanStationPS5 - lists interface strings that src/i18n.c has no translation row for.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """python tools/i18n_missing.py
 
@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 STRING = r'"((?:[^"\\]|\\.)*)"'
 TABLE_FILES = {"settings_screen.c", "menu_screen.c", "coverflow.c", "main.c"}
-IGNORE = {"PSXS5", "4:3", "16:9", "16:10", "2x", "3x", "4x", "25%", "50%", "75%", "100%",
+IGNORE = {"SwanStationPS5", "4:3", "16:9", "16:10", "2x", "3x", "4x", "25%", "50%", "75%", "100%",
           "L1", "R1", "L2", "R2", "L3", "R3", "OPTIONS", "SELECT", "START", "Pop", "BIOS",
           "Format", "Europe", "RetroAchievements"}
 

@@ -1,11 +1,11 @@
 /*
- * PSXS5 - writes a crash report into psxs5.log on the PS5.
+ * SwanStationPS5 - writes a crash report into SwanStationPS5.log on the PS5.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The Shell only says "something went wrong". On a fatal signal this logs
  * the signal, the faulting address, the instruction pointer and a short
  * frame-pointer walk, each also as an offset from main(), so the CI build's
- * symbol map (PSXS5-symbols.txt) turns them into function names.
+ * symbol map (SwanStationPS5-symbols.txt) turns them into function names.
  */
 #if defined(__PROSPERO__)
 #include "ps5_crash.h"

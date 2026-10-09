@@ -1,9 +1,9 @@
 /*
- * PSXS5 - crash reports into psxs5.log (PS5 only; no-ops elsewhere).
+ * SwanStationPS5 - crash reports into SwanStationPS5.log (PS5 only; no-ops elsewhere).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_PS5_CRASH_H
-#define PSXS5_PS5_CRASH_H
+#ifndef SwanStationPS5_PS5_CRASH_H
+#define SwanStationPS5_PS5_CRASH_H
 
 #if defined(__PROSPERO__)
 void ps5_crash_install(const char *log_path);

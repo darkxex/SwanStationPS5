@@ -1,12 +1,12 @@
 /*
- * PSXS5 - profiles: several people on one console, each with their own
+ * SwanStationPS5 - profiles: several people on one console, each with their own
  * memory cards, save states, settings, play time and favourites, and
  * RetroAchievements sign-in. Games, BIOS, covers and cheats are shared.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The main profile is the data root itself (where everything lived before
  * profiles), so nothing moves. Others live in <root>/profiles/<name>/.
- * <root>/profiles.txt lists them (a sandboxed PSXS5 can't list folders) and
+ * <root>/profiles.txt lists them (a sandboxed SwanStationPS5 can't list folders) and
  * <root>/profile.txt says whose turn it is.
  */
 #include "profiles.h"
@@ -43,7 +43,7 @@ static void load_list(void)
 {
     count = 1;
     names[0][0] = '\0';
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     list_path(path, sizeof(path));
     FILE *f = fopen(path, "r");
     if (!f)
@@ -60,12 +60,12 @@ static void load_list(void)
 
 static void save_list(void)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     list_path(path, sizeof(path));
     FILE *f = fopen(path, "w");
     if (!f)
         return;
-    fprintf(f, "# PSXS5 profiles (each has a folder in profiles/)\n");
+    fprintf(f, "# SwanStationPS5 profiles (each has a folder in profiles/)\n");
     for (int i = 1; i < count; ++i)
         fprintf(f, "%s\n", names[i]);
     fclose(f);
@@ -83,7 +83,7 @@ static void folder_of(const char *name, char *out, size_t size)
 /* app.paths for profile i: the per-person folders under its own directory. */
 static void apply_paths(int i)
 {
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     if (i <= 0)
         str_copy(dir, sizeof(dir), app.paths.root);
     else
@@ -103,7 +103,7 @@ void profiles_startup(void)
 {
     load_list();
     current = 0;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     current_path(path, sizeof(path));
     FILE *f = fopen(path, "r");
     if (f)
@@ -120,7 +120,7 @@ void profiles_startup(void)
     }
     apply_paths(current);
     if (current)
-        psxs5_log("profile: %s (%s)", names[current], app.paths.user);
+        SwanStationPS5_log("profile: %s (%s)", names[current], app.paths.user);
 }
 
 int profiles_count(void)
@@ -201,7 +201,7 @@ bool profiles_switch(int i)
     sfx_configure(app.global.ui_sound, (app.global.ui_volume + 1) * 25);
     stats_load(app.paths.user);
     ra_init(&app.paths);
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     current_path(path, sizeof(path));
     f = fopen(path, "w");
     if (f)
@@ -210,6 +210,6 @@ bool profiles_switch(int i)
         fclose(f);
     }
     shelf_library_changed(); /* favourites and hidden games are the profile's */
-    psxs5_log("profile: switched to %s", i ? names[i] : "the main profile");
+    SwanStationPS5_log("profile: switched to %s", i ? names[i] : "the main profile");
     return true;
 }

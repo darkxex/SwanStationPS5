@@ -1,11 +1,11 @@
 /*
- * PSXS5 - reads a game's serial (SLUS-01041 ...) from its disc image.
+ * SwanStationPS5 - reads a game's serial (SLUS-01041 ...) from its disc image.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_DISC_H
-#define PSXS5_DISC_H
+#ifndef SwanStationPS5_DISC_H
+#define SwanStationPS5_DISC_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 /* Fills `serial` ("SLUS-01041") from SYSTEM.CNF (.cue/.bin/.iso/.img/.m3u) or
  * PARAM.SFO (.pbp). CHD is compressed and is not read here. */

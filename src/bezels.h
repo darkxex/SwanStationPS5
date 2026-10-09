@@ -1,11 +1,11 @@
 /*
- * PSXS5 - the game's own artwork around a 4:3 picture (The Bezel Project).
+ * SwanStationPS5 - the game's own artwork around a 4:3 picture (The Bezel Project).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_BEZELS_H
-#define PSXS5_BEZELS_H
+#ifndef SwanStationPS5_BEZELS_H
+#define SwanStationPS5_BEZELS_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 /* Over the game picture, the whole screen; false when there is none (yet:
  * the first time, it is downloaded meanwhile). */

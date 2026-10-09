@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""PSXS5 - writes assets/chtdb-index.txt: which file of DuckStation's cheat
+"""SwanStationPS5 - writes assets/chtdb-index.txt: which file of DuckStation's cheat
 database (github.com/duckstation/chtdb, cheats/) holds the codes for each disc
 serial. The second source of cheats, for games libretro-database has nothing
-for (Persona, Diablo...); PSXS5 downloads only that game's file. Also
+for (Persona, Diablo...); SwanStationPS5 downloads only that game's file. Also
 assets/chtdb-patches-index.txt, the same for patches/ (widescreen, 60 fps,
 NTSC mode, fixes: changes that don't make a game easier).
 
@@ -24,7 +24,7 @@ ZIP = "https://codeload.github.com/duckstation/chtdb/zip/refs/heads/master"
 
 
 def main():
-    req = urllib.request.Request(ZIP, headers={"User-Agent": "PSXS5"})
+    req = urllib.request.Request(ZIP, headers={"User-Agent": "SwanStationPS5"})
     with urllib.request.urlopen(req, timeout=120) as r:
         data = r.read()
     write(data, "cheats", "chtdb-index.txt")

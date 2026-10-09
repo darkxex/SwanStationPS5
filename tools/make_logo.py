@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# PSXS5 - retro pixel-art logo for the GitHub page (not the app's own art).
+# SwanStationPS5 - retro pixel-art logo for the GitHub page (not the app's own art).
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
 Draws everything on a small pixel canvas, then scales it up with nearest
@@ -150,7 +150,7 @@ def square_logo():
     pixel_disc(d, 64, 44, 24)
     symbols(d, 64, 44, 34)
     # wordmark at 2x inside the 128 canvas: 5 letters * 16 px = 80 px wide
-    wordmark(d, "PSXS5", 22, 84, scale=2, depth=2)
+    wordmark(d, "SwanStationPS5", 22, 84, scale=2, depth=2)
     small_text(d, "PLAYSTATION X SUPER 5", 64, 112, (150, 160, 230), center=True)
     frame(d, w, h)
     s = 4
@@ -170,7 +170,7 @@ def social_preview():
         d.line([(w // 2 + (x - w // 2) // 4, 118), (x, h)], fill=(70, 50, 150))
     pixel_disc(d, 72, 66, 34)
     symbols(d, 72, 66, 46)
-    wordmark(d, "PSXS5", 140, 40, scale=3, depth=3)
+    wordmark(d, "SwanStationPS5", 140, 40, scale=3, depth=3)
     small_text(d, "PLAYSTATION X SUPER 5", 140 + 60, 82, (220, 225, 255), center=True)
     small_text(d, "PS1 EMULATION FOR JAILBROKEN PS5", 140 + 60, 92, (140, 150, 220), center=True)
     frame(d, w, h)

@@ -1,11 +1,11 @@
 /*
- * PSXS5 - libretro host for the statically linked SwanStation core.
+ * SwanStationPS5 - libretro host for the statically linked SwanStation core.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_HOST_H
-#define PSXS5_HOST_H
+#ifndef SwanStationPS5_HOST_H
+#define SwanStationPS5_HOST_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 /* serial: the disc's (SLUS-00662), for the emulator choice and the memory
  * card; may be empty. */
@@ -18,7 +18,7 @@ const char *host_core_name(void);
 /* The emulator a game would get with these settings ("SwanStation"); *why_not_beetle is always NULL. */
 const char *host_emulator_for(const Settings *settings, const char *serial, const char **why_not_beetle);
 
-void host_set_pads(const PadState pads[PSXS5_MAX_PADS]);
+void host_set_pads(const PadState pads[SwanStationPS5_MAX_PADS]);
 /* Port 1's device for the next host_load: 0 a pad, 1 GunCon, 2 Justifier. */
 void host_set_gun(int device);
 /* Other controllers for the next host_load: 0 pads, 1 NeGcon in every port, 2 a mouse in port 1. */

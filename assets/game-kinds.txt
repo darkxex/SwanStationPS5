@@ -1,9 +1,9 @@
-# PSXS5 games that need something from the controller.
+# SwanStationPS5 games that need something from the controller.
 # kind<TAB>title
 # kinds:
 #   guncon     a GunCon (G-Con 45) light gun game: aim by moving the controller
 #   justifier  a Konami Justifier / Hyperblaster light gun game
-#   racing     Cross is the gas and Square the brake: PSXS5 can put them on R2 and L2
+#   racing     Cross is the gas and Square the brake: SwanStationPS5 can put them on R2 and L2
 # A title ending in * matches every game whose title holds all its words
 # ("Gran Turismo*" is Gran Turismo and Gran Turismo 2); without it, the
 # title is compared word by word, as the cheat matching does.

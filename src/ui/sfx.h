@@ -1,11 +1,11 @@
 /*
- * PSXS5 - interface sounds, synthesised at start-up (no sample files).
+ * SwanStationPS5 - interface sounds, synthesised at start-up (no sample files).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_SFX_H
-#define PSXS5_SFX_H
+#ifndef SwanStationPS5_SFX_H
+#define SwanStationPS5_SFX_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 typedef enum
 {

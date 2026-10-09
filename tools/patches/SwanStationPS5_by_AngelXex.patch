@@ -1,0 +1,175 @@
+diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
+index 014ebdbc..316a86ee 100644
+--- a/src/common/file_system.cpp
++++ b/src/common/file_system.cpp
+@@ -590,8 +590,10 @@ bool FindFiles(const char* Path, const char* Pattern, uint32_t Flags, FindResult
+ 
+ RFILE* OpenMappableRFile(const char* filename)
+ {
++   /* SwanStationPS5: no mapping hint. On the PS5, mmap() of a disc image (700 MB) took
++    * ~16 s on the first open of a game; plain reads start at once. */
+    return filestream_open(filename, RETRO_VFS_FILE_ACCESS_READ,
+-         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
++         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+ }
+ 
+ const uint8_t* GetMappedView(RFILE* fp, int64_t* size)
+diff --git a/src/common/jit_code_buffer.cpp b/src/common/jit_code_buffer.cpp
+index e29571ff..e0950384 100644
+--- a/src/common/jit_code_buffer.cpp
++++ b/src/common/jit_code_buffer.cpp
+@@ -10,6 +10,14 @@
+ #include <sys/mman.h>
+ #endif
+ 
++#if defined(__PROSPERO__)
++// Executable memory comes from the PS5 RetroArch title runtime
++// (ps5platform/exec.h): a PS5 title cannot mmap PROT_EXEC itself, so
++// ps5_exec_allocate() returns an RWX region from the direct-memory pool and
++// ps5_exec_release() frees it.
++#include <ps5platform/exec.h>
++#endif
++
+ #if defined(__APPLE__) && defined(__aarch64__)
+ // pthread_jit_write_protect_np()
+ #include <pthread.h>
+@@ -36,6 +44,13 @@ bool JitCodeBuffer::Allocate(uint32_t size /* = 64 * 1024 * 1024 */, uint32_t fa
+   m_code_ptr = static_cast<uint8_t*>(VirtualAlloc(nullptr, m_total_size, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+   if (!m_code_ptr)
+     return false;
++#elif defined(__PROSPERO__)
++  // W^X: a title's own mmap cannot be executable; the title runtime's exec
++  // allocator supplies the region instead.
++  static const char jit_anchor = 0;
++  m_code_ptr = static_cast<uint8_t*>(ps5_exec_allocate(m_total_size, (uintptr_t)&jit_anchor));
++  if (!m_code_ptr)
++    return false;
+ #elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__FreeBSD__)
+   int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+ #if defined(__APPLE__) && defined(__aarch64__)
+@@ -129,6 +144,9 @@ void JitCodeBuffer::Destroy()
+   {
+ #if defined(_WIN32)
+     VirtualFree(m_code_ptr, 0, MEM_RELEASE);
++#elif defined(__PROSPERO__)
++    if (m_code_ptr)
++      ps5_exec_release(m_code_ptr);
+ #elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__) || defined(__HAIKU__) || defined(__FreeBSD__)
+     munmap(m_code_ptr, m_total_size);
+ #endif
+@@ -138,7 +156,7 @@ void JitCodeBuffer::Destroy()
+ #if defined(_WIN32)
+     DWORD old_protect = 0;
+     VirtualProtect(m_code_ptr, m_total_size, m_old_protection, &old_protect);
+-#else
++#elif !defined(__PROSPERO__)
+     mprotect(m_code_ptr, m_total_size, m_old_protection);
+ #endif
+   }
+diff --git a/src/core/CMakeLists.txt b/src/core/CMakeLists.txt
+index 460ea0f0..55e13889 100644
+--- a/src/core/CMakeLists.txt
++++ b/src/core/CMakeLists.txt
+@@ -133,7 +133,15 @@ endif()
+ 
+ if(${CPU_ARCH} STREQUAL "x64")
+   target_include_directories(core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../dep/xbyak/xbyak")
+-  target_compile_definitions(core PUBLIC "WITH_RECOMPILER=1" "WITH_MMAP_FASTMEM=1")
++  if(PROSPERO)
++    # The MMap fastmem scheme reserves a 4 GiB address range and aliases the
++    # RAM arena into it, then protects code pages and handles the faults -
++    # none of which survives inside a PS5 title's sandbox. The LUT mode keeps
++    # the recompiler and only pays a pointer-table lookup per memory access.
++    target_compile_definitions(core PUBLIC "WITH_RECOMPILER=1")
++  else()
++    target_compile_definitions(core PUBLIC "WITH_RECOMPILER=1" "WITH_MMAP_FASTMEM=1")
++  endif()
+   target_sources(core PRIVATE ${RECOMPILER_SRCS}
+     cpu_recompiler_code_generator_x64.cpp
+   )
+diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
+index 59ca133c..ee95c6df 100644
+--- a/src/core/cdrom.cpp
++++ b/src/core/cdrom.cpp
+@@ -1193,6 +1193,7 @@ void CDROM::ExecuteCommand(TickCount ticks_late)
+       SoftReset(ticks_late);
+ 
+       QueueCommandSecondResponse(Command::Reset, RESET_TICKS);
++      EndCommand(); // without it the command runs again after the ACK is read: a second INT3
+       return;
+     }
+     break;
+@@ -1993,7 +1994,19 @@ void CDROM::DoIDRead()
+   static constexpr uint32_t REGION_STRING_LENGTH = 4;
+   static constexpr std::array<std::array<uint8_t, REGION_STRING_LENGTH>, static_cast<size_t>(DiscRegion::Count)>
+     region_strings = {{{'S', 'C', 'E', 'I'}, {'S', 'C', 'E', 'A'}, {'S', 'C', 'E', 'E'}, {0, 0, 0, 0}}};
+-  m_async_response_fifo.PushRange(region_strings[static_cast<uint8_t>(m_disc_region)].data(), REGION_STRING_LENGTH);
++  // Homebrew discs have no license, so their region is Other and the string would be empty: the BIOS then waits
++  // forever after the logo. Answer with the console's own region so it accepts the disc.
++  DiscRegion id_region = m_disc_region;
++  if (id_region == DiscRegion::Other && CanReadMedia() && IsMediaPS1Disc())
++  {
++    switch (System::GetRegion())
++    {
++      case ConsoleRegion::NTSC_J: id_region = DiscRegion::NTSC_J; break;
++      case ConsoleRegion::PAL: id_region = DiscRegion::PAL; break;
++      default: id_region = DiscRegion::NTSC_U; break;
++    }
++  }
++  m_async_response_fifo.PushRange(region_strings[static_cast<uint8_t>(id_region)].data(), REGION_STRING_LENGTH);
+ 
+   SetAsyncInterrupt((flags_byte != 0) ? Interrupt::Error : Interrupt::Complete);
+ }
+diff --git a/src/core/cpu_code_cache.cpp b/src/core/cpu_code_cache.cpp
+index adfb7057..c989f93e 100644
+--- a/src/core/cpu_code_cache.cpp
++++ b/src/core/cpu_code_cache.cpp
+@@ -24,8 +24,12 @@ static constexpr uint32_t INVALIDATE_THRESHOLD_TO_DISABLE_LINKING = 10;
+ 
+ #ifdef WITH_RECOMPILER
+ 
+-// Currently remapping the code buffer doesn't work in macOS or Haiku.
+-#if !defined(__HAIKU__) && !defined(__APPLE__)
++// Currently remapping the code buffer doesn't work in macOS or Haiku. On
++// Prospero the static buffer is never usable either - a title cannot mprotect
++// its own image executable - and its 48 MiB of .bss trips the exec-region
++// protection at the image tail. The heap path allocates through
++// ps5_exec_allocate instead, which is the memory the JIT runs from anyway.
++#if !defined(__HAIKU__) && !defined(__APPLE__) && !defined(__PROSPERO__)
+ #define USE_STATIC_CODE_BUFFER 1
+ #endif
+ 
+diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
+index a0613fb4..3b9b5960 100644
+--- a/src/libretro/libretro_host_interface.cpp
++++ b/src/libretro/libretro_host_interface.cpp
+@@ -440,12 +440,13 @@ std::string HostInterface::GetGameMemoryCardPath(const char* game_code, uint32_t
+ 
+ std::string HostInterface::GetShaderCacheBasePath() const
+ {
+-  // Use the system directory, and failing that, the downloads directory.
++  // SwanStationPS5: the frontend's cache directory first (core assets), and failing that, the system directory.
+   const char* cache_directory_ptr = nullptr;
+-  if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &cache_directory_ptr) || !cache_directory_ptr)
++  if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY, &cache_directory_ptr) ||
++      !cache_directory_ptr)
+   {
+     cache_directory_ptr = nullptr;
+-    if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY, &cache_directory_ptr) ||
++    if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &cache_directory_ptr) ||
+         !cache_directory_ptr)
+     {
+       Log_WarningPrint("No shader cache directory available, startup will be slower.");
+@@ -2188,7 +2189,11 @@ void HostInterface::SwitchToSoftwareRenderer()
+   m_display = std::make_unique<LibretroHostDisplay>();
+   m_display->CreateRenderDevice(wi, {}, false, false);
+   m_display->InitializeRenderDevice({}, false, false);
+-  System::RecreateGPU(GPURenderer::Software, false);
++  // SwanStationPS5: the frontend destroys the context after retro_unload_game, when
++  // the system is already shut down and g_gpu is gone; there is no GPU to
++  // recreate then (it crashed on a null g_gpu).
++  if (!System::IsShutdown())
++    System::RecreateGPU(GPURenderer::Software, false);
+ 
+   if (save_display)
+   {

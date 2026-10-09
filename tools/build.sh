@@ -241,11 +241,11 @@ if [[ -n ${pacbrew_root:-} ]]; then
         ninja_inputs+=("$input")
     done < <(find "$pacbrew_root" -type f \( -name '*.a' -o -name '*.so' \) -print0 | sort -z)
 fi
-# PSXS5 v2: APP_VULKAN=1 links RADV, Mihawk-99's PS5 port of Mesa's AMD Vulkan
+# SwanStationPS5 v2: APP_VULKAN=1 links RADV, Mihawk-99's PS5 port of Mesa's AMD Vulkan
 # driver (a title can't load a driver library at run time), the way PS5
 # RetroArch does: the driver whole, the SDK's C++ runtime and platform layer,
 # the platform's libc bindings (tooling/radv/radv-link.sh, from PS5_Vulkan),
-# and link stubs for the AGC system modules. PSXS5 keeps its own heap, so the
+# and link stubs for the AGC system modules. SwanStationPS5 keeps its own heap, so the
 # recipe's allocator wraps are left out.
 linker_options=(-T "$native/ps5-pie.ld")
 stub_options=()
@@ -264,9 +264,9 @@ if [[ ${APP_VULKAN:-0} == 1 ]]; then
             --wrap=malloc | --wrap=calloc | --wrap=realloc | --wrap=free | --wrap=posix_memalign | \
             --wrap=aligned_alloc | --wrap=memalign | --wrap=malloc_usable_size | --wrap=reallocf | \
             --wrap=reallocarray | --wrap=getline | --wrap=getdelim) ;;
-            # libc's own versions already work for PSXS5 (the library scan, the
+            # libc's own versions already work for SwanStationPS5 (the library scan, the
             # unlock check, cover downloads, ps5_shims.c); the platform's opendir
-            # took PSXS5 down while etaHEN was opening /data.
+            # took SwanStationPS5 down while etaHEN was opening /data.
             --defsym=opendir=* | --defsym=fdopendir=* | --defsym=readdir=* | \
             --defsym=rewinddir=* | --defsym=dirfd=* | --defsym=closedir=* | \
             --defsym=access=* | --defsym=getaddrinfo=* | --defsym=freeaddrinfo=* | \
@@ -357,10 +357,10 @@ assert manifest["target_title"] == app.name and manifest["mode"] == "elf-helper"
 PY
 fi
 
-# Licences of PSXS5 and what it's built from (GPL: the texts travel with it).
+# Licences of SwanStationPS5 and what it's built from (GPL: the texts travel with it).
 mkdir -p "$app/licenses"
 cp "$root/docs/THIRD-PARTY.txt" "$app/licenses/THIRD-PARTY.txt"
-cp "$root/LICENSE" "$app/licenses/LICENSE-PSXS5.txt"
+cp "$root/LICENSE" "$app/licenses/LICENSE-SwanStationPS5.txt"
 for pair in "third_party/swanstation/LICENSE:LICENSE-swanstation.txt" \
     "third_party/beetle-psx/COPYING:COPYING-beetle-psx.txt" \
     "third_party/rcheevos/LICENSE:LICENSE-rcheevos.txt"; do

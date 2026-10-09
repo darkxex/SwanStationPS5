@@ -1,5 +1,5 @@
 /*
- * PSXS5 - fast multi-threaded scaling of the game picture into the screen.
+ * SwanStationPS5 - fast multi-threaded scaling of the game picture into the screen.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * On PS5 everything is drawn by the CPU. SDL's generic software stretch

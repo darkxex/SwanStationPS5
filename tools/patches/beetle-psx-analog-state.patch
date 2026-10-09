@@ -6,7 +6,7 @@ index b94fcbb2..cc2cebc1 100644
           self->transmit_pos = 0;
           self->transmit_count = 0;
        }
-+      /* PSXS5: a game started in analog mode (setting_apply_analog_default)
++      /* SwanStationPS5: a game started in analog mode (setting_apply_analog_default)
 +       * stays analog when an older state saved in digital mode is loaded,
 +       * unless the game itself locked the mode */
 +      if(setting_apply_analog_default && !self->analog_mode_locked)

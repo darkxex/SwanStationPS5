@@ -1,5 +1,5 @@
 /*
- * PSXS5 - game art downloaded on demand: bezels (The Bezel Project), title
+ * SwanStationPS5 - game art downloaded on demand: bezels (The Bezel Project), title
  * screens and gameplay pictures (libretro-thumbnails).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -62,11 +62,11 @@ static uint64_t clock_tick;
 static SDL_atomic_t busy;   /* a download is running */
 static SDL_atomic_t result; /* 0 none, 1 arrived, 2 failed: for the slot below */
 static int fetch_slot = -1;
-static char fetch_url[700], fetch_dest[PSXS5_PATH_MAX];
+static char fetch_url[700], fetch_dest[SwanStationPS5_PATH_MAX];
 
 static void art_path(const Game *g, int kind, char *out, size_t size)
 {
-    char dir[PSXS5_PATH_MAX], sub[64], file[120];
+    char dir[SwanStationPS5_PATH_MAX], sub[64], file[120];
     snprintf(sub, sizeof(sub), "art/%s", KINDS[kind].folder);
     path_join(dir, sizeof(dir), app.paths.root, sub);
     snprintf(file, sizeof(file), "%.100s.png", g->id);
@@ -76,13 +76,13 @@ static void art_path(const Game *g, int kind, char *out, size_t size)
 static int fetch_main(void *unused)
 {
     (void)unused;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.part", fetch_dest);
     NetResult r = net_download(fetch_url, temp);
     bool ok = r == NET_OK && rename(temp, fetch_dest) == 0;
     if (!ok)
         remove(temp);
-    psxs5_log("art: download %s: %s", fetch_dest, ok ? "ok" : r == NET_NOT_FOUND ? "not found" : "failed");
+    SwanStationPS5_log("art: download %s: %s", fetch_dest, ok ? "ok" : r == NET_NOT_FOUND ? "not found" : "failed");
     SDL_AtomicSet(&result, ok ? 1 : 2);
     SDL_AtomicSet(&busy, 0);
     return 0;
@@ -104,7 +104,7 @@ static bool fetch_start(int s)
     }
     fetch_url[w] = '\0';
     art_path(slot->game, slot->kind, fetch_dest, sizeof(fetch_dest));
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     str_copy(dir, sizeof(dir), fetch_dest);
     char *cut = strrchr(dir, '/');
     if (cut)
@@ -123,7 +123,7 @@ static bool fetch_start(int s)
 
 static bool load(Slot *slot)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     art_path(slot->game, slot->kind, path, sizeof(path));
     int w, h, n;
     uint8_t *rgba = stbi_load(path, &w, &h, &n, 4);
@@ -180,7 +180,7 @@ PlatTexture *art_get(const Game *g, int kind)
         else if ((kind == ART_BEZEL || app.global.cover_download) &&
                  cheats_best_in_index(g, KINDS[kind].index, slot->name, sizeof(slot->name)))
         {
-            psxs5_log("art: %s %s -> %s", KINDS[kind].folder, g->title, slot->name);
+            SwanStationPS5_log("art: %s %s -> %s", KINDS[kind].folder, g->title, slot->name);
             slot->state = ST_WAITING;
         }
         else

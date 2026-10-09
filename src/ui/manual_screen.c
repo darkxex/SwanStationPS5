@@ -1,11 +1,11 @@
 /*
- * PSXS5 - a game's manual: page images you put in the game's folder.
+ * SwanStationPS5 - a game's manual: page images you put in the game's folder.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * <game folder>/manual/ holds one image per page (.jpg or .png). With /data
- * unlocked every image there is a page, in name order; a sandboxed PSXS5
+ * unlocked every image there is a page, in name order; a sandboxed SwanStationPS5
  * can't list folders, so it looks for numbered pages: 1.jpg, 2.jpg... (also
- * 01, 001 and .png). PSXS5 never downloads manuals.
+ * 01, 001 and .png). SwanStationPS5 never downloads manuals.
  */
 #include "../app.h"
 #include "../i18n.h"
@@ -27,7 +27,7 @@ static struct
 {
     const Game *scanned_for;
     int count;
-    char (*pages)[PSXS5_PATH_MAX];
+    char (*pages)[SwanStationPS5_PATH_MAX];
     int page;
     PlatTexture *texture;
     int loaded_page;
@@ -68,7 +68,7 @@ static void scan(const Game *g)
         return;
     if (!N.pages && !(N.pages = malloc(sizeof(*N.pages) * MAX_PAGES)))
         return;
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), g->folder, "manual");
     DIR *d = opendir(dir);
     if (d)
@@ -76,7 +76,7 @@ static void scan(const Game *g)
         struct dirent *e;
         while ((e = readdir(d)) && N.count < MAX_PAGES)
             if (e->d_name[0] != '.' && is_image(e->d_name))
-                path_join(N.pages[N.count++], PSXS5_PATH_MAX, dir, e->d_name);
+                path_join(N.pages[N.count++], SwanStationPS5_PATH_MAX, dir, e->d_name);
         closedir(d);
         qsort(N.pages, (size_t)N.count, sizeof(*N.pages), by_name);
         return;
@@ -90,7 +90,7 @@ static void scan(const Game *g)
         {
             char name[16];
             snprintf(name, sizeof(name), forms[f], n);
-            path_join(N.pages[N.count], PSXS5_PATH_MAX, dir, name);
+            path_join(N.pages[N.count], SwanStationPS5_PATH_MAX, dir, name);
             found = opens(N.pages[N.count]);
         }
         if (!found)

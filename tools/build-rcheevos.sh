@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PSXS5 - builds rcheevos (RetroAchievements, MIT) as a static library.
+# SwanStationPS5 - builds rcheevos (RetroAchievements, MIT) as a static library.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 #   tools/build-rcheevos.sh ps5       -> build/rcheevos-ps5/librcheevos.a

@@ -1,5 +1,5 @@
 /*
- * PSXS5 - third-party C libraries compiled into the app:
+ * SwanStationPS5 - third-party C libraries compiled into the app:
  *   miniz 3.0.2 (MIT): unzips updates
  *   QR Code generator by Project Nayuki (MIT): the phone page's QR code
  * Their warnings are theirs; keep them out of ours.

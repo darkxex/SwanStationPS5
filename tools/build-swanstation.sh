@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# PSXS5 - builds SwanStation (libretro's DuckStation fork, GPL-3.0) for the PS5
+# SwanStationPS5 - builds SwanStation (libretro's DuckStation fork, GPL-3.0) for the PS5
 # as a static archive that lives in the same app as the frontend (and Beetle, if built).
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 #   tools/build-swanstation.sh   -> build/swanstation-ps5/libswanstation.a
 #
-# Source: third_party/swanstation + tools/patches/swanstation-ps5.patch. The
+# Source: third_party/swanstation + tools/patches/SwanStationPS5_by_AngelXex.patch. The
 # port is that one patch: the x64 recompiler's code buffer comes from
 # ps5platform/exec.h instead of an RWX mmap a title cannot make, the 48 MiB
 # in-image code buffer is dropped, and the 4 GiB MMap fastmem scheme (aliased
@@ -37,9 +37,9 @@ lld=$(command -v ld.lld-18 || command -v ld.lld)
 mkdir -p "$out"
 archive="$out/libswanstation_hw.a"
 
-# PSXS5's changes live as patches (the submodule stays pristine); each is
+# SwanStationPS5's changes live as patches (the submodule stays pristine); each is
 # applied once.
-for patch in "$root"/tools/patches/swanstation-*.patch; do
+for patch in "$root"/tools/patches/SwanStationPS5_by_AngelXex.patch; do
     [[ -f $patch ]] || continue
     if git -C "$core" apply --ignore-whitespace --reverse --check "$patch" 2>/dev/null; then
         continue # already applied
@@ -50,7 +50,7 @@ done
 
 # Rebuild only when the source revision, this script or a patch changed.
 stamp="$out/.stamp"
-want="$(git -C "$core" rev-parse HEAD) $(cat "$0" "$root/tools/swanstation-archive.mk" "$root"/tools/patches/swanstation-*.patch 2>/dev/null | sha256sum | cut -c1-16)"
+want="$(git -C "$core" rev-parse HEAD) $(cat "$0" "$root/tools/swanstation-archive.mk" "$root"/tools/patches/SwanStationPS5_by_AngelXex.patch 2>/dev/null | sha256sum | cut -c1-16)"
 if [[ ! -f $out/libswanstation.a || ! -f $stamp || $(cat "$stamp") != "$want" ]]; then
     echo "==> [swanstation] building SwanStation ($jobs jobs)"
     make -C "$core" -f Makefile.libretro clean >/dev/null 2>&1 || true
@@ -68,7 +68,7 @@ if [[ ! -f $out/libswanstation.a || ! -f $stamp || $(cat "$stamp") != "$want" ]]
         platform=unix CPU_ARCH=x64 WITH_MMAP_FASTMEM=0 LINK_STATIC_LIBCPLUSPLUS=0 CONFIG_HAVE_ALLOCA_H= \
         TARGET=libswanstation_hw.a \
         CC="sh $root/tooling/prospero-clang18" CXX="sh $root/tooling/prospero-clang18 -x c++" \
-        AR="$ar" psxs5-archive
+        AR="$ar" SwanStationPS5-archive
     cp "$core/libswanstation_hw.a" "$archive"
 
     echo "==> [swanstation] isolating its symbols"

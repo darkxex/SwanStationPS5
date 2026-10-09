@@ -1,5 +1,5 @@
 /*
- * PSXS5 - RetroAchievements password sign-in.
+ * SwanStationPS5 - RetroAchievements password sign-in.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "login.h"
@@ -51,7 +51,7 @@ bool ra_password_login(const char *name, const char *password, char *token, size
     char *reply = NULL;
     size_t reply_len = 0;
     int status = net_request("https://retroachievements.org/dorequest.php", post,
-                             "application/x-www-form-urlencoded", PSXS5_NAME "/" PSXS5_VERSION, &reply, &reply_len);
+                             "application/x-www-form-urlencoded", SwanStationPS5_NAME "/" SwanStationPS5_VERSION, &reply, &reply_len);
     memset(post, 0, sizeof(post));
     error[0] = '\0';
     bool ok = reply && strstr(reply, "\"Success\":true") && json_value(reply, "Token", token, token_size);

@@ -1,5 +1,5 @@
 /*
- * PSXS5 - Find a code: a cheat search over the PS1's 2 MB of RAM.
+ * SwanStationPS5 - Find a code: a cheat search over the PS1's 2 MB of RAM.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Start a search (a snapshot), play until the value changes, come back and

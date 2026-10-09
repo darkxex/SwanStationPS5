@@ -1,5 +1,5 @@
 /*
- * PSXS5 - RetroArch .cht cheat files (GameShark / Action Replay codes).
+ * SwanStationPS5 - RetroArch .cht cheat files (GameShark / Action Replay codes).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Format (libretro-database):
@@ -376,7 +376,7 @@ static bool find_in_dir(const char *dir, const Game *game, char *best_path, size
  * any folder. */
 bool cheats_best_in_index(const Game *game, const char *asset, char *name, size_t size)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     plat_asset_path(path, sizeof(path), asset);
     FILE *f = fopen(path, "r");
     if (!f)
@@ -404,18 +404,18 @@ bool cheats_best_in_index(const Game *game, const char *asset, char *name, size_
 /* One file from libretro-database, on a thread: the game starts meanwhile and
  * its cheats appear as soon as the file is in (cheats_fetch_finished). */
 static SDL_atomic_t fetch_state; /* 0 idle, 1 downloading, 2 done */
-static char fetch_url[600], fetch_dest[PSXS5_PATH_MAX];
+static char fetch_url[600], fetch_dest[SwanStationPS5_PATH_MAX];
 
 static int fetch_main(void *unused)
 {
     (void)unused;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.part", fetch_dest);
     NetResult r = net_download(fetch_url, temp);
     bool ok = r == NET_OK && rename(temp, fetch_dest) == 0;
     if (!ok)
         remove(temp);
-    psxs5_log("cheats: download %s: %s", fetch_dest, ok ? "ok" : r == NET_NOT_FOUND ? "not found" : "failed");
+    SwanStationPS5_log("cheats: download %s: %s", fetch_dest, ok ? "ok" : r == NET_NOT_FOUND ? "not found" : "failed");
     SDL_AtomicSet(&fetch_state, ok ? 2 : 0);
     return 0;
 }
@@ -456,7 +456,7 @@ bool cheats_fetch_finished(void)
  * serial<TAB>file. */
 static bool chtdb_file_for(const char *index, const char *serial, char *name, size_t size)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     plat_asset_path(path, sizeof(path), index);
     FILE *f = fopen(path, "r");
     if (!f)
@@ -553,7 +553,7 @@ static void user_file(const Game *game, const char *cheats_dir, char *dir, size_
 
 static void load_user(CheatList *list, const Game *game, const char *cheats_dir)
 {
-    char dir[PSXS5_PATH_MAX], path[PSXS5_PATH_MAX], file[96], line[400];
+    char dir[SwanStationPS5_PATH_MAX], path[SwanStationPS5_PATH_MAX], file[96], line[400];
     user_file(game, cheats_dir, dir, sizeof(dir), path, sizeof(path), file, sizeof(file));
     FILE *f = fopen(path, "r");
     while (f && fgets(line, sizeof(line), f) && list->count < CHEATS_MAX)
@@ -577,10 +577,10 @@ bool cheats_load(CheatList *list, const Game *game, const char *cheats_dir)
     cheats_clear(list);
     memset(list->items, 0, sizeof(list->items));
 
-    char path[PSXS5_PATH_MAX] = "";
+    char path[SwanStationPS5_PATH_MAX] = "";
     int score = 0;
     /* 1. A .cht next to the game always wins. "cheats.cht" (placed by the sync
-     *    tool) opens without listing the folder, which a sandboxed PSXS5 can't. */
+     *    tool) opens without listing the folder, which a sandboxed SwanStationPS5 can't. */
     bool found = false;
     if (game->folder[0])
     {
@@ -595,7 +595,7 @@ bool cheats_load(CheatList *list, const Game *game, const char *cheats_dir)
         found = find_in_dir(cheats_dir, game, path, sizeof(path), &score);
     if (!found)
     {
-        char sub[PSXS5_PATH_MAX];
+        char sub[SwanStationPS5_PATH_MAX];
         path_join(sub, sizeof(sub), cheats_dir, "Sony - PlayStation");
         found = find_in_dir(sub, game, path, sizeof(path), &score);
     }
@@ -624,7 +624,7 @@ bool cheats_load(CheatList *list, const Game *game, const char *cheats_dir)
         if (disc_format_serial(game->serial, serial, sizeof(serial)) &&
             chtdb_file_for("chtdb-index.txt", serial, name, sizeof(name)))
         {
-            char dir[PSXS5_PATH_MAX];
+            char dir[SwanStationPS5_PATH_MAX];
             path_join(dir, sizeof(dir), cheats_dir, "duckstation");
             path_join(path, sizeof(path), dir, name);
             if (file_opens(path))
@@ -642,7 +642,7 @@ bool cheats_load(CheatList *list, const Game *game, const char *cheats_dir)
         if (game->serial[0] && disc_format_serial(game->serial, serial, sizeof(serial)) &&
             chtdb_file_for("chtdb-patches-index.txt", serial, name, sizeof(name)))
         {
-            char dir[PSXS5_PATH_MAX], patch_path[PSXS5_PATH_MAX];
+            char dir[SwanStationPS5_PATH_MAX], patch_path[SwanStationPS5_PATH_MAX];
             path_join(dir, sizeof(dir), cheats_dir, "duckstation/patches");
             path_join(patch_path, sizeof(patch_path), dir, name);
             if (file_opens(patch_path))
@@ -671,13 +671,13 @@ bool cheats_load(CheatList *list, const Game *game, const char *cheats_dir)
     load_user(list, game, cheats_dir);
     if (!list->count)
         return false;
-    char enabled_dir[PSXS5_PATH_MAX], file[96];
+    char enabled_dir[SwanStationPS5_PATH_MAX], file[96];
     path_join(enabled_dir, sizeof(enabled_dir), cheats_dir, "enabled");
     make_dirs(enabled_dir);
     snprintf(file, sizeof(file), "%.80s.txt", game->id);
     path_join(list->state_path, sizeof(list->state_path), enabled_dir, file);
     load_selection(list);
-    psxs5_log("cheats: %d codes from %s, %d of your own", from_library, library ? path : "nowhere",
+    SwanStationPS5_log("cheats: %d codes from %s, %d of your own", from_library, library ? path : "nowhere",
               list->count - from_library);
     return true;
 }
@@ -686,7 +686,7 @@ bool cheats_add_user(CheatList *list, const Game *game, const char *cheats_dir, 
 {
     if (!game || list->count >= CHEATS_MAX)
         return false;
-    char dir[PSXS5_PATH_MAX], path[PSXS5_PATH_MAX], file[96];
+    char dir[SwanStationPS5_PATH_MAX], path[SwanStationPS5_PATH_MAX], file[96];
     user_file(game, cheats_dir, dir, sizeof(dir), path, sizeof(path), file, sizeof(file));
     make_dirs(dir);
     FILE *f = fopen(path, "a");
@@ -701,7 +701,7 @@ bool cheats_add_user(CheatList *list, const Game *game, const char *cheats_dir, 
     c->enabled = true;
     if (!list->state_path[0])
     {
-        char enabled_dir[PSXS5_PATH_MAX], name[96];
+        char enabled_dir[SwanStationPS5_PATH_MAX], name[96];
         path_join(enabled_dir, sizeof(enabled_dir), cheats_dir, "enabled");
         make_dirs(enabled_dir);
         snprintf(name, sizeof(name), "%.80s.txt", game->id);

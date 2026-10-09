@@ -145,22 +145,22 @@ is titled `Night Drive`.
 
 No proprietary runtime module, encryption key, or game file is included.
 
-## PSXS5 additions
+## SwanStationPS5 additions
 
 | Component | Use | License |
 | --- | --- | --- |
 | [stb_image, stb_truetype](https://github.com/nothings/stb) | cover decoding, font rendering (`third_party/stb`) | Public domain / MIT |
 | [Inter](https://github.com/rsms/inter) | interface font (`assets/fonts`) | SIL Open Font License 1.1 (`assets/fonts/OFL.txt`) |
 | [xlenore/psx-covers](https://github.com/xlenore/psx-covers) | cover art, downloaded at runtime by serial; not bundled | see that repository |
-| [libretro-database](https://github.com/libretro/libretro-database) | `.cht` cheat files, installed by `tools/psxs5_sync.py`; not bundled | see that repository |
+| [libretro-database](https://github.com/libretro/libretro-database) | `.cht` cheat files, installed by `tools/SwanStationPS5_sync.py`; not bundled | see that repository |
 | [rcheevos](https://github.com/RetroAchievements/rcheevos) v12.5.0 | RetroAchievements client (`third_party/rcheevos`) | MIT |
 | [SDL2](https://www.libsdl.org/) (PacBrew port) | events, controllers, audio, software renderer | zlib |
 | [dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html) 2.8.6 by Doug Lea | allocator for the direct-memory heap (`third_party/dlmalloc`) | Public domain (CC0) |
 | xBR by Hyllian | upscale filter, reimplemented in `src/platform/xbr.c` | algorithm credit (MIT-licensed reference) |
 | Scale2x / Scale3x by Andrea Mazzoleni (AdvanceMAME) | upscale filter, reimplemented in `src/platform/plat_sdl.c` | algorithm credit |
 | [RetroAchievements](https://retroachievements.org) | achievement sets and accounts, used online; not bundled | service terms of retroachievements.org |
-| [Noto Sans JP](https://github.com/notofonts/noto-cjk) (subset by `tools/make_jp_font.py`) | Japanese interface text (`assets/fonts/NotoSansJP-PSXS5.ttf`) | SIL Open Font License 1.1 (`assets/fonts/OFL-NotoSansJP.txt`) |
-| [Tabler Icons](https://tabler.io/icons) 3.31.0 (subset by `tools/make_icon_font.py`) | interface icons (`assets/fonts/tabler-psxs5.ttf`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
+| [Noto Sans JP](https://github.com/notofonts/noto-cjk) (subset by `tools/make_jp_font.py`) | Japanese interface text (`assets/fonts/NotoSansJP-SwanStationPS5.ttf`) | SIL Open Font License 1.1 (`assets/fonts/OFL-NotoSansJP.txt`) |
+| [Tabler Icons](https://tabler.io/icons) 3.31.0 (subset by `tools/make_icon_font.py`) | interface icons (`assets/fonts/tabler-SwanStationPS5.ttf`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
 | [QR Code generator](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki | the phone page QR code (`third_party/qrcodegen`) | MIT |
 | [lcd3x](https://github.com/libretro/slang-shaders) by Gigaherz | the LCD3x shader, ported to GLSL in `src/platform/vk/shaders/lcd3x.frag` | Public domain |
 | [crt-royale](https://github.com/libretro/slang-shaders) (crt-royale-fast) by TroggleMonkey, adapted by Hyllian | the CRT Royale shader, compiled to SPIR-V by `tools/make-royale.py` (`third_party/crt-royale`) | GPL-2.0-or-later (`third_party/crt-royale/LICENSE.TXT`) |

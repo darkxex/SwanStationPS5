@@ -1,11 +1,11 @@
 /*
- * PSXS5 - per-game records: play time, last played, favorite, achievements.
+ * SwanStationPS5 - per-game records: play time, last played, favorite, achievements.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_STATS_H
-#define PSXS5_STATS_H
+#ifndef SwanStationPS5_STATS_H
+#define SwanStationPS5_STATS_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 #include <time.h>
 

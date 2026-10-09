@@ -1,9 +1,9 @@
 /*
- * PSXS5 - xBR 2x (level 2) pixel-art scaler.
+ * SwanStationPS5 - xBR 2x (level 2) pixel-art scaler.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_XBR_H
-#define PSXS5_XBR_H
+#ifndef SwanStationPS5_XBR_H
+#define SwanStationPS5_XBR_H
 
 #include <stdbool.h>
 #include <stddef.h>

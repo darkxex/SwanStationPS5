@@ -1,9 +1,9 @@
 /*
- * PSXS5 - RetroArch .cht cheat files (GameShark / Action Replay codes).
+ * SwanStationPS5 - RetroArch .cht cheat files (GameShark / Action Replay codes).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_CHEATS_H
-#define PSXS5_CHEATS_H
+#ifndef SwanStationPS5_CHEATS_H
+#define SwanStationPS5_CHEATS_H
 
 #include "library.h"
 
@@ -21,8 +21,8 @@ typedef struct
 {
     Cheat items[CHEATS_MAX];
     int count;
-    char source[PSXS5_PATH_MAX]; /* the .cht that was loaded, "" if none */
-    char state_path[PSXS5_PATH_MAX];
+    char source[SwanStationPS5_PATH_MAX]; /* the .cht that was loaded, "" if none */
+    char state_path[SwanStationPS5_PATH_MAX];
 } CheatList;
 
 /* Finds the best .cht for `game`: one beside the game files first, then the

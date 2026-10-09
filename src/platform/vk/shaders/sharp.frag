@@ -1,4 +1,4 @@
-// PSXS5 - sharp bilinear: each source pixel stays a crisp block, and only the
+// SwanStationPS5 - sharp bilinear: each source pixel stays a crisp block, and only the
 // seams between blocks are blended, so uneven scaling doesn't shimmer.
 // SPDX-License-Identifier: GPL-3.0-or-later
 #version 450

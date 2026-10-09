@@ -1,5 +1,5 @@
 /*
- * PSXS5 - Your library: games, play time, achievements and the most played.
+ * SwanStationPS5 - Your library: games, play time, achievements and the most played.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "../app.h"

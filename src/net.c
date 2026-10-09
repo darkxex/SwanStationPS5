@@ -1,5 +1,5 @@
 /*
- * PSXS5 - minimal HTTPS download (libcurl).
+ * SwanStationPS5 - minimal HTTPS download (libcurl).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * PS5: PacBrew's libcurl plus the boilerplate's console_curl helpers (system
@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(PSXS5_HAVE_CURL)
+#if defined(SwanStationPS5_HAVE_CURL)
 #include <curl/curl.h>
 #if defined(__PROSPERO__)
 #include "console_curl.h"
@@ -34,7 +34,7 @@ NetResult net_download(const char *url, const char *dest)
 {
     if (!net_available())
         return NET_UNAVAILABLE;
-    char part[PSXS5_PATH_MAX];
+    char part[SwanStationPS5_PATH_MAX];
     snprintf(part, sizeof(part), "%s.part", dest);
     FILE *f = fopen(part, "wb");
     if (!f)
@@ -56,7 +56,7 @@ NetResult net_download(const char *url, const char *dest)
     curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(easy, CURLOPT_CONNECTTIMEOUT, 8L);
     curl_easy_setopt(easy, CURLOPT_TIMEOUT, 25L);
-    curl_easy_setopt(easy, CURLOPT_USERAGENT, PSXS5_NAME "/" PSXS5_VERSION);
+    curl_easy_setopt(easy, CURLOPT_USERAGENT, SwanStationPS5_NAME "/" SwanStationPS5_VERSION);
     curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, write_cb);
     curl_easy_setopt(easy, CURLOPT_WRITEDATA, f);
 
@@ -71,7 +71,7 @@ NetResult net_download(const char *url, const char *dest)
     remove(part);
     if (rc == CURLE_OK && status == 404)
         return NET_NOT_FOUND;
-    psxs5_log("net: %s -> curl %d, http %ld", url, (int)rc, status);
+    SwanStationPS5_log("net: %s -> curl %d, http %ld", url, (int)rc, status);
     return rc == CURLE_OK ? NET_NOT_FOUND : NET_UNAVAILABLE;
 }
 
@@ -121,7 +121,7 @@ int net_request(const char *url, const char *post_data, const char *content_type
     curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(easy, CURLOPT_CONNECTTIMEOUT, 8L);
     curl_easy_setopt(easy, CURLOPT_TIMEOUT, 30L);
-    curl_easy_setopt(easy, CURLOPT_USERAGENT, user_agent ? user_agent : PSXS5_NAME "/" PSXS5_VERSION);
+    curl_easy_setopt(easy, CURLOPT_USERAGENT, user_agent ? user_agent : SwanStationPS5_NAME "/" SwanStationPS5_VERSION);
     curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, buffer_cb);
     curl_easy_setopt(easy, CURLOPT_WRITEDATA, &b);
     if (post_data)
@@ -142,7 +142,7 @@ int net_request(const char *url, const char *post_data, const char *content_type
     curl_slist_free_all(headers);
     if (rc != CURLE_OK)
     {
-        psxs5_log("net: %s -> curl %d", url, (int)rc);
+        SwanStationPS5_log("net: %s -> curl %d", url, (int)rc);
         free(b.data);
         return -1;
     }

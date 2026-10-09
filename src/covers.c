@@ -1,5 +1,5 @@
 /*
- * PSXS5 - cover art: local lookup, background download and decoding.
+ * SwanStationPS5 - cover art: local lookup, background download and decoding.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Lookup order for a game:
@@ -56,7 +56,7 @@ typedef struct
     char serial[16];
     char id[64];
     char disc_name[160];
-    char folder[PSXS5_PATH_MAX];
+    char folder[SwanStationPS5_PATH_MAX];
 } Slot;
 
 static Slot *slots;
@@ -174,7 +174,7 @@ static uint8_t *load_named(const char *dir, const char *name, int *w, int *h)
         return NULL;
     for (size_t i = 0; i < 3; ++i)
     {
-        char file[200], path[PSXS5_PATH_MAX];
+        char file[200], path[SwanStationPS5_PATH_MAX];
         snprintf(file, sizeof(file), "%s.%s", name, IMAGE_EXTS[i]);
         path_join(path, sizeof(path), dir, file);
         uint8_t *px = path_exists(path) ? load_image(path, w, h) : NULL;
@@ -192,7 +192,7 @@ void covers_custom_dir(char *out, size_t size)
 /* Finds or fetches the art for one slot. Runs on the worker thread. */
 static uint8_t *produce(const Slot *job, int *w, int *h, bool *placeholder)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     *placeholder = false;
     covers_custom_dir(path, sizeof(path));
     const char *names[][2] = {
@@ -214,14 +214,14 @@ static uint8_t *produce(const Slot *job, int *w, int *h, bool *placeholder)
         cache_path(path, sizeof(path), job->serial);
         if (!path_exists(path) && download_enabled && network_failures < 3)
         {
-            char url[256], dir[PSXS5_PATH_MAX];
+            char url[256], dir[SwanStationPS5_PATH_MAX];
             covers_url(url, sizeof(url), style, job->serial);
             str_copy(dir, sizeof(dir), path);
             *strrchr(dir, '/') = '\0';
             make_dirs(dir);
             NetResult r = net_download(url, path);
             if (r == NET_UNAVAILABLE && ++network_failures == 3)
-                psxs5_log("covers: network unavailable, downloads paused");
+                SwanStationPS5_log("covers: network unavailable, downloads paused");
             if (r == NET_OK)
                 network_failures = 0;
         }
@@ -244,7 +244,7 @@ static uint8_t *produce(const Slot *job, int *w, int *h, bool *placeholder)
             char name[256];
             if (cheats_best_in_index(&g, "boxarts-index.txt", name, sizeof(name)))
             {
-                char url[700], dir[PSXS5_PATH_MAX];
+                char url[700], dir[SwanStationPS5_PATH_MAX];
                 size_t w = (size_t)snprintf(url, sizeof(url), "%s",
                                             "https://raw.githubusercontent.com/libretro-thumbnails/Sony_-_PlayStation/master/Named_Boxarts/");
                 for (const unsigned char *p = (const unsigned char *)name; *p && w + 4 < sizeof(url); ++p)
@@ -259,16 +259,16 @@ static uint8_t *produce(const Slot *job, int *w, int *h, bool *placeholder)
                 *strrchr(dir, '/') = '\0';
                 make_dirs(dir);
                 NetResult r = net_download(url, path);
-                psxs5_log("covers: %s by name (%s): %s", job->title, name, r == NET_OK ? "ok" : "failed");
+                SwanStationPS5_log("covers: %s by name (%s): %s", job->title, name, r == NET_OK ? "ok" : "failed");
                 if (r == NET_UNAVAILABLE && ++network_failures == 3)
-                    psxs5_log("covers: network unavailable, downloads paused");
+                    SwanStationPS5_log("covers: network unavailable, downloads paused");
             }
         }
         uint8_t *px = path_exists(path) ? load_image(path, w, h) : NULL;
         if (px)
             return px;
     }
-    /* art found beside the game files by tools/psxs5_sync.py: better than nothing */
+    /* art found beside the game files by tools/SwanStationPS5_sync.py: better than nothing */
     if (job->folder[0])
     {
         path_join(path, sizeof(path), job->folder, "fallback-cover.png");
@@ -375,7 +375,7 @@ void covers_start(const Library *lib, const Paths *p, const Settings *settings)
     SDL_UnlockMutex(lock);
     if (!worker)
         worker = SDL_CreateThread(worker_main, "covers", NULL);
-    psxs5_log("covers: %d games, style %d, downloads %s", slot_count, style,
+    SwanStationPS5_log("covers: %d games, style %d, downloads %s", slot_count, style,
               download_enabled ? "on" : "off");
 }
 

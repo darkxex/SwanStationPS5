@@ -1,9 +1,9 @@
 /*
- * PSXS5 - cover art: local lookup, background download and decoding.
+ * SwanStationPS5 - cover art: local lookup, background download and decoding.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_COVERS_H
-#define PSXS5_COVERS_H
+#ifndef SwanStationPS5_COVERS_H
+#define SwanStationPS5_COVERS_H
 
 #include "library.h"
 #include "platform/platform.h"
@@ -29,7 +29,7 @@ uint32_t covers_color(int index);
 /* Downloads still queued, for the "Downloading covers" indicator. */
 int covers_downloading(void);
 
-/* URL of a cover in xlenore/psx-covers (also used by tools/psxs5_sync.py). */
+/* URL of a cover in xlenore/psx-covers (also used by tools/SwanStationPS5_sync.py). */
 void covers_url(char *out, size_t size, int style, const char *serial);
 
 /* Forgets game `index`'s cover so it is looked up again (after a pick). */

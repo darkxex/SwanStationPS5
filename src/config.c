@@ -1,5 +1,5 @@
 /*
- * PSXS5 - settings stored as key=value lines in <root>/psxs5.ini.
+ * SwanStationPS5 - settings stored as key=value lines in <root>/SwanStationPS5.ini.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "config.h"
@@ -83,8 +83,6 @@ static bool config_apply(Settings *s, const char *path)
             s->show_fps = as_bool(value);
         else if (strcmp(key, "region") == 0)
             s->region = atoi(value) % REGION_COUNT;
-        else if (strcmp(key, "force_hle") == 0)
-            s->force_hle = false; /* SwanStation has no built-in HLE BIOS: an old file may still say 1 */
         else if (strcmp(key, "dithering") == 0)
             s->dithering = as_bool(value);
         else if (strcmp(key, "cd_fast") == 0)
@@ -278,19 +276,19 @@ bool config_load_game(Settings *out, const Settings *global, const char *path)
 
 bool config_save(const Settings *s, const char *path)
 {
-    char temp[PSXS5_PATH_MAX];
+    char temp[SwanStationPS5_PATH_MAX];
     snprintf(temp, sizeof(temp), "%s.tmp", path);
     FILE *f = fopen(temp, "w");
     if (!f)
         return false;
     fprintf(f,
-            "# PSXS5 settings\n"
-            "aspect=%d\nsmooth=%d\nshow_fps=%d\nregion=%d\nforce_hle=%d\n"
+            "# SwanStationPS5 settings\n"
+            "aspect=%d\nsmooth=%d\nshow_fps=%d\nregion=%d\n"
             "dithering=%d\ncd_fast=%d\nanalog=%d\nstate_slot=%d\nlast_game=%d\n"
             "cover_style=%d\ncover_download=%d\nui_sound=%d\nui_volume=%d\n"
             "integer_scale=%d\ninternal_res=%d\nupscale=%d\nupscale_filter=%d\nstick_dpad=%d\nlanguage=%d\n"
             "vibration=%d\nsort_mode=%d\nshelf_category=%d\nbackground=%d\n",
-            s->aspect, s->smooth, s->show_fps, s->region, s->force_hle, s->dithering,
+            s->aspect, s->smooth, s->show_fps, s->region, s->dithering,
             s->cd_fast, s->analog, s->state_slot, s->last_game, s->cover_style,
             s->cover_download, s->ui_sound, s->ui_volume, s->integer_scale, s->internal_res, s->upscale,
             s->upscale_filter, s->stick_dpad, s->language, s->vibration,
@@ -337,7 +335,7 @@ void config_paths(Paths *p, const char *root)
     path_join(p->cheats, sizeof(p->cheats), root, "cheats");
     path_join(p->covers, sizeof(p->covers), root, "covers");
     path_join(p->logs, sizeof(p->logs), root, "logs");
-    path_join(p->config, sizeof(p->config), root, "psxs5.ini");
+    path_join(p->config, sizeof(p->config), root, "SwanStationPS5.ini");
     str_copy(p->user, sizeof(p->user), root);
 }
 
@@ -346,5 +344,5 @@ void config_user_paths(Paths *p, const char *dir)
     str_copy(p->user, sizeof(p->user), dir);
     path_join(p->saves, sizeof(p->saves), dir, "saves");
     path_join(p->states, sizeof(p->states), dir, "states");
-    path_join(p->config, sizeof(p->config), dir, "psxs5.ini");
+    path_join(p->config, sizeof(p->config), dir, "SwanStationPS5.ini");
 }

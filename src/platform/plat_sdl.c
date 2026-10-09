@@ -1,5 +1,5 @@
 /*
- * PSXS5 - SDL2 platform layer.
+ * SwanStationPS5 - SDL2 platform layer.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The same file drives the PS5 build (PacBrew SDL2 port) and the desktop
@@ -22,10 +22,10 @@
 #include <sys/mman.h>
 int sceKernelSendNotificationRequest(uint32_t device, void *request, size_t size, int blocking);
 int sceSystemServiceHideSplashScreen(void);
-int psxs5_elevate(const char **route); /* elevation_shim.cpp */
+int SwanStationPS5_elevate(const char **route); /* elevation_shim.cpp */
 #else
 static bool init_desktop_window(void);
-#if defined(PSXS5_PREVIEW)
+#if defined(SwanStationPS5_PREVIEW)
 static bool init_preview_screen(void);
 #endif
 #endif
@@ -43,8 +43,8 @@ static int out_w = 1920, out_h = 1080;
 static SDL_AudioDeviceID audio_device;
 static int audio_rate;
 
-static SDL_GameController *controllers[PSXS5_MAX_PADS];
-static uint16_t rumble_strong[PSXS5_MAX_PADS], rumble_weak[PSXS5_MAX_PADS];
+static SDL_GameController *controllers[SwanStationPS5_MAX_PADS];
+static uint16_t rumble_strong[SwanStationPS5_MAX_PADS], rumble_weak[SwanStationPS5_MAX_PADS];
 
 static void set_draw_color(uint32_t argb)
 {
@@ -69,7 +69,7 @@ const char *plat_screen_info(void)
 static bool init_failed(const char *stage)
 {
     snprintf(init_error, sizeof(init_error), "%s failed: %s", stage, SDL_GetError());
-    psxs5_log("%s", init_error);
+    SwanStationPS5_log("%s", init_error);
     return false;
 }
 
@@ -83,11 +83,11 @@ static bool use_vulkan;    /* v2: shown by vk_present instead */
 static bool init_ps5_screen(void)
 {
     char error[160];
-#if defined(PSXS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN)
     /* v2: the screen through Vulkan; the old VideoOut path stays as the
-     * fallback (and is forced by creating /data/PSXS5/no_vulkan). */
+     * fallback (and is forced by creating /data/SwanStationPS5/no_vulkan). */
     /* fopen, not access(): access() fails in the sandbox even for files that open */
-    FILE *off = fopen("/data/PSXS5/no_vulkan", "rb");
+    FILE *off = fopen("/data/SwanStationPS5/no_vulkan", "rb");
     bool forced_off = off != NULL;
     if (off)
         fclose(off);
@@ -96,7 +96,7 @@ static bool init_ps5_screen(void)
         snprintf(screen_info, sizeof(screen_info), "Vulkan, %s", vkp_describe());
     else
         snprintf(screen_info, sizeof(screen_info), "VideoOut (Vulkan %s)",
-                 forced_off ? "turned off by /data/PSXS5/no_vulkan" : error);
+                 forced_off ? "turned off by /data/SwanStationPS5/no_vulkan" : error);
     if (!use_vulkan && !ps5_video_open(error, sizeof(error)))
 #else
     snprintf(screen_info, sizeof(screen_info), "VideoOut");
@@ -136,14 +136,14 @@ bool plat_init(void)
 #endif
     /* Sound or controller trouble must not stop the app. */
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
-        psxs5_log("SDL audio unavailable: %s", SDL_GetError());
+        SwanStationPS5_log("SDL audio unavailable: %s", SDL_GetError());
     if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) != 0)
-        psxs5_log("SDL controllers unavailable: %s", SDL_GetError());
+        SwanStationPS5_log("SDL controllers unavailable: %s", SDL_GetError());
 
 #if defined(__PROSPERO__)
     if (!init_ps5_screen())
         return false;
-#elif defined(PSXS5_PREVIEW)
+#elif defined(SwanStationPS5_PREVIEW)
     if (!init_preview_screen())
         return false;
 #else
@@ -157,13 +157,13 @@ bool plat_init(void)
 
     SDL_RendererInfo info;
     if (SDL_GetRendererInfo(renderer, &info) == 0)
-        psxs5_log("renderer: %s", info.name);
+        SwanStationPS5_log("renderer: %s", info.name);
 
     SDL_GameControllerEventState(SDL_ENABLE);
     return true;
 }
 
-#if defined(PSXS5_PREVIEW)
+#if defined(SwanStationPS5_PREVIEW)
 /* ---- interface preview (tools/ui-preview): the PS5's software renderer on an
  * off-screen surface, a fixed 60 Hz clock, scripted buttons and screenshots. */
 static SDL_Surface *preview_surface;
@@ -217,13 +217,13 @@ static void preview_step(void)
         if (!strcmp(cmd, "shot"))
         {
             char path[300];
-            snprintf(path, sizeof(path), "%s/%s.bmp", SDL_getenv("PSXS5_SHOTS") ? SDL_getenv("PSXS5_SHOTS") : ".", arg);
+            snprintf(path, sizeof(path), "%s/%s.bmp", SDL_getenv("SwanStationPS5_SHOTS") ? SDL_getenv("SwanStationPS5_SHOTS") : ".", arg);
             SDL_Surface *out = SDL_CreateRGBSurfaceWithFormat(0, 1920, 1080, 32, SDL_PIXELFORMAT_ARGB8888);
             SDL_Rect r = {0, 36, 1920, 1080}; /* the 1080 lines inside the 1152-line canvas */
             SDL_BlitSurface(preview_surface, &r, out, NULL);
             SDL_SaveBMP(out, path);
             SDL_FreeSurface(out);
-            psxs5_log("preview: %s", path);
+            SwanStationPS5_log("preview: %s", path);
             continue;
         }
         if (!strcmp(cmd, "press") || !strcmp(cmd, "hold"))
@@ -248,7 +248,7 @@ static bool init_preview_screen(void)
     renderer = SDL_CreateSoftwareRenderer(preview_surface);
     if (!renderer)
         return init_failed("preview renderer");
-    const char *script = SDL_getenv("PSXS5_SCRIPT");
+    const char *script = SDL_getenv("SwanStationPS5_SCRIPT");
     preview_script = script ? fopen(script, "r") : NULL;
     return true;
 }
@@ -257,7 +257,7 @@ static bool init_preview_screen(void)
 #if !defined(__PROSPERO__)
 static bool init_desktop_window(void)
 {
-    window = SDL_CreateWindow(PSXS5_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    window = SDL_CreateWindow(SwanStationPS5_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               1280, 720, SDL_WINDOW_RESIZABLE);
     if (!window)
         return init_failed("SDL window");
@@ -273,7 +273,7 @@ static bool init_desktop_window(void)
 void plat_shutdown(void)
 {
     plat_audio_close();
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         if (controllers[i])
             SDL_GameControllerClose(controllers[i]);
     if (game_texture)
@@ -288,14 +288,14 @@ void plat_shutdown(void)
 void plat_default_root(char *out, size_t size)
 {
 #if defined(__PROSPERO__)
-    str_copy(out, size, "/data/PSXS5");
+    str_copy(out, size, "/data/SwanStationPS5");
 #else
-    const char *env = SDL_getenv("PSXS5_ROOT");
-    str_copy(out, size, env && *env ? env : "./psxs5-data");
+    const char *env = SDL_getenv("SwanStationPS5_ROOT");
+    str_copy(out, size, env && *env ? env : "./SwanStationPS5-data");
 #endif
 }
 
-/* What a still-sandboxed PSXS5 can do with its data folder, for the log. */
+/* What a still-sandboxed SwanStationPS5 can do with its data folder, for the log. */
 static char sandbox_probe[96] = "not probed";
 
 const char *plat_sandbox_probe(void)
@@ -305,8 +305,8 @@ const char *plat_sandbox_probe(void)
 
 /* Settings > System > "Unlock /data with etaHEN": stored as a marker file so
  * it can be read before any unlock (paths that may work while sandboxed). */
-static const char *const NO_UNLOCK_MARKERS[] = {"/download0/psxs5_no_unlock",
-                                                "/data/PSXS5/no_unlock"};
+static const char *const NO_UNLOCK_MARKERS[] = {"/download0/SwanStationPS5_no_unlock",
+                                                "/data/SwanStationPS5/no_unlock"};
 
 bool plat_unlock_disabled(void)
 {
@@ -335,8 +335,8 @@ bool plat_prepare_storage(char *error, size_t size)
 {
 #if defined(__PROSPERO__)
     {
-        FILE *r = fopen("/data/PSXS5/psxs5.ini", "r");
-        FILE *w = fopen("/data/PSXS5/.sandbox-test", "w");
+        FILE *r = fopen("/data/SwanStationPS5/SwanStationPS5.ini", "r");
+        FILE *w = fopen("/data/SwanStationPS5/.sandbox-test", "w");
         snprintf(sandbox_probe, sizeof(sandbox_probe), "sandboxed read %s, write %s, list %s",
                  r ? "ok" : "no", w ? "ok" : "no", ps5_data_listable() ? "ok" : "no");
         if (r)
@@ -344,7 +344,7 @@ bool plat_prepare_storage(char *error, size_t size)
         if (w)
         {
             fclose(w);
-            remove("/data/PSXS5/.sandbox-test");
+            remove("/data/SwanStationPS5/.sandbox-test");
         }
     }
     if (plat_unlock_disabled())
@@ -358,7 +358,7 @@ bool plat_prepare_storage(char *error, size_t size)
         return true;
     /* 2. The boilerplate's Lapy helper through the ELF loader (6.02/12.70). */
     const char *route = "none";
-    int status = psxs5_elevate(&route);
+    int status = SwanStationPS5_elevate(&route);
     if (status == 0 && ps5_data_listable())
         return true;
     /* 3. Sandboxed: files in /data still open and save, folders can't be listed. */
@@ -375,28 +375,28 @@ bool plat_prepare_storage(char *error, size_t size)
 /* ---------------------------------------------------------------- input */
 
 /* order[player] = the controller (Controls > Players order) */
-static int player_order[PSXS5_MAX_PADS] = {0, 1, 2, 3};
+static int player_order[SwanStationPS5_MAX_PADS] = {0, 1, 2, 3};
 
-void plat_set_player_order(const int order[PSXS5_MAX_PADS])
+void plat_set_player_order(const int order[SwanStationPS5_MAX_PADS])
 {
     memcpy(player_order, order, sizeof(player_order));
 }
 
-void plat_player_order(int order[PSXS5_MAX_PADS])
+void plat_player_order(int order[SwanStationPS5_MAX_PADS])
 {
     memcpy(order, player_order, sizeof(player_order));
 }
 
 static int physical(int port)
 {
-    return port >= 0 && port < PSXS5_MAX_PADS ? player_order[port] : -1;
+    return port >= 0 && port < SwanStationPS5_MAX_PADS ? player_order[port] : -1;
 }
 
-static void order_pads(PadState pads[PSXS5_MAX_PADS])
+static void order_pads(PadState pads[SwanStationPS5_MAX_PADS])
 {
-    PadState raw[PSXS5_MAX_PADS];
+    PadState raw[SwanStationPS5_MAX_PADS];
     memcpy(raw, pads, sizeof(raw));
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         pads[i] = raw[player_order[i]];
 }
 
@@ -406,11 +406,11 @@ static void order_pads(PadState pads[PSXS5_MAX_PADS])
  * the pad with a PC "PS5 Controller" profile that numbers them differently,
  * so buttons came out wrong (Triangle acted as Circle). Read the raw
  * joystick in the driver's order instead. The driver has no Create button
- * (slot 5); PSXS5 turns a touchpad tap into Select. */
-static SDL_Joystick *joys[PSXS5_MAX_PADS];
-static int pad_uid[PSXS5_MAX_PADS] = {-1, -1, -1, -1}; /* the PS5 user of each */
-static int pad_h[PSXS5_MAX_PADS] = {-1, -1, -1, -1};   /* its scePad handle */
-static bool motion_on, touch_on, motion_set[PSXS5_MAX_PADS];
+ * (slot 5); SwanStationPS5 turns a touchpad tap into Select. */
+static SDL_Joystick *joys[SwanStationPS5_MAX_PADS];
+static int pad_uid[SwanStationPS5_MAX_PADS] = {-1, -1, -1, -1}; /* the PS5 user of each */
+static int pad_h[SwanStationPS5_MAX_PADS] = {-1, -1, -1, -1};   /* its scePad handle */
+static bool motion_on, touch_on, motion_set[SwanStationPS5_MAX_PADS];
 
 /* scePad, for what the SDL driver doesn't pass on: the motion sensor and the
  * adaptive triggers (layouts as in Sony's pad.h; the read gets room to spare) */
@@ -457,7 +457,7 @@ int scePadSetTriggerEffect(int handle, const Ps5TriggerParam *param);
 
 static int pad_handle(int i)
 {
-    if (i < 0 || i >= PSXS5_MAX_PADS || !joys[i] || pad_uid[i] < 0)
+    if (i < 0 || i >= SwanStationPS5_MAX_PADS || !joys[i] || pad_uid[i] < 0)
         return -1;
     if (pad_h[i] < 0)
         pad_h[i] = scePadGetHandle(pad_uid[i], 0, 0);
@@ -472,7 +472,7 @@ static const int ps5_buttons[] = {
 
 static void refresh_controllers(void)
 {
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         if (joys[i] && !SDL_JoystickGetAttached(joys[i]))
         {
@@ -496,22 +496,22 @@ static void refresh_controllers(void)
             continue; /* "PS5 Remote Control": not a gamepad */
         SDL_JoystickID id = SDL_JoystickGetDeviceInstanceID(j);
         bool open = false;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
             open |= joys[i] && SDL_JoystickInstanceID(joys[i]) == id;
-        for (int i = 0; i < PSXS5_MAX_PADS && !open; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS && !open; ++i)
             if (!joys[i])
             {
                 joys[i] = SDL_JoystickOpen(j);
                 pad_uid[i] = j < users ? user_of[j] : -1;
                 if (joys[i])
-                    psxs5_log("pad %d: %s (%d buttons, %d axes)", i + 1, name ? name : "?",
+                    SwanStationPS5_log("pad %d: %s (%d buttons, %d axes)", i + 1, name ? name : "?",
                               SDL_JoystickNumButtons(joys[i]), SDL_JoystickNumAxes(joys[i]));
                 open = true;
             }
     }
 }
 
-void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
+void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit)
 {
     SDL_Event event;
     bool devices_changed = false;
@@ -525,8 +525,8 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
         refresh_controllers();
         first = false;
     }
-    memset(pads, 0, sizeof(PadState) * PSXS5_MAX_PADS);
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    memset(pads, 0, sizeof(PadState) * SwanStationPS5_MAX_PADS);
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         SDL_Joystick *j = joys[i];
         if (!j)
@@ -549,7 +549,7 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
             if (motion_on && !motion_set[i])
             {
                 int err = scePadSetMotionSensorState(h, true);
-                psxs5_log("pad %d: motion sensor %s (0x%08x)", i + 1, err ? "failed" : "on", (unsigned)err);
+                SwanStationPS5_log("pad %d: motion sensor %s (0x%08x)", i + 1, err ? "failed" : "on", (unsigned)err);
                 motion_set[i] = true;
             }
             Ps5PadBuffer b;
@@ -563,8 +563,8 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
                 p->touch_x = (uint16_t)(b.d.touch[8] | b.d.touch[9] << 8);
                 p->touch_y = (uint16_t)(b.d.touch[10] | b.d.touch[11] << 8);
                 /* where the battery is isn't documented: log the extra bytes when they change */
-                static uint8_t last[PSXS5_MAX_PADS][32];
-                static uint64_t logged_at[PSXS5_MAX_PADS];
+                static uint8_t last[SwanStationPS5_MAX_PADS][32];
+                static uint64_t logged_at[SwanStationPS5_MAX_PADS];
                 uint64_t now = plat_ticks_us();
                 if (memcmp(last[i], b.d.ext, 32) != 0 && now - logged_at[i] > 30000000ull)
                 {
@@ -573,7 +573,7 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
                     char hex[100];
                     for (int k = 0; k < 32; ++k)
                         snprintf(hex + k * 3, 4, "%02x ", b.d.ext[k]);
-                    psxs5_log("pad %d extra: %s", i + 1, hex);
+                    SwanStationPS5_log("pad %d extra: %s", i + 1, hex);
                 }
             }
         }
@@ -600,8 +600,8 @@ void plat_pad_touch(bool on)
 void plat_pad_triggers(int port, PlatTrigger l2, PlatTrigger r2)
 {
     int i = physical(port);
-    static PlatTrigger last[PSXS5_MAX_PADS][2];
-    static int last_h[PSXS5_MAX_PADS] = {-2, -2, -2, -2};
+    static PlatTrigger last[SwanStationPS5_MAX_PADS][2];
+    static int last_h[SwanStationPS5_MAX_PADS] = {-2, -2, -2, -2};
     int h = pad_handle(i);
     if (h < 0)
         return;
@@ -626,7 +626,7 @@ void plat_pad_triggers(int port, PlatTrigger l2, PlatTrigger r2)
     static bool logged;
     if (err && !logged)
     {
-        psxs5_log("pad: trigger effect failed (0x%08x)", (unsigned)err);
+        SwanStationPS5_log("pad: trigger effect failed (0x%08x)", (unsigned)err);
         logged = true;
     }
 }
@@ -639,9 +639,9 @@ int plat_pad_battery(int port)
 
 void plat_set_lightbar(int port, uint32_t rgb)
 {
-    static uint32_t last[PSXS5_MAX_PADS] = {0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu};
+    static uint32_t last[SwanStationPS5_MAX_PADS] = {0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu};
     port = physical(port);
-    if (port < 0 || port >= PSXS5_MAX_PADS || !joys[port] || last[port] == rgb)
+    if (port < 0 || port >= SwanStationPS5_MAX_PADS || !joys[port] || last[port] == rgb)
         return;
     last[port] = rgb;
 #if SDL_VERSION_ATLEAST(2, 0, 14)
@@ -649,7 +649,7 @@ void plat_set_lightbar(int port, uint32_t rgb)
     {
         static bool logged;
         if (!logged)
-            psxs5_log("pad: light bar not supported here (%s)", SDL_GetError());
+            SwanStationPS5_log("pad: light bar not supported here (%s)", SDL_GetError());
         logged = true;
     }
 #endif
@@ -658,7 +658,7 @@ void plat_set_lightbar(int port, uint32_t rgb)
 void plat_rumble(int port, uint16_t strong, uint16_t weak)
 {
     port = physical(port);
-    if (port < 0 || port >= PSXS5_MAX_PADS || !joys[port])
+    if (port < 0 || port >= SwanStationPS5_MAX_PADS || !joys[port])
         return;
     if (rumble_strong[port] == strong && rumble_weak[port] == weak)
         return;
@@ -670,7 +670,7 @@ void plat_rumble(int port, uint16_t strong, uint16_t weak)
 
 static void refresh_controllers(void)
 {
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         if (controllers[i] && !SDL_GameControllerGetAttached(controllers[i]))
         {
@@ -684,19 +684,19 @@ static void refresh_controllers(void)
             continue;
         SDL_JoystickID id = SDL_JoystickGetDeviceInstanceID(j);
         bool open = false;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
             if (controllers[i] &&
                 SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controllers[i])) == id)
                 open = true;
         if (open)
             continue;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         {
             if (!controllers[i])
             {
                 controllers[i] = SDL_GameControllerOpen(j);
                 if (controllers[i])
-                    psxs5_log("pad %d: %s", i + 1, SDL_GameControllerName(controllers[i]));
+                    SwanStationPS5_log("pad %d: %s", i + 1, SDL_GameControllerName(controllers[i]));
                 break;
             }
         }
@@ -742,7 +742,7 @@ static const struct
     {SDL_SCANCODE_ESCAPE, BTN_MENU},  {SDL_SCANCODE_TAB, BTN_MENU},
 };
 
-void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
+void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit)
 {
     SDL_Event event;
     bool devices_changed = false;
@@ -760,8 +760,8 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
         first = false;
     }
 
-    memset(pads, 0, sizeof(PadState) * PSXS5_MAX_PADS);
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    memset(pads, 0, sizeof(PadState) * SwanStationPS5_MAX_PADS);
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         SDL_GameController *c = controllers[i];
         if (!c)
@@ -784,7 +784,7 @@ void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit)
     }
     order_pads(pads);
 
-#if defined(PSXS5_PREVIEW)
+#if defined(SwanStationPS5_PREVIEW)
     preview_step();
     pads[0].connected = true;
     pads[0].buttons = preview_buttons;
@@ -835,7 +835,7 @@ void plat_set_lightbar(int port, uint32_t rgb)
 {
     port = physical(port);
 #if SDL_VERSION_ATLEAST(2, 0, 14)
-    if (port >= 0 && port < PSXS5_MAX_PADS && controllers[port])
+    if (port >= 0 && port < SwanStationPS5_MAX_PADS && controllers[port])
         SDL_GameControllerSetLED(controllers[port], (Uint8)(rgb >> 16), (Uint8)(rgb >> 8), (Uint8)rgb);
 #else
     (void)port, (void)rgb;
@@ -845,7 +845,7 @@ void plat_set_lightbar(int port, uint32_t rgb)
 void plat_rumble(int port, uint16_t strong, uint16_t weak)
 {
     port = physical(port);
-    if (port < 0 || port >= PSXS5_MAX_PADS || !controllers[port])
+    if (port < 0 || port >= SwanStationPS5_MAX_PADS || !controllers[port])
         return;
     if (rumble_strong[port] == strong && rumble_weak[port] == weak)
         return;
@@ -874,12 +874,12 @@ bool plat_audio_open(int sample_rate)
     audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0); /* SDL resamples for us */
     if (!audio_device)
     {
-        psxs5_log("audio open failed: %s", SDL_GetError());
+        SwanStationPS5_log("audio open failed: %s", SDL_GetError());
         return false;
     }
     audio_rate = sample_rate;
     SDL_PauseAudioDevice(audio_device, 0);
-    psxs5_log("audio: %d Hz", sample_rate);
+    SwanStationPS5_log("audio: %d Hz", sample_rate);
     return true;
 }
 
@@ -1036,7 +1036,7 @@ static bool ensure_game_texture(int format, int w, int h)
 }
 
 #if defined(__PROSPERO__)
-/* PS5: the latest game picture, kept in PSXS5's memory and scaled straight
+/* PS5: the latest game picture, kept in SwanStationPS5's memory and scaled straight
  * into the canvas by blit.c (SDL's software stretch was the bottleneck). */
 static const uint32_t *game_image;
 static int game_image_w, game_image_h;
@@ -1511,7 +1511,7 @@ static void profile_frame_end(void)
     int w = snprintf(line, sizeof(line), "ui profile (ms/frame):");
     for (int i = 0; i < prof.count && w < (int)sizeof(line) - 24; ++i)
         w += snprintf(line + w, sizeof(line) - (size_t)w, " %s %.1f", prof.name[i], prof.us[i] / 120 / 1000.0);
-    /* psxs5_log("%s", line); */ /* per-frame timings: uncomment to profile the UI */
+    /* SwanStationPS5_log("%s", line); */ /* per-frame timings: uncomment to profile the UI */
     (void)line;
     memset(&prof, 0, sizeof(prof));
 }
@@ -1520,7 +1520,7 @@ void plat_end_frame(void)
 {
     profile_frame_end();
     SDL_RenderPresent(renderer);
-#if defined(PSXS5_PREVIEW)
+#if defined(SwanStationPS5_PREVIEW)
     preview_clock += 16667;
 #endif
 #if defined(__PROSPERO__)
@@ -1538,7 +1538,7 @@ void plat_end_frame(void)
         present_us += shown - drawn;
         if (++frames == 120)
         {
-            /* psxs5_log("ui: draw %.1f ms, present %.1f ms per frame (avg of 120)",
+            /* SwanStationPS5_log("ui: draw %.1f ms, present %.1f ms per frame (avg of 120)",
                       draw_us / 120 / 1000.0, present_us / 120 / 1000.0); */
             frames = 0;
             draw_us = present_us = 0;
@@ -1565,7 +1565,7 @@ PlatTexture *plat_texture_create(const uint8_t *rgba, int width, int height, boo
                                width, height); /* ABGR8888 = R,G,B,A bytes in memory */
     if (!t->sdl)
     {
-        psxs5_log("texture %dx%d failed: %s", width, height, SDL_GetError());
+        SwanStationPS5_log("texture %dx%d failed: %s", width, height, SDL_GetError());
         SDL_free(t);
         return NULL;
     }
@@ -1676,7 +1676,7 @@ void plat_set_clip(int x, int y, int w, int h)
 void plat_asset_path(char *out, size_t size, const char *relative)
 {
 #if defined(__PROSPERO__)
-    /* /app0 exists only inside the sandbox. Once the HEN frees PSXS5 its
+    /* /app0 exists only inside the sandbox. Once the HEN frees SwanStationPS5 its
      * file system is the console's real one, where the title is mounted at
      * /system_ex/app/<id> (ShadowMountPlus) and stored in /data/homebrew/<id>. */
     static const char *const bases[] = {"/app0/assets", "/system_ex/app/PPSA98510/assets",
@@ -1691,18 +1691,18 @@ void plat_asset_path(char *out, size_t size, const char *relative)
                 chosen = i;
                 break;
             }
-        psxs5_log("assets: %s", bases[chosen]);
+        SwanStationPS5_log("assets: %s", bases[chosen]);
     }
     path_join(out, size, bases[chosen], relative);
 #else
-    const char *base = SDL_getenv("PSXS5_ASSETS");
+    const char *base = SDL_getenv("SwanStationPS5_ASSETS");
     path_join(out, size, base && *base ? base : "assets", relative);
 #endif
 }
 
 uint64_t plat_ticks_us(void)
 {
-#if defined(PSXS5_PREVIEW)
+#if defined(SwanStationPS5_PREVIEW)
     return 1000000ull + preview_clock;
 #endif
     return SDL_GetPerformanceCounter() * 1000000ull / SDL_GetPerformanceFrequency();
@@ -1715,7 +1715,7 @@ void plat_sleep_us(uint32_t us)
 
 void plat_notify(const char *message)
 {
-    psxs5_log("notify: %s", message);
+    SwanStationPS5_log("notify: %s", message);
 #if defined(__PROSPERO__)
     static struct
     {

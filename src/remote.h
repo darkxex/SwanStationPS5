@@ -1,11 +1,11 @@
 /*
- * PSXS5 - settings from a phone: a small web page on the local network.
+ * SwanStationPS5 - settings from a phone: a small web page on the local network.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_REMOTE_H
-#define PSXS5_REMOTE_H
+#ifndef SwanStationPS5_REMOTE_H
+#define SwanStationPS5_REMOTE_H
 
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 #define REMOTE_PORT 8095
 

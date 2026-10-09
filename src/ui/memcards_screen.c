@@ -1,6 +1,6 @@
 /*
- * PSXS5 - memory card manager: every game's card, the saves on it, export
- * for other emulators, import from /data/PSXS5/import.
+ * SwanStationPS5 - memory card manager: every game's card, the saves on it, export
+ * for other emulators, import from /data/SwanStationPS5/import.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The core keeps one card per game: <saves>/<serial>_1.mcd (raw, 128 KiB).
@@ -31,7 +31,7 @@ typedef struct
 {
     char serial[24];
     char title[96];
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     int used;            /* blocks in use */
     char saves[15][48];  /* one name per save */
     int save_blocks[15];
@@ -181,7 +181,7 @@ static bool copy_file(const char *from, const char *to, long skip)
     fclose(in);
     if (!ok || data[0] != 'M' || data[1] != 'C')
         return false;
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.tmp", to);
     FILE *out = fopen(temp, "wb");
     ok = out && fwrite(data, 1, CARD_SIZE, out) == CARD_SIZE;
@@ -192,12 +192,12 @@ static bool copy_file(const char *from, const char *to, long skip)
 
 static void export_card(const Card *c)
 {
-    char dir[PSXS5_PATH_MAX], to[PSXS5_PATH_MAX], file[64];
+    char dir[SwanStationPS5_PATH_MAX], to[SwanStationPS5_PATH_MAX], file[64];
     path_join(dir, sizeof(dir), app.paths.root, "memcards-export");
     make_dirs(dir);
     snprintf(file, sizeof(file), "%s.mcd", c->serial);
     path_join(to, sizeof(to), dir, file);
-    char msg[PSXS5_PATH_MAX + 32];
+    char msg[SwanStationPS5_PATH_MAX + 32];
     if (copy_file(c->path, to, 0))
         snprintf(msg, sizeof(msg), tr("Exported to %s"), to);
     else
@@ -208,7 +208,7 @@ static void export_card(const Card *c)
 static void list_imports(void)
 {
     C.import_count = 0;
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "import");
     make_dirs(dir);
     DIR *d = opendir(dir);
@@ -227,7 +227,7 @@ static void list_imports(void)
 
 static void import_card(Card *c, const char *name)
 {
-    char dir[PSXS5_PATH_MAX], from[PSXS5_PATH_MAX], backup[PSXS5_PATH_MAX + 8];
+    char dir[SwanStationPS5_PATH_MAX], from[SwanStationPS5_PATH_MAX], backup[SwanStationPS5_PATH_MAX + 8];
     path_join(dir, sizeof(dir), app.paths.root, "import");
     path_join(from, sizeof(from), dir, name);
     snprintf(backup, sizeof(backup), "%s.bak", c->path);
@@ -302,7 +302,7 @@ void memcards_screen(uint32_t pressed)
         shelf_backdrop();
     text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, tr("Memory cards"));
     text_draw(TH_MARGIN + 2, 100, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT,
-              tr("One card per game. Import from /data/PSXS5/import."));
+              tr("One card per game. Import from /data/SwanStationPS5/import."));
 
     /* the cards, on the left */
     const int rows = 10;
@@ -375,7 +375,7 @@ void memcards_screen(uint32_t pressed)
         text_draw(dx + 40, dy + 30, 30, FONT_BOLD, TH_TEXT, ALIGN_LEFT, tr("Import a memory card"));
         if (!C.import_count)
         {
-            char hint[PSXS5_PATH_MAX + 64];
+            char hint[SwanStationPS5_PATH_MAX + 64];
             snprintf(hint, sizeof(hint), tr("Put .mcr, .mcd, .srm or .gme files in %s/import"), app.paths.root);
             text_draw_fit(dx + 40, dy + 110, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, dw - 80, hint);
         }

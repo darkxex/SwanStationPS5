@@ -1,4 +1,4 @@
-// PSXS5 v2 - a textured rectangle: the game picture, or the interface on top.
+// SwanStationPS5 v2 - a textured rectangle: the game picture, or the interface on top.
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Compiled into shaders_spv.h by tools/make-shaders.sh.
 #version 450

@@ -1,5 +1,5 @@
 /*
- * PSXS5 - PlayStation X Super 5
+ * SwanStationPS5 - PlayStation X Super 5
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Entry point, game start/stop and the emulation screen. The other screens
@@ -69,7 +69,7 @@ void app_toast(const char *message)
 void app_toast_for(const char *message, float seconds)
 {
     uint64_t length_us = (uint64_t)(seconds * 1e6f);
-    psxs5_log("%s", message);
+    SwanStationPS5_log("%s", message);
     const char *text = tr(message);
     if (toast[0] && plat_ticks_us() < toast_until)
     {
@@ -145,7 +145,7 @@ static uint32_t nav_pressed(const PadState *pads)
     static uint64_t repeat_at;
     static int repeats;
     uint32_t held = 0;
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         held |= pads[i].buttons;
         if (pads[i].ly < -20000)
@@ -188,11 +188,6 @@ void app_state_path(char *out, size_t size, int slot)
 
 void app_describe_bios(char *out, size_t size)
 {
-    if (app.settings.force_hle)
-    {
-        str_copy(out, size, tr("Using the built-in HLE BIOS"));
-        return;
-    }
     DIR *d = opendir(app.paths.bios);
     out[0] = '\0';
     if (d)
@@ -207,7 +202,7 @@ void app_describe_bios(char *out, size_t size)
         closedir(d);
     }
     if (!out[0])
-        str_copy(out, size, tr("No BIOS file in bios/, using the built-in HLE BIOS"));
+        str_copy(out, size, tr("No BIOS file in bios/, using OpenBios"));
 }
 
 void app_restart_covers(void)
@@ -219,9 +214,25 @@ void app_restart_covers(void)
 
 void app_rescan(void)
 {
-    const char *roots[] = {app.paths.games, "/mnt/usb0/PSXS5", "/mnt/usb1/PSXS5",
-                           "/mnt/ext0/PSXS5", "/mnt/ext1/PSXS5", "/mnt/ext1/PSXS5/games"};
-    char index[PSXS5_PATH_MAX];
+    /* The games folder, then on each drive both <drive>/<name> and <drive>/<name>/games, for our
+     * folder name and for the PSXS5 one. */
+    static const char *const drives[] = {"/mnt/usb0", "/mnt/usb1", "/mnt/ext0", "/mnt/ext1"};
+    static const char *const names[] = {"SwanStationPS5", "PSXS5"};
+    static char drive_roots[2 * 2 * 4][SwanStationPS5_PATH_MAX];
+    const char *roots[2 + 2 * 2 * 4];
+    int root_count = 0;
+    roots[root_count++] = app.paths.games;
+    roots[root_count++] = "/data/PSXS5/games";
+    for (int d = 0; d < 4; ++d)
+        for (int n = 0; n < 2; ++n)
+        {
+            char *plain = drive_roots[root_count - 2], *games = drive_roots[root_count - 1];
+            snprintf(plain, SwanStationPS5_PATH_MAX, "%s/%s", drives[d], names[n]);
+            snprintf(games, SwanStationPS5_PATH_MAX, "%s/%s/games", drives[d], names[n]);
+            roots[root_count++] = plain;
+            roots[root_count++] = games;
+        }
+    char index[SwanStationPS5_PATH_MAX];
     path_join(index, sizeof(index), app.paths.root, "library.txt");
     if (app.sandboxed)
     {
@@ -231,7 +242,7 @@ void app_rescan(void)
     }
     else
     {
-        library_scan(&app.library, roots, sizeof(roots) / sizeof(roots[0]));
+        library_scan(&app.library, roots, root_count);
         if (app.library.count == 0)
             library_load_index(&app.library, index);
     }
@@ -246,7 +257,7 @@ const Paths *app_paths(void)
 
 void app_game_config_path(char *out, size_t size, const Game *g)
 {
-    char dir[PSXS5_PATH_MAX], file[96];
+    char dir[SwanStationPS5_PATH_MAX], file[96];
     path_join(dir, sizeof(dir), app.paths.user, "game-settings");
     snprintf(file, sizeof(file), "%.80s.ini", g ? g->id : "none");
     path_join(out, size, dir, file);
@@ -257,7 +268,7 @@ void app_save_settings(void)
     config_save(&app.global, app.paths.config);
     if (app.game && app.game_has_own)
     {
-        char path[PSXS5_PATH_MAX], dir[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX], dir[SwanStationPS5_PATH_MAX];
         path_join(dir, sizeof(dir), app.paths.user, "game-settings");
         make_dirs(dir);
         app_game_config_path(path, sizeof(path), app.game);
@@ -393,7 +404,7 @@ void app_draw_game(uint8_t dim)
             draw_rrect(gx - 26, gy - 24, gw + 52, gh + 48, 34, argb_lerp(0xff000000u, 0xff0e0e11u, k));
             draw_circle(gx + gw + 30, gy + gh + 44, 7, argb_lerp(0xff000000u, 0xff3cd070u, k));
             text_draw(gx + gw * 0.5f, gy + gh + 32, 22, FONT_BOLD, argb_lerp(0xff000000u, 0xff5a5a66u, k),
-                      ALIGN_CENTER, PSXS5_TITLE);
+                      ALIGN_CENTER, SwanStationPS5_TITLE);
         }
     }
     plat_set_colour(view.brightness, view.colour, view.sharpen);
@@ -403,10 +414,10 @@ void app_draw_game(uint8_t dim)
         draw_timer();
 }
 
-/* Is there a BIOS file (any .bin) in bios/? When the folder can't be listed (sandboxed mode) we can't tell: yes. */
-static bool bios_file_present(void)
+/* Is there a BIOS file (any .bin) in dir? When the folder can't be listed (sandboxed mode) we can't tell: yes. */
+static bool bios_dir_has_bin(const char *dir)
 {
-    DIR *d = opendir(app.paths.bios);
+    DIR *d = opendir(dir);
     if (!d)
         return true;
     bool found = false;
@@ -417,12 +428,32 @@ static bool bios_file_present(void)
     return found;
 }
 
+/* Is there a BIOS file (any .bin) in bios/? */
+static bool bios_file_present(void)
+{
+    return bios_dir_has_bin(app.paths.bios);
+}
+
+/* Also support the BIOS folder of PSXS5: used when ours has no BIOS file and that one has. */
+static void bios_use_legacy_dir(void)
+{
+    static const char legacy[] = "/data/PSXS5/bios";
+    DIR *d = opendir(legacy);
+    if (!d) /* missing or can't be listed: nothing proves it holds a BIOS */
+        return;
+    closedir(d);
+    if (bios_dir_has_bin(app.paths.bios) || !bios_dir_has_bin(legacy))
+        return;
+    str_copy(app.paths.bios, sizeof(app.paths.bios), legacy);
+    SwanStationPS5_log("bios: none in our bios folder, using %s", legacy);
+}
+
 void app_start_game(int index, bool resume)
 {
     if (index < 0 || index >= app.library.count)
         return;
     const Game *g = &app.library.games[index];
-    char error[160], own[PSXS5_PATH_MAX];
+    char error[160], own[SwanStationPS5_PATH_MAX];
     app_game_config_path(own, sizeof(own), g);
     app.game_has_own = config_load_game(&app.settings, &app.global, own);
     bool translated = play_prepare_patch(g);
@@ -440,9 +471,9 @@ void app_start_game(int index, bool resume)
             fixes |= GDB_ANALOG;
         host_set_fixes(fixes);
         if (fixes)
-            psxs5_log("start: known fixes %x (DuckStation's database)", fixes);
+            SwanStationPS5_log("start: known fixes %x (DuckStation's database)", fixes);
     }
-    psxs5_log("start: %s (%s) from %s%s", g->title, g->serial, g->path,
+    SwanStationPS5_log("start: %s (%s) from %s%s", g->title, g->serial, g->path,
               app.game_has_own ? " with its own settings" : "");
     if (!host_load(g->path, g->serial, &app.paths, &app.settings, error, sizeof(error)))
     {
@@ -545,7 +576,7 @@ static uint32_t map_buttons(uint32_t buttons)
 }
 
 /* Speedrun timer: touchpad + Triangle starts/pauses, touchpad + Circle resets.
- * It counts only while the game runs (not in the PSXS5 menu). */
+ * It counts only while the game runs (not in the SwanStationPS5 menu). */
 static struct
 {
     bool shown, running;
@@ -570,11 +601,11 @@ static void draw_timer(void)
 /* The DualSense light bars: per player, or the cover's colour. */
 static void update_lightbars(void)
 {
-    static const uint32_t players[PSXS5_MAX_PADS] = {0x2050ff, 0xff2030, 0x20d040, 0xff40c0};
+    static const uint32_t players[SwanStationPS5_MAX_PADS] = {0x2050ff, 0xff2030, 0x20d040, 0xff40c0};
     if (app.settings.lightbar == 0)
         return;
     uint32_t cover = app.game ? covers_color(app.game_index) & 0xffffff : 0;
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         plat_set_lightbar(i, app.settings.lightbar == 2 && cover ? cover : players[i]);
 }
 
@@ -587,10 +618,10 @@ static uint32_t held_from_menu;
 static void game_screen(PadState *pads)
 {
     uint32_t held_now = 0;
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         held_now |= pads[i].buttons;
     held_from_menu &= held_now;
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         pads[i].buttons &= ~held_from_menu;
     static uint32_t combo_prev;
     uint32_t combo = pads[0].buttons & (BIT(BTN_L3) | BIT(BTN_R3));
@@ -598,7 +629,7 @@ static void game_screen(PadState *pads)
     combo_prev = combo;
 
     /* Touchpad: a tap is the PS1's Select (the PS5 SDL driver has no Create
-     * button); holding it opens the PSXS5 menu. */
+     * button); holding it opens the SwanStationPS5 menu. */
     static uint64_t touch_since;
     static bool touch_used;
     static int select_frames;
@@ -620,7 +651,7 @@ static void game_screen(PadState *pads)
     if (newly & BIT(BTN_SQUARE))
     {
         bool ok = play_screenshot();
-        app_toast(ok ? "Screenshot saved in /data/PSXS5/screenshots" : "Could not save the screenshot");
+        app_toast(ok ? "Screenshot saved in /data/SwanStationPS5/screenshots" : "Could not save the screenshot");
         sfx_play(ok ? SFX_SELECT : SFX_BACK);
     }
     if (newly & BIT(BTN_TRIANGLE))
@@ -670,11 +701,11 @@ static void game_screen(PadState *pads)
         app_draw_game(255);
         return;
     }
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         if (fast || back)
             pads[i].buttons &= ~(BIT(BTN_L2) | BIT(BTN_R2));
-        if (touch) /* the combo buttons go to PSXS5, not the game */
+        if (touch) /* the combo buttons go to SwanStationPS5, not the game */
             pads[i].buttons &= ~combo_keys;
         pads[i].buttons = map_buttons(pads[i].buttons & ~BIT(BTN_MENU));
         if (i == 0 && select_frames > 0)
@@ -795,7 +826,7 @@ static void game_screen(PadState *pads)
     emu_frames += runs;
     if (emu_frames >= 240)
     {
-        psxs5_log("emu: %.1f ms per emulated frame, %.1f fps measured", emu_us / 1000.0 / emu_frames,
+        SwanStationPS5_log("emu: %.1f ms per emulated frame, %.1f fps measured", emu_us / 1000.0 / emu_frames,
                   app.fps);
         emu_us = 0;
         emu_frames = 0;
@@ -871,8 +902,8 @@ static void count_play_time(void)
 int main(void)
 {
     /* First thing: proves the loader accepted the title and main() runs. */
-    plat_notify("SwanStationPS5 " PSXS5_VERSION " starting...");
-    char root[PSXS5_PATH_MAX];
+    plat_notify("SwanStationPS5 " SwanStationPS5_VERSION " starting...");
+    char root[SwanStationPS5_PATH_MAX];
     plat_default_root(root, sizeof(root));
     config_paths(&app.paths, root);
 
@@ -897,7 +928,8 @@ int main(void)
                           app.paths.covers, app.paths.logs,   app.paths.cache};
     for (size_t i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i)
         make_dirs(dirs[i]);
-    char probe[PSXS5_PATH_MAX];
+    bios_use_legacy_dir();
+    char probe[SwanStationPS5_PATH_MAX];
     path_join(probe, sizeof(probe), app.paths.root, ".write-test");
     FILE *pf = fopen(probe, "w");
     if (pf)
@@ -908,9 +940,9 @@ int main(void)
     else
         snprintf(app.storage_error, sizeof(app.storage_error),
                  "%s isn't writable. Is the HEN running? (%s)", app.paths.root, app.sandbox_reason);
-    char log_path[PSXS5_PATH_MAX];
-    path_join(log_path, sizeof(log_path), app.paths.logs, "psxs5.log");
-    psxs5_log_open(log_path);
+    char log_path[SwanStationPS5_PATH_MAX];
+    path_join(log_path, sizeof(log_path), app.paths.logs, "SwanStationPS5.log");
+    SwanStationPS5_log_open(log_path);
     ps5_crash_install(log_path);
 #if defined(__PROSPERO__)
     /* the log's stderr lines go to klog: nc <PS5 IP> 3232 shows them live */
@@ -920,23 +952,23 @@ int main(void)
     /* a second games folder on the extended storage, only when it is mounted */
     struct stat ext;
     if (stat("/mnt/ext1", &ext) != 0 || !S_ISDIR(ext.st_mode))
-        psxs5_log("games folder /mnt/ext1/PSXS5/games: /mnt/ext1 is not available");
-    else if (stat("/mnt/ext1/PSXS5/games", &ext) == 0)
-        psxs5_log("games folder /mnt/ext1/PSXS5/games: already exists");
-    else if (make_dirs("/mnt/ext1/PSXS5/games"))
-        psxs5_log("games folder /mnt/ext1/PSXS5/games: created successfully");
+        SwanStationPS5_log("games folder /mnt/ext1/SwanStationPS5/games: /mnt/ext1 is not available");
+    else if (stat("/mnt/ext1/SwanStationPS5/games", &ext) == 0)
+        SwanStationPS5_log("games folder /mnt/ext1/SwanStationPS5/games: already exists");
+    else if (make_dirs("/mnt/ext1/SwanStationPS5/games"))
+        SwanStationPS5_log("games folder /mnt/ext1/SwanStationPS5/games: created successfully");
     else
-        psxs5_log("games folder /mnt/ext1/PSXS5/games: could not be created (%s)", strerror(errno));
-    psxs5_log("SwanStationPS5 %s starting, data root %s", PSXS5_VERSION, app.paths.root);
-    psxs5_log("screen: %s", plat_screen_info());
+        SwanStationPS5_log("games folder /mnt/ext1/SwanStationPS5/games: could not be created (%s)", strerror(errno));
+    SwanStationPS5_log("SwanStationPS5 %s starting, data root %s", SwanStationPS5_VERSION, app.paths.root);
+    SwanStationPS5_log("screen: %s", plat_screen_info());
 #if defined(__PROSPERO__)
     extern size_t ps5_heap_size_mb(void);
-    psxs5_log("heap: %zu MB of direct memory%s", ps5_heap_size_mb(),
+    SwanStationPS5_log("heap: %zu MB of direct memory%s", ps5_heap_size_mb(),
               ps5_heap_size_mb() ? "" : " (unavailable: using the system heap)");
 #endif
-    psxs5_log(app.sandboxed ? "storage: sandboxed (%s)" : "storage: unlocked%s",
+    SwanStationPS5_log(app.sandboxed ? "storage: sandboxed (%s)" : "storage: unlocked%s",
               app.sandboxed ? app.sandbox_reason : "");
-    psxs5_log("storage probe before unlock: %s", plat_sandbox_probe());
+    SwanStationPS5_log("storage probe before unlock: %s", plat_sandbox_probe());
     vk_probe(app.paths.root); /* v2: proves the Vulkan driver runs; logs only */
     app.unlock_setting = !plat_unlock_disabled();
 
@@ -965,7 +997,7 @@ int main(void)
     plat_notify("SwanStationPS5 ready");
 
     bool quit = false;
-    PadState pads[PSXS5_MAX_PADS];
+    PadState pads[SwanStationPS5_MAX_PADS];
     uint64_t last = plat_ticks_us();
     while (!quit)
     {
@@ -995,7 +1027,7 @@ int main(void)
         case SCREEN_LIBRARY: shelf_screen(pressed); break;
         case SCREEN_GAME:
             if (last_screen != SCREEN_GAME)
-                for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+                for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
                     held_from_menu |= pads[i].buttons;
             game_screen(pads);
             break;
@@ -1030,23 +1062,23 @@ int main(void)
 
     /* Only the desktop build gets here; the PS5 shell closes the title. */
     ps5_crash_step("shutdown");
-    psxs5_log("shutdown: leaving the main loop");
+    SwanStationPS5_log("shutdown: leaving the main loop");
     if (app.game)
         app_stop_game();
     config_save(&app.global, app.paths.config);
     stats_save();
-    psxs5_log("shutdown: settings and stats saved");
+    SwanStationPS5_log("shutdown: settings and stats saved");
     remote_update(false);
     ra_shutdown();
-    psxs5_log("shutdown: network and RetroAchievements stopped");
+    SwanStationPS5_log("shutdown: network and RetroAchievements stopped");
     covers_stop();
     plat_audio_close();
     icons_shutdown();
     text_shutdown();
     library_free(&app.library);
-    psxs5_log("shutdown: interface freed");
+    SwanStationPS5_log("shutdown: interface freed");
     plat_shutdown();
-    psxs5_log("shutdown: done");
+    SwanStationPS5_log("shutdown: done");
 #if defined(__PROSPERO__)
     /* The system closes the title: exit()/_exit() raise SIGSYS on the console. */
     extern int sceSystemServiceGetAppIdOfRunningBigApp(void);

@@ -150,7 +150,7 @@ function render() {
 }
 
 /* ---- RetroAchievements: sign in from the phone (the password goes to
-   retroachievements.org through PSXS5 and isn't kept; PSXS5 keeps a token) ---- */
+   retroachievements.org through SwanStationPS5 and isn't kept; SwanStationPS5 keeps a token) ---- */
 
 let accountMessage = '';
 
@@ -173,7 +173,7 @@ function renderAccount(rows) {
     row.appendChild(out);
   } else {
     row.appendChild(el('div', 'name', 'Sign in'));
-    row.appendChild(el('div', 'help', 'For the profile “' + data.ra.profile + '”. Your password goes from SwanStationPS5 straight to retroachievements.org and isn’t kept: PSXS5 only keeps the sign-in token.'));
+    row.appendChild(el('div', 'help', 'For the profile “' + data.ra.profile + '”. Your password goes from SwanStationPS5 straight to retroachievements.org and isn’t kept: SwanStationPS5 only keeps the sign-in token.'));
     const form = el('form');
     const user = el('input');
     user.placeholder = 'User name';

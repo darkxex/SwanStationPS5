@@ -1,9 +1,9 @@
 /*
- * PSXS5 - the game shelf (home screen).
+ * SwanStationPS5 - the game shelf (home screen).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_COVERFLOW_H
-#define PSXS5_COVERFLOW_H
+#ifndef SwanStationPS5_COVERFLOW_H
+#define SwanStationPS5_COVERFLOW_H
 
 #include "../library.h"
 

@@ -1,13 +1,13 @@
 /*
- * PSXS5 - state and helpers shared by the screens (main.c owns them).
+ * SwanStationPS5 - state and helpers shared by the screens (main.c owns them).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_APP_H
-#define PSXS5_APP_H
+#ifndef SwanStationPS5_APP_H
+#define SwanStationPS5_APP_H
 
 #include "cheats.h"
 #include "library.h"
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 enum Screen
 {
@@ -31,7 +31,7 @@ typedef struct
 {
     Paths paths;
     Settings settings;        /* in effect now: the game's own when it has them */
-    Settings global;          /* console-wide (psxs5.ini) */
+    Settings global;          /* console-wide (SwanStationPS5.ini) */
     bool game_has_own;        /* the running game has its own settings file */
     Library library;
     CheatList cheats;
@@ -45,7 +45,7 @@ typedef struct
     char sandbox_reason[200];
     float dt;                 /* seconds since the last frame */
     float fps;                /* emulated frames per second */
-    PadState pads[PSXS5_MAX_PADS]; /* this frame's controllers, as read (by player) */
+    PadState pads[SwanStationPS5_MAX_PADS]; /* this frame's controllers, as read (by player) */
     bool quit_requested;      /* leave the main loop and close the app */
     double play_seconds;      /* how long this game has been played since it started */
 } App;
@@ -66,7 +66,7 @@ void app_start_game(int index, bool resume);
 void app_stop_game(void);
 /* Path of a game's own settings file. */
 void app_game_config_path(char *out, size_t size, const Game *g);
-/* Saves psxs5.ini and, when it has them, the running game's own settings. */
+/* Saves SwanStationPS5.ini and, when it has them, the running game's own settings. */
 void app_save_settings(void);
 void app_open_settings(enum Screen back_to);
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PSXS5 v2 - builds Beetle PSX HW (Mednafen PSX, libretro, GPL-2.0) for the PS5
+# SwanStationPS5 v2 - builds Beetle PSX HW (Mednafen PSX, libretro, GPL-2.0) for the PS5
 # as a static archive that can live in the same app as PCSX-ReARMed.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
@@ -36,7 +36,7 @@ lld=$(command -v ld.lld-18 || command -v ld.lld)
 mkdir -p "$out"
 archive="$out/libmednafen_psx_hw.a"
 
-# PSXS5's small changes to the core live as patches (the submodule stays
+# SwanStationPS5's small changes to the core live as patches (the submodule stays
 # pristine); each is applied once.
 for patch in "$root"/tools/patches/beetle-psx-*.patch; do
     [[ -f $patch ]] || continue
@@ -57,12 +57,12 @@ if [[ ! -f $out/libbeetle_psx.a || ! -f $stamp || $(cat "$stamp") != "$want" ]];
     export CFLAGS="-O2 -fPIC -ffunction-sections -fdata-sections -march=znver2"
     export CXXFLAGS="$CFLAGS"
     # Not STATIC_LINKING: that build leaves libretro-common to the frontend,
-    # and PSXS5's copy belongs to PCSX-ReARMed. The shared-library source list
+    # and SwanStationPS5's copy belongs to PCSX-ReARMed. The shared-library source list
     # carries Beetle's own; beetle-archive.mk archives it instead of linking.
     make -C "$core" -f Makefile -f "$root/tools/beetle-archive.mk" -j"$jobs" platform=ps5 \
         TARGET=libmednafen_psx_hw.a \
         CC="sh $root/tooling/prospero-clang18" CXX="sh $root/tooling/prospero-clang18 -x c++" \
-        AR="$ar" psxs5-archive
+        AR="$ar" SwanStationPS5-archive
     cp "$core/libmednafen_psx_hw.a" "$archive"
 
     echo "==> [beetle] isolating its symbols"

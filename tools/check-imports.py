@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# PSXS5 - fails the build if eboot.bin imports a system module that stops
+# SwanStationPS5 - fails the build if eboot.bin imports a system module that stops
 # a native title from launching ("Can't start the game or app").
 # SPDX-License-Identifier: GPL-3.0-or-later
 import re

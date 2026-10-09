@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PSXS5 interface preview: builds the screens for Windows (zig + SDL2 for
+# SwanStationPS5 interface preview: builds the screens for Windows (zig + SDL2 for
 # mingw) with a fake core, runs a button script and saves screenshots.
 #
 #   bash tools/ui-preview/build.sh [script]   -> build/preview/shots/*.png
@@ -19,20 +19,20 @@ sources=(src/cheats.c src/config.c src/covers.c src/disc.c src/i18n.c src/librar
     src/net.c src/stats.c src/tips.c src/controls.c src/bezels.c src/art.c src/profiles.c src/gamedb.c src/stb_impl.c src/util.c src/play.c src/remote.c src/update.c src/vendor.c src/platform/vk/vk_probe.c src/platform/plat_sdl.c src/platform/xbr.c src/platform/blit.c
     src/ui/*.c tools/ui-preview/stubs.c)
 python -m ziglang cc -target x86_64-windows-gnu -std=gnu11 -O2 -w \
-    -DPSXS5_PREVIEW -DSDL_MAIN_HANDLED -include tools/ui-preview/compat.h \
+    -DSwanStationPS5_PREVIEW -DSDL_MAIN_HANDLED -include tools/ui-preview/compat.h \
     -Isrc -Ithird_party/stb -Ithird_party/swanstation/dep/libretro-common/include \
     -Ithird_party/rcheevos/include -I"$sdl/include" \
-    "${sources[@]}" "$sdl/lib/libSDL2.dll.a" -o "$out/psxs5-preview.exe"
+    "${sources[@]}" "$sdl/lib/libSDL2.dll.a" -o "$out/SwanStationPS5-preview.exe"
 cp "$sdl/bin/SDL2.dll" "$out/"
-echo "built $out/psxs5-preview.exe"
+echo "built $out/SwanStationPS5-preview.exe"
 
 script=${1:-tools/ui-preview/tour.txt}
 rm -f "$out"/shots/*.bmp
 (
     cd "$out"
-    PSXS5_ROOT="$root/build/preview-root" PSXS5_SCRIPT="$root/$script" PSXS5_SHOTS="shots" \
-        PSXS5_ASSETS="$root/assets" PSXS5_BANNER="${PSXS5_BANNER:-}" SDL_AUDIODRIVER=dummy \
-        ./psxs5-preview.exe
+    SwanStationPS5_ROOT="$root/build/preview-root" SwanStationPS5_SCRIPT="$root/$script" SwanStationPS5_SHOTS="shots" \
+        SwanStationPS5_ASSETS="$root/assets" SwanStationPS5_BANNER="${SwanStationPS5_BANNER:-}" SDL_AUDIODRIVER=dummy \
+        ./SwanStationPS5-preview.exe
 )
 python - "$out/shots" <<'PY'
 import sys, pathlib

@@ -1,4 +1,4 @@
-# PSXS5 per-game tips, shown in the shelf's Details panel.
+# SwanStationPS5 per-game tips, shown in the shelf's Details panel.
 # title<TAB>region (any, US, EU or JP: the disc's serial)<TAB>tip
 # The title is compared word by word, as the cheat matching does (no
 # punctuation, roman numerals as digits). Add only what is sure.

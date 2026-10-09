@@ -1,14 +1,14 @@
 /*
- * PSXS5 - what PSXS5 does with the controller while a game runs: stick dead
+ * SwanStationPS5 - what SwanStationPS5 does with the controller while a game runs: stick dead
  * zone and response, gas and brake on the triggers in racing games, the
  * DualSense as a light gun, and the adaptive triggers.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_CONTROLS_H
-#define PSXS5_CONTROLS_H
+#ifndef SwanStationPS5_CONTROLS_H
+#define SwanStationPS5_CONTROLS_H
 
 #include "library.h"
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 enum GameKind
 {
@@ -29,7 +29,7 @@ int controls_special_for(const Game *g, const Settings *s);
 void controls_start(const Game *g, const Settings *s);
 void controls_stop(void);
 /* Each frame, on the buttons the game will see. */
-void controls_apply(PadState pads[PSXS5_MAX_PADS], const Settings *s, float dt);
+void controls_apply(PadState pads[SwanStationPS5_MAX_PADS], const Settings *s, float dt);
 /* The gun's crosshair, over the game. */
 void controls_draw(void);
 bool controls_gun_active(void);

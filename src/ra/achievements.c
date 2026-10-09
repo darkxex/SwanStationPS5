@@ -1,9 +1,9 @@
 /*
- * PSXS5 - RetroAchievements (retroachievements.org) through rcheevos.
+ * SwanStationPS5 - RetroAchievements (retroachievements.org) through rcheevos.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * - Sign-in uses the token from retroachievements.ini; the password is never
- *   stored on the console (tools/psxs5_sync.py ra-login exchanges it once).
+ *   stored on the console (tools/SwanStationPS5_sync.py ra-login exchanges it once).
  * - Server calls run on one worker thread (libcurl, blocking).
  * - PS1 RAM is read through the core's libretro memory map (rc_libretro).
  * - The game is identified by rc_hash's PlayStation hash, reading sectors
@@ -74,7 +74,7 @@ bool ra_tracker(char *title, size_t title_size, char *progress, size_t progress_
 
 static void post(const char *title, const char *detail)
 {
-    psxs5_log("ra: %s - %s", title, detail);
+    SwanStationPS5_log("ra: %s - %s", title, detail);
     if (!msg_lock)
         return;
     SDL_LockMutex(msg_lock);
@@ -217,7 +217,7 @@ static uint32_t RC_CCONV read_memory(uint32_t address, uint8_t *buffer, uint32_t
  * time<TAB>points<TAB>game<TAB>achievement<TAB>description. */
 static void log_unlock(const rc_client_achievement_t *a)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     path_join(path, sizeof(path), paths.user, "achievements-log.txt");
     FILE *f = fopen(path, "a");
     if (!f)
@@ -240,7 +240,7 @@ static void log_unlock(const rc_client_achievement_t *a)
 
 int ra_recent(RaRecent *out, int max)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     path_join(path, sizeof(path), paths.user, "achievements-log.txt");
     FILE *f = fopen(path, "r");
     if (!f || max <= 0)
@@ -363,13 +363,13 @@ static void RC_CCONV on_event(const rc_client_event_t *e, rc_client_t *c)
 
 static void RC_CCONV hash_error(const char *message)
 {
-    psxs5_log("ra: disc hash: %s", message);
+    SwanStationPS5_log("ra: disc hash: %s", message);
 }
 
 static void RC_CCONV log_message(const char *message, const rc_client_t *c)
 {
     (void)c;
-    psxs5_log("rcheevos: %s", message);
+    SwanStationPS5_log("rcheevos: %s", message);
 }
 
 /* ---------------------------------------------------------------- settings file */
@@ -381,7 +381,7 @@ static void ini_path(char *out, size_t size)
 
 static void load_ini(void)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     ini_path(path, sizeof(path));
     FILE *f = fopen(path, "r");
     if (!f)
@@ -406,7 +406,7 @@ static void load_ini(void)
 
 static void save_ini(void)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     ini_path(path, sizeof(path));
     FILE *f = fopen(path, "w");
     if (!f)
@@ -441,7 +441,7 @@ void ra_init(const Paths *p)
     load_ini();
     if (!user[0] || !token[0])
     {
-        psxs5_log("ra: not set up (run tools/psxs5_sync.py ra-login)");
+        SwanStationPS5_log("ra: not set up (run tools/SwanStationPS5_sync.py ra-login)");
         return;
     }
     if (!msg_lock)
@@ -458,7 +458,7 @@ void ra_init(const Paths *p)
     rc_client_set_hardcore_enabled(client, hardcore ? 1 : 0);
     char clause[128] = "";
     rc_client_get_user_agent_clause(client, clause, sizeof(clause));
-    snprintf(agent, sizeof(agent), PSXS5_NAME "/" PSXS5_VERSION " (PS5) %s", clause);
+    snprintf(agent, sizeof(agent), SwanStationPS5_NAME "/" SwanStationPS5_VERSION " (PS5) %s", clause);
 
     rc_hash_init_error_message_callback(hash_error);
 
@@ -489,7 +489,7 @@ static void RC_CCONV on_game_loaded(int result, const char *error, rc_client_t *
         if (result == RC_NO_GAME_LOADED) /* "Unknown game": this dump's hash isn't in any set */
             post("RetroAchievements", tr("This version of the game isn't supported. A Redump dump of your disc usually is."));
         else
-            psxs5_log("ra: no achievements loaded: %s", error ? error : "?");
+            SwanStationPS5_log("ra: no achievements loaded: %s", error ? error : "?");
         return;
     }
     const rc_client_game_t *g = rc_client_get_game_info(c);
@@ -513,7 +513,7 @@ static void first_disc(const char *game_path, char *out, size_t size)
     if (str_icmp(path_ext(game_path), "m3u") != 0)
         return;
     FILE *f = fopen(game_path, "r");
-    char line[PSXS5_PATH_MAX] = "";
+    char line[SwanStationPS5_PATH_MAX] = "";
     while (f && fgets(line, sizeof(line), f))
     {
         line[strcspn(line, "\r\n")] = '\0';
@@ -529,7 +529,7 @@ static void first_disc(const char *game_path, char *out, size_t size)
         str_copy(out, size, line);
     else
     {
-        char dir[PSXS5_PATH_MAX];
+        char dir[SwanStationPS5_PATH_MAX];
         str_copy(dir, sizeof(dir), game_path);
         char *slash = strrchr(dir, '/');
         if (slash)
@@ -544,15 +544,15 @@ void ra_game_loaded(const char *game_path)
         return;
     regions_ready = rc_libretro_memory_init(&regions, host_memory_map(), core_memory_info,
                                             RC_CONSOLE_PLAYSTATION) != 0;
-    char hash[33] = "", disc[PSXS5_PATH_MAX];
+    char hash[33] = "", disc[SwanStationPS5_PATH_MAX];
     first_disc(game_path, disc, sizeof(disc));
     bool ok = rc_hash_generate_from_file(hash, RC_CONSOLE_PLAYSTATION, disc);
     if (!ok)
     {
-        psxs5_log("ra: could not hash this disc");
+        SwanStationPS5_log("ra: could not hash this disc");
         return;
     }
-    psxs5_log("ra: game hash %s", hash);
+    SwanStationPS5_log("ra: game hash %s", hash);
     rc_client_begin_load_game(client, hash, on_game_loaded, NULL);
 }
 

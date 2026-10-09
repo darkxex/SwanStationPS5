@@ -1,9 +1,9 @@
 /*
- * PSXS5 - tips for a game, shown in the shelf's Details panel.
+ * SwanStationPS5 - tips for a game, shown in the shelf's Details panel.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_TIPS_H
-#define PSXS5_TIPS_H
+#ifndef SwanStationPS5_TIPS_H
+#define SwanStationPS5_TIPS_H
 
 #include "library.h"
 

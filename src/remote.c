@@ -1,5 +1,5 @@
 /*
- * PSXS5 - settings from a phone: a small web page on the local network.
+ * SwanStationPS5 - settings from a phone: a small web page on the local network.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * One thread answers HTTP on REMOTE_PORT:
@@ -92,7 +92,7 @@ static void respond(int fd, const char *status, const char *type, const char *bo
 
 static char *read_asset(const char *name, size_t *len)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     plat_asset_path(path, sizeof(path), name);
     FILE *f = fopen(path, "rb");
     if (!f)
@@ -179,7 +179,7 @@ static void card_file(const RemoteGame *g, char *out, size_t size)
     }
     for (char *c = name; *c; ++c)
         *c = (char)(*c >= 'A' && *c <= 'Z' ? *c + 32 : *c);
-    char lower[PSXS5_PATH_MAX];
+    char lower[SwanStationPS5_PATH_MAX];
     path_join(lower, sizeof(lower), app.paths.saves, name);
     if ((f = fopen(lower, "rb")) != NULL)
     {
@@ -217,7 +217,7 @@ static size_t json_text(char *out, size_t size, const char *in)
 
 static void read_note(const char *state, char *out, size_t size)
 {
-    char path[PSXS5_PATH_MAX + 8];
+    char path[SwanStationPS5_PATH_MAX + 8];
     snprintf(path, sizeof(path), "%s.note", state);
     out[0] = '\0';
     FILE *f = fopen(path, "rb");
@@ -242,7 +242,7 @@ static void send_saves(int fd)
     for (int i = 0; i < game_count && w + 4096 < cap; ++i)
     {
         const RemoteGame *g = &games[i];
-        char path[PSXS5_PATH_MAX], text[400];
+        char path[SwanStationPS5_PATH_MAX], text[400];
         card_file(g, path, sizeof(path));
         long long card = path[0] ? file_time(path, NULL) : 0;
         w += (size_t)snprintf(out + w, cap - w, "%s{\"id\":\"", i ? "," : "");
@@ -305,7 +305,7 @@ void mz_free(void *p);
 /* GET /api/thumb: the slot's picture (PSXT, raw RGBA) as a PNG */
 static void send_thumb(int fd, const char *state)
 {
-    char path[PSXS5_PATH_MAX + 8];
+    char path[SwanStationPS5_PATH_MAX + 8];
     snprintf(path, sizeof(path), "%s.thumb", state);
     FILE *f = fopen(path, "rb");
     uint8_t head[8];
@@ -367,7 +367,7 @@ static char *read_body(int fd, const char *req, size_t req_len, size_t limit, si
 
 static bool write_atomic(const char *path, const char *data, size_t len)
 {
-    char temp[PSXS5_PATH_MAX + 8];
+    char temp[SwanStationPS5_PATH_MAX + 8];
     snprintf(temp, sizeof(temp), "%s.upload", path);
     FILE *f = fopen(temp, "wb");
     bool ok = f && fwrite(data, 1, len, f) == len;
@@ -390,7 +390,7 @@ static void serve_saves(int fd, const char *method, const char *path, const char
         query(q + 1, "type", kind, sizeof(kind));
         query(q + 1, "slot", slot_s, sizeof(slot_s));
     }
-    /* ids are written by PSXS5 itself (serials or title letters), so no escapes to undo */
+    /* ids are written by SwanStationPS5 itself (serials or title letters), so no escapes to undo */
     SDL_LockMutex(lock);
     const RemoteGame *found = find_game(id);
     RemoteGame g;
@@ -404,7 +404,7 @@ static void serve_saves(int fd, const char *method, const char *path, const char
         reply_json(fd, "404 Not Found", "{\"ok\":false,\"error\":\"unknown game\"}");
         return;
     }
-    char file[PSXS5_PATH_MAX], name[160];
+    char file[SwanStationPS5_PATH_MAX], name[160];
     bool card = !strcmp(kind, "card");
     if (card)
     {
@@ -447,7 +447,7 @@ static void serve_saves(int fd, const char *method, const char *path, const char
     bool ok;
     if (!strncmp(path, "/api/note", 9))
     {
-        char note[PSXS5_PATH_MAX + 8];
+        char note[SwanStationPS5_PATH_MAX + 8];
         snprintf(note, sizeof(note), "%s.note", file);
         len = strcspn(body, "\r\n");
         ok = len ? write_atomic(note, body, len < 120 ? len : 120) : (remove(note), true);
@@ -458,7 +458,7 @@ static void serve_saves(int fd, const char *method, const char *path, const char
     {
         if (card) /* keep the card it replaces */
         {
-            char backup[PSXS5_PATH_MAX + 8];
+            char backup[SwanStationPS5_PATH_MAX + 8];
             snprintf(backup, sizeof(backup), "%s.bak", file);
             FILE *old = fopen(file, "rb");
             if (old)
@@ -471,7 +471,7 @@ static void serve_saves(int fd, const char *method, const char *path, const char
         ok = (!card || len == 128 * 1024) && write_atomic(file, body, len);
     }
     free(body);
-    psxs5_log("remote: %s %s for %s: %s", !strncmp(path, "/api/note", 9) ? "note" : card ? "card" : "state",
+    SwanStationPS5_log("remote: %s %s for %s: %s", !strncmp(path, "/api/note", 9) ? "note" : card ? "card" : "state",
               !strcmp(method, "POST") ? "uploaded" : "?", id, ok ? "ok" : "refused");
     if (ok)
         reply_json(fd, "200 OK", "{\"ok\":true}");
@@ -549,7 +549,7 @@ static void serve_ra_login(int fd, const char *req, size_t req_len)
         SDL_UnlockMutex(lock);
     }
     memset(token, 0, sizeof(token));
-    psxs5_log("remote: RetroAchievements sign-in from the phone: %s", ok ? "ok" : "failed");
+    SwanStationPS5_log("remote: RetroAchievements sign-in from the phone: %s", ok ? "ok" : "failed");
     char answer[400];
     int n;
     if (ok)
@@ -700,7 +700,7 @@ void remote_update(bool enabled)
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd < 0 || !lock || !snapshot)
     {
-        psxs5_log("remote: no socket");
+        SwanStationPS5_log("remote: no socket");
         return;
     }
     int yes = 1;
@@ -711,7 +711,7 @@ void remote_update(bool enabled)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0 || listen(listen_fd, 4) != 0)
     {
-        psxs5_log("remote: port %d unavailable", REMOTE_PORT);
+        SwanStationPS5_log("remote: port %d unavailable", REMOTE_PORT);
         close(listen_fd);
         listen_fd = -1;
         return;
@@ -719,7 +719,7 @@ void remote_update(bool enabled)
     SDL_AtomicSet(&quit, 0);
     find_address();
     thread = SDL_CreateThread(server, "remote", NULL);
-    psxs5_log("remote: settings page at %s", address[0] ? address : "(no address)");
+    SwanStationPS5_log("remote: settings page at %s", address[0] ? address : "(no address)");
 }
 
 void remote_frame(void)

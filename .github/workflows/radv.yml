@@ -1,4 +1,4 @@
-# PSXS5 v2 - builds Mihawk-99's RADV port (Mesa's Vulkan driver for the PS5 GPU)
+# SwanStationPS5 v2 - builds Mihawk-99's RADV port (Mesa's Vulkan driver for the PS5 GPU)
 # as a static archive, for the Vulkan renderer. Slow (Mesa), so it runs on
 # demand and its result is published as a release asset the app build downloads.
 # SPDX-License-Identifier: GPL-3.0-or-later

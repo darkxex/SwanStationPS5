@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in PSXS5 doesn't work as it should
+description: Something in SwanStationPS5 doesn't work as it should
 labels: [bug]
 body:
   - type: markdown
@@ -21,7 +21,7 @@ body:
     id: steps
     attributes:
       label: How to make it happen
-      description: The steps from starting PSXS5. Does it happen every time?
+      description: The steps from starting SwanStationPS5. Does it happen every time?
       placeholder: |
         1. Start Toy Story 2
         2. Walk up to Mr. Potato Head and press X
@@ -44,9 +44,9 @@ body:
         - A game looks wrong (graphics)
         - A game sounds wrong
         - A game crashes, freezes or won't start
-        - PSXS5 crashes or closes
+        - SwanStationPS5 crashes or closes
         - The PS5 crashes or freezes
-        - Storage / "can't open /data/PSXS5"
+        - Storage / "can't open /data/SwanStationPS5"
         - Controls or button mapping
         - Menus, shelf or settings
         - Covers, cheats or memory cards
@@ -58,7 +58,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: PSXS5 version
+      label: SwanStationPS5 version
       description: Settings → About → Version
       placeholder: 1.2.0
     validations:
@@ -85,10 +85,10 @@ body:
     attributes:
       label: Log
       description: |
-        Attach `/data/PSXS5/logs/psxs5.log`. Copy it with FTP **right after** the problem,
-        before starting PSXS5 again (each start replaces it). After a crash it ends with a
+        Attach `/data/SwanStationPS5/logs/SwanStationPS5.log`. Copy it with FTP **right after** the problem,
+        before starting SwanStationPS5 again (each start replaces it). After a crash it ends with a
         `crash:` section; that's the most useful part.
-      placeholder: Drag the psxs5.log file here.
+      placeholder: Drag the SwanStationPS5.log file here.
     validations:
       required: true
 

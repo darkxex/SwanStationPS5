@@ -1,5 +1,5 @@
 /*
- * PSXS5 - the in-game menu (a side panel over the paused game) and cheats.
+ * SwanStationPS5 - the in-game menu (a side panel over the paused game) and cheats.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "../app.h"
@@ -64,7 +64,7 @@ static PlatTexture *slot_thumb(int slot)
     {
         thumbs_loaded[slot] = true;
         static uint8_t rgba[THUMB_W * THUMB_H * 4];
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         app_state_path(path, sizeof(path), slot);
         if (play_load_thumb(path, rgba))
             thumbs[slot] = plat_texture_create(rgba, THUMB_W, THUMB_H, true);
@@ -116,7 +116,7 @@ static bool item_shown(int i)
 /* "2 min ago", "Yesterday"...; "" when the slot is empty */
 static void slot_age(int slot, char *out, size_t size)
 {
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     app_state_path(path, sizeof(path), slot);
     struct stat st;
     out[0] = '\0';
@@ -149,7 +149,7 @@ static const char *slot_note(int slot)
         read_at = now;
         for (int s = 0; s < 10; ++s)
         {
-            char path[PSXS5_PATH_MAX + 8];
+            char path[SwanStationPS5_PATH_MAX + 8];
             app_state_path(path, sizeof(path) - 8, s);
             strcat(path, ".note");
             notes[s][0] = '\0';
@@ -261,7 +261,7 @@ void menu_screen(uint32_t pressed)
     }
     if (pressed & BIT(BTN_CROSS))
     {
-        char msg[96], st[PSXS5_PATH_MAX];
+        char msg[96], st[SwanStationPS5_PATH_MAX];
         app_state_path(st, sizeof(st), app.settings.state_slot);
         switch (M.cursor)
         {
@@ -296,7 +296,7 @@ void menu_screen(uint32_t pressed)
             return;
         case MI_AUTO:
         {
-            char path[PSXS5_PATH_MAX];
+            char path[SwanStationPS5_PATH_MAX];
             if (ra_hardcore())
                 str_copy(msg, sizeof(msg), tr("Not allowed in hardcore mode"));
             else if (autos > 0)
@@ -520,7 +520,7 @@ void menu_screen(uint32_t pressed)
         else
             snprintf(played, sizeof(played), tr("Playing for %d h %02d"), minutes / 60, minutes % 60);
         char batteries[96] = "";
-        for (int k = 0; k < PSXS5_MAX_PADS; ++k)
+        for (int k = 0; k < SwanStationPS5_MAX_PADS; ++k)
         {
             int level = app.pads[k].connected ? plat_pad_battery(k) : -1;
             if (level >= 0)
@@ -612,11 +612,11 @@ void cheats_screen(uint32_t pressed)
         icon_draw(ICON_CODE, plat_width() * 0.5f - 32, by + 32, 64, TH_FOCUS);
         text_draw(plat_width() * 0.5f, by + 112, 34, FONT_BOLD, TH_TEXT, ALIGN_CENTER,
                   tr("No cheats for this game"));
-        char where[PSXS5_PATH_MAX + 64];
+        char where[SwanStationPS5_PATH_MAX + 64];
         snprintf(where, sizeof(where), tr("Put .cht files in %s, or one next to the game."), app.paths.cheats);
         text_draw_fit(plat_width() * 0.5f, by + 168, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, bw - 80, where);
         text_draw(plat_width() * 0.5f, by + 206, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
-                  tr("tools/psxs5_sync.py cheats installs the libretro cheat library."));
+                  tr("tools/SwanStationPS5_sync.py cheats installs the libretro cheat library."));
     }
     else
     {
@@ -688,12 +688,12 @@ static void badge_path(int i, char *out, size_t size)
 static int fetch_badges(void *unused)
 {
     (void)unused;
-    char dir[PSXS5_PATH_MAX];
+    char dir[SwanStationPS5_PATH_MAX];
     path_join(dir, sizeof(dir), app.paths.root, "cache/badges");
     make_dirs(dir);
     for (int i = 0; i < A.count && !SDL_AtomicGet(&A.stop); ++i)
     {
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         badge_path(i, path, sizeof(path));
         bool ok = path_exists(path) ||
                   (A.list[i].badge_url[0] && net_download(A.list[i].badge_url, path) == NET_OK);
@@ -851,7 +851,7 @@ void achievements_screen(uint32_t pressed)
         /* the badge, once downloaded; a trophy or a lock until then */
         if (!A.badge[i] && SDL_AtomicGet(&A.badge_ready[i]) == 1)
         {
-            char path[PSXS5_PATH_MAX];
+            char path[SwanStationPS5_PATH_MAX];
             badge_path(i, path, sizeof(path));
             int bw, bh, comp;
             unsigned char *px = stbi_load(path, &bw, &bh, &comp, 4);

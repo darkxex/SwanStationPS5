@@ -1,9 +1,9 @@
 /*
- * PSXS5 - game art downloaded on demand: bezels, title screens, gameplay.
+ * SwanStationPS5 - game art downloaded on demand: bezels, title screens, gameplay.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_ART_H
-#define PSXS5_ART_H
+#ifndef SwanStationPS5_ART_H
+#define SwanStationPS5_ART_H
 
 #include "library.h"
 #include "platform/platform.h"

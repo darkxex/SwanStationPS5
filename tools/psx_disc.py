@@ -1,4 +1,4 @@
-# PSXS5 - reads the boot serial (SLUS-01041 ...) straight from a PS1 disc image.
+# SwanStationPS5 - reads the boot serial (SLUS-01041 ...) straight from a PS1 disc image.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Every PS1 disc has SYSTEM.CNF in its root with a line like
     BOOT = cdrom:\\SLUS_010.41;1

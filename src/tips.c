@@ -1,8 +1,8 @@
 /*
- * PSXS5 - tips for a game, shown in the shelf's Details panel.
+ * SwanStationPS5 - tips for a game, shown in the shelf's Details panel.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * Some come from what PSXS5 knows about the game here (which emulator runs
+ * Some come from what SwanStationPS5 knows about the game here (which emulator runs
  * it, its discs, a manual), some from assets/game-tips.txt (light guns,
  * multitap games, LibCrypt discs...).
  */
@@ -35,7 +35,7 @@ static bool has_manual(const Game *g)
                                         "manual/001.jpg", "manual/001.png"};
     for (size_t i = 0; i < sizeof(first) / sizeof(first[0]); ++i)
     {
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         path_join(path, sizeof(path), g->folder, first[i]);
         FILE *f = fopen(path, "rb");
         if (f)
@@ -68,7 +68,7 @@ int tips_for(const Game *g, const Settings *settings, char lines[][TIP_LEN], int
     if (!known && !known_tried)
     {
         known_tried = true;
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         plat_asset_path(path, sizeof(path), "game-tips.txt");
         FILE *f = fopen(path, "rb");
         if (f)

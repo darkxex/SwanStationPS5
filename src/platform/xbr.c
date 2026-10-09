@@ -1,5 +1,5 @@
 /*
- * PSXS5 - xBR 2x (level 2), the edge-directed pixel-art scaler by Hyllian.
+ * SwanStationPS5 - xBR 2x (level 2), the edge-directed pixel-art scaler by Hyllian.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * For each source pixel E the 5x5 neighbourhood decides, per output corner,

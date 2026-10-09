@@ -1,5 +1,5 @@
 /*
- * PSXS5 - the game's own artwork around a 4:3 picture (Settings > Display >
+ * SwanStationPS5 - the game's own artwork around a 4:3 picture (Settings > Display >
  * Game artwork border), from The Bezel Project (art.c downloads it once into
  * <root>/art/bezels). Each is a 1920x1080 picture with a clear 4:3 window.
  * SPDX-License-Identifier: GPL-3.0-or-later

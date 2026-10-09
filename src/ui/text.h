@@ -1,11 +1,11 @@
 /*
- * PSXS5 - TrueType text (Inter) on top of the platform mesh API.
+ * SwanStationPS5 - TrueType text (Inter) on top of the platform mesh API.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_TEXT_H
-#define PSXS5_TEXT_H
+#ifndef SwanStationPS5_TEXT_H
+#define SwanStationPS5_TEXT_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 enum
 {

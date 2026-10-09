@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-# PSXS5 - prepares a PlayStation library on a PC and uploads it to the PS5.
+# SwanStationPS5 - prepares a PlayStation library on a PC and uploads it to the PS5.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-psxs5_sync.py - get your PS1 games onto PSXS5.
+SwanStationPS5_sync.py - get your PS1 games onto SwanStationPS5.
 
-  python tools/psxs5_sync.py plan    --source "D:\\Games\\PS1"
-  python tools/psxs5_sync.py prepare --source "D:\\Games\\PS1"   (into PSXS5_ready in your user folder)
-  python tools/psxs5_sync.py upload  --host 192.168.1.50
-  python tools/psxs5_sync.py cheats  --host 192.168.1.50      (libretro .cht library)
-  python tools/psxs5_sync.py bios    scph5501.bin --host 192.168.1.50
-  python tools/psxs5_sync.py index   --host 192.168.1.50 [--fix-cues]
-                                      (games copied another way: list them for PSXS5)
-  python tools/psxs5_sync.py ra-login --host 192.168.1.50    (RetroAchievements)
+  python tools/SwanStationPS5_sync.py plan    --source "D:\\Games\\PS1"
+  python tools/SwanStationPS5_sync.py prepare --source "D:\\Games\\PS1"   (into SwanStationPS5_ready in your user folder)
+  python tools/SwanStationPS5_sync.py upload  --host 192.168.1.50
+  python tools/SwanStationPS5_sync.py cheats  --host 192.168.1.50      (libretro .cht library)
+  python tools/SwanStationPS5_sync.py bios    scph5501.bin --host 192.168.1.50
+  python tools/SwanStationPS5_sync.py index   --host 192.168.1.50 [--fix-cues]
+                                      (games copied another way: list them for SwanStationPS5)
+  python tools/SwanStationPS5_sync.py ra-login --host 192.168.1.50    (RetroAchievements)
 
 prepare builds one clean folder per game:
   * already-extracted .cue/.bin, .chd, .pbp are used as-is (hardlinked, no copy)
@@ -20,7 +20,7 @@ prepare builds one clean folder per game:
   * duplicates (the same game as a folder and as a loose archive) are skipped
   * the largest image beside the game becomes fallback-cover.png (used only
     when the cover database has nothing for that serial)
-upload mirrors the staging folder to /data/PSXS5/games over FTP and skips
+upload mirrors the staging folder to /data/SwanStationPS5/games over FTP and skips
 files that are already there with the same size, so it can be re-run.
 """
 from __future__ import annotations
@@ -47,7 +47,7 @@ DISC_EXTS = {".cue", ".bin", ".chd", ".pbp", ".iso", ".img", ".m3u", ".ccd", ".s
 LOADABLE = {".cue", ".chd", ".pbp", ".iso", ".m3u", ".ccd", ".mds"}
 ARCHIVE_EXTS = {".7z", ".rar", ".zip"}
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
-REMOTE_ROOT = "/data/PSXS5"
+REMOTE_ROOT = "/data/SwanStationPS5"
 SEVEN_ZIP_CANDIDATES = [
     r"C:\Program Files\7-Zip\7z.exe",
     r"C:\Program Files (x86)\7-Zip\7z.exe",
@@ -193,7 +193,7 @@ def discover(source: Path) -> list[Source]:
                 per_disc[(key, "archive")] = g
             games.append(g)
         elif entry.suffix.lower() == ".m3u":
-            continue  # PSXS5 writes the playlist itself (one made by VLC may hold this PC's paths)
+            continue  # SwanStationPS5 writes the playlist itself (one made by VLC may hold this PC's paths)
         elif entry.suffix.lower() in LOADABLE:
             # "FF IX (USA) (Disc 1).chd", "(Disc 2).chd"...: one game with every disc
             title = game_title(entry.name)
@@ -260,7 +260,7 @@ def write_cue_for_bins(bins: list[Path], out_dir: Path) -> list[Path]:
 
 
 def extract(archive: Path, out_dir: Path) -> None:
-    tmp = Path(tempfile.mkdtemp(prefix="psxs5_", dir=out_dir.parent))
+    tmp = Path(tempfile.mkdtemp(prefix="SwanStationPS5_", dir=out_dir.parent))
     try:
         print(f"    extracting {archive.name} ...", flush=True)
         r = subprocess.run([seven_zip(), "x", "-y", f"-o{tmp}", str(archive)],
@@ -308,7 +308,7 @@ def write_m3u(out_dir: Path, title: str) -> None:
 
 
 def write_serial(out_dir: Path) -> str | None:
-    """serial.txt lets PSXS5 match covers/saves even for .chd, which it can't read."""
+    """serial.txt lets SwanStationPS5 match covers/saves even for .chd, which it can't read."""
     for pattern in ("*.m3u", "*.cue", "*.pbp", "*.iso", "*.bin"):
         for p in sorted(out_dir.glob(pattern)):
             serial = disc_serial(p)
@@ -567,8 +567,8 @@ def game_entry(folder: Path) -> tuple[str, str, int, str, str] | None:
 
 
 def write_index(staging: Path) -> Path:
-    """library.txt: what a sandboxed PSXS5 (which can't list folders) loads."""
-    lines = ["# PSXS5 library index - written by tools/psxs5_sync.py; one game per line:",
+    """library.txt: what a sandboxed SwanStationPS5 (which can't list folders) loads."""
+    lines = ["# SwanStationPS5 library index - written by tools/SwanStationPS5_sync.py; one game per line:",
              "# title<TAB>serial<TAB>discs<TAB>path<TAB>first disc name"]
     for folder in sorted((p for p in staging.iterdir() if p.is_dir()), key=lambda p: p.name.lower()):
         entry = game_entry(folder)
@@ -576,14 +576,14 @@ def write_index(staging: Path) -> Path:
             title, serial, discs, name, first = entry
             lines.append("\t".join([title, serial, str(discs),
                                     f"{REMOTE_ROOT}/games/{folder.name}/{name}", first]))
-    index = staging.parent / "PSXS5_library.txt"  # beside, not inside, the uploaded tree
+    index = staging.parent / "SwanStationPS5_library.txt"  # beside, not inside, the uploaded tree
     index.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     print(f"  index: {len(lines) - 2} games in {index}")
     return index
 
 
 def best_cheat(cheat_dir: Path, title: str, serial: str, disc_name: str) -> Path | None:
-    """Same idea as PSXS5's own matcher: exact disc name, else same title, then region."""
+    """Same idea as SwanStationPS5's own matcher: exact disc name, else same title, then region."""
     want = {normalize(title), normalize(disc_name)}
     region = ("(USA)" if serial[:4] in ("SLUS", "SCUS") else
               "(Europe)" if serial[:4] in ("SLES", "SCES", "SCED") else
@@ -651,7 +651,7 @@ def ra_login(host: str, port: int, user: str | None, hardcore: bool, profile: st
     data = urllib.parse.urlencode({"r": "login2", "u": user, "p": password}).encode()
     del password
     req = urllib.request.Request("https://retroachievements.org/dorequest.php", data=data,
-                                 headers={"User-Agent": "PSXS5-sync/0.1"})
+                                 headers={"User-Agent": "SwanStationPS5-sync/0.1"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             reply = json.load(r)
@@ -665,7 +665,7 @@ def ra_login(host: str, port: int, user: str | None, hardcore: bool, profile: st
             "# RetroAchievements sign-in (token only, never the password)\n"
             f"user={reply.get('User') or user}\ntoken={reply['Token']}\nhardcore={int(hardcore)}\n",
             encoding="utf-8", newline="\n")
-        # a profile's sign-in goes in its folder (the same name rule as PSXS5's)
+        # a profile's sign-in goes in its folder (the same name rule as SwanStationPS5's)
         remote = REMOTE_ROOT
         if profile:
             folder = "".join(c if c.isalnum() or c in " -_" else "_" for c in profile)
@@ -674,7 +674,7 @@ def ra_login(host: str, port: int, user: str | None, hardcore: bool, profile: st
     finally:
         shutil.rmtree(tmp)
     who = f" for the profile {profile}" if profile else ""
-    print(f"Signed in as {reply.get('User') or user}{who}. Restart PSXS5 (or switch profiles) to use it.")
+    print(f"Signed in as {reply.get('User') or user}{who}. Restart SwanStationPS5 (or switch profiles) to use it.")
 
 
 # Beetle PSX HW looks for one file name per region (scph5500/5501/5502.bin);
@@ -697,7 +697,7 @@ def bios_upload_name(path):
     return path.name.lower()
 
 
-# What PSXS5 loads from a game folder, best first.
+# What SwanStationPS5 loads from a game folder, best first.
 INDEX_PICK = [".m3u", ".cue", ".chd", ".pbp", ".iso", ".img", ".mdf", ".ccd", ".bin"]
 
 
@@ -744,7 +744,7 @@ def index_remote(host, port, fix_cues):
     """library.txt for games already on the PS5, however they got there."""
     ftp = ftp_connect(host, port)
     games_dir = f"{REMOTE_ROOT}/games"
-    lines = ["# PSXS5 library index - written by tools/psxs5_sync.py index; one game per line:",
+    lines = ["# SwanStationPS5 library index - written by tools/SwanStationPS5_sync.py index; one game per line:",
              "# title<TAB>serial<TAB>discs<TAB>path<TAB>first disc name"]
     for name, is_dir in sorted(ftp_list(ftp, games_dir), key=lambda e: e[0].lower()):
         if not is_dir:
@@ -769,11 +769,11 @@ def index_remote(host, port, fix_cues):
             first = Path(entries[0]).stem if entries else Path(pick).stem
         else:
             first = Path(pick).stem
-        # serial left empty: PSXS5 reads it from the disc (or serial.txt)
+        # serial left empty: SwanStationPS5 reads it from the disc (or serial.txt)
         lines.append("\t".join([name, "", str(discs), f"{folder}/{pick}", first]))
     ftp.storbinary(f"STOR {REMOTE_ROOT}/library.txt", io.BytesIO(("\n".join(lines) + "\n").encode("utf-8")))
     ftp.quit()
-    print(f"  library.txt: {len(lines) - 2} games. Restart PSXS5 to see them.")
+    print(f"  library.txt: {len(lines) - 2} games. Restart SwanStationPS5 to see them.")
 
 
 def main() -> None:
@@ -784,7 +784,7 @@ def main() -> None:
                     help="index: point .cue sheets at the folder's .bin when the name they give is missing")
     ap.add_argument("--user", help="ra-login: RetroAchievements user name")
     ap.add_argument("--hardcore", action="store_true", help="ra-login: start in hardcore mode")
-    ap.add_argument("--profile", help="ra-login: sign in a PSXS5 profile (its name, as on the console)")
+    ap.add_argument("--profile", help="ra-login: sign in a SwanStationPS5 profile (its name, as on the console)")
     ap.add_argument("--app-dir", type=Path, default=Path(__file__).resolve().parent.parent / "dist" / "PPSA98510",
                     help="app: the built title folder to install")
     ap.add_argument("--all", action="store_true", help="covers: the whole database, not just your games")
@@ -795,7 +795,7 @@ def main() -> None:
     ap.add_argument("files", nargs="*", help="BIOS file(s) for the bios command")
     ap.add_argument("--source", type=Path, help="the folder with your PS1 games")
     ap.add_argument("--staging", type=Path,
-                    help="where prepared games go before the upload (default: PSXS5_ready next to --source, "
+                    help="where prepared games go before the upload (default: SwanStationPS5_ready next to --source, "
                          "on the same drive, so games are linked there rather than copied)")
     ap.add_argument("--host", help="PS5 IP address")
     ap.add_argument("--port", type=int, default=2121, help="etaHEN FTP port")
@@ -803,7 +803,7 @@ def main() -> None:
     args = ap.parse_args()
     if args.staging is None:
         # beside the games: same drive, so place() hard-links instead of copying
-        args.staging = (args.source.resolve().parent if args.source else Path.home()) / "PSXS5_ready"
+        args.staging = (args.source.resolve().parent if args.source else Path.home()) / "SwanStationPS5_ready"
 
     if args.command == "index":
         if not args.host:
@@ -833,7 +833,7 @@ def main() -> None:
 
     if args.command == "covers":
         styles = ["default", "3d"] if args.style == "both" else [args.style]
-        dest = args.staging.parent / "PSXS5_covers"
+        dest = args.staging.parent / "SwanStationPS5_covers"
         if args.all:
             regions = [r.strip().lower() for r in args.regions.split(",") if r.strip()]
             bad = [r for r in regions if r not in REGION_PREFIXES]
@@ -849,7 +849,7 @@ def main() -> None:
         return
 
     if args.command == "cheats":
-        folder = fetch_cheats(args.staging.parent / "PSXS5_cheats")
+        folder = fetch_cheats(args.staging.parent / "SwanStationPS5_cheats")
         if args.staging.exists():
             place_game_cheats(args.staging, folder)
         if args.host:

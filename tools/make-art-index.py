@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PSXS5 - writes the lists of downloadable game art PSXS5 matches a game
+"""SwanStationPS5 - writes the lists of downloadable game art SwanStationPS5 matches a game
 against (as it does for cheats), so it downloads just that one picture:
   assets/bezels-index.txt   The Bezel Project's PlayStation bezels
   assets/snaps-index.txt    libretro-thumbnails: gameplay pictures (Named_Snaps)
@@ -25,7 +25,7 @@ LISTS = [
 
 
 def get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "PSXS5", "Accept": "application/vnd.github+json"})
+    req = urllib.request.Request(url, headers={"User-Agent": "SwanStationPS5", "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 

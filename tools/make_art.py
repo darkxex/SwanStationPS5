@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# PSXS5 - draws the home-screen art (icon0.png and the two 3840x2160 backgrounds).
+# SwanStationPS5 - draws the home-screen art (icon0.png and the two 3840x2160 backgrounds).
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Original PSXS5 artwork, generated so it can be tweaked and rebuilt:
+"""Original SwanStationPS5 artwork, generated so it can be tweaked and rebuilt:
 
     python tools/make_art.py            -> sce_sys/icon0.png
                                            sce_sys/background-source.png (selected)
@@ -147,7 +147,7 @@ def text(base, xy, s, size, font, fill=(255, 255, 255, 255), anchor="la", glow=0
 
 
 def selection_background():
-    """Shown behind the home-screen UI while PSXS5 is selected. The Shell draws
+    """Shown behind the home-screen UI while SwanStationPS5 is selected. The Shell draws
     the title and buttons on the left, so the art lives on the right."""
     w, h = 3840, 2160
     img = vignette(gradient(w, h), 0.5, bias_x=0.68)
@@ -158,12 +158,12 @@ def selection_background():
         ("cross", 2700, 1800, 120, BLUE),
         ("square", 1840, 1010, 120, PINK),
     ], 22, 30)
-    img = text(img, (3700, 2010), "PSXS5", 150, FONT_BOLD, anchor="rs", glow=26)
+    img = text(img, (3700, 2010), "SwanStationPS5", 150, FONT_BOLD, anchor="rs", glow=26)
     return img.convert("RGB")
 
 
 def launch_background():
-    """Shown while PSXS5 starts: centred, and it fades into the shelf's colours."""
+    """Shown while SwanStationPS5 starts: centred, and it fades into the shelf's colours."""
     w, h = 3840, 2160
     img = vignette(gradient(w, h), 0.45)
     img = add_disc_with_glow(img, 1920, 900, 430)
@@ -173,7 +173,7 @@ def launch_background():
         ("cross", 1920, 1520, 70, BLUE),
         ("square", 1280, 900, 70, PINK),
     ], 14, 20)
-    img = text(img, (1920, 1840), "PSXS5", 210, FONT_BOLD, anchor="ms", glow=30)
+    img = text(img, (1920, 1840), "SwanStationPS5", 210, FONT_BOLD, anchor="ms", glow=30)
     img = text(img, (1920, 1960), "PlayStation X Super 5", 72, FONT_REGULAR,
                fill=(201, 210, 255, 255), anchor="ms")
     return img.convert("RGB")
@@ -190,7 +190,7 @@ def icon():
         ("circle", int(w * 0.84), int(w * 0.42), int(w * 0.045), RED),
         ("square", int(w * 0.16), int(w * 0.42), int(w * 0.045), PINK),
     ], int(w * 0.012), int(w * 0.012))
-    img = text(img, (w // 2, int(w * 0.94)), "PSXS5", int(w * 0.2), FONT_BOLD, anchor="ms", glow=int(w * 0.012))
+    img = text(img, (w // 2, int(w * 0.94)), "SwanStationPS5", int(w * 0.2), FONT_BOLD, anchor="ms", glow=int(w * 0.012))
     return img.convert("RGB").resize((512, 512), Image.LANCZOS)
 
 
@@ -206,7 +206,7 @@ def banner():
         ("cross", int(w * 0.24), int(h * 0.91), int(h * 0.045), BLUE),
         ("square", int(w * 0.24) - int(h * 0.44), h // 2, int(h * 0.045), PINK),
     ], int(h * 0.012), int(h * 0.02))
-    img = text(img, (int(w * 0.47), int(h * 0.56)), "PSXS5", int(h * 0.30), FONT_BOLD, anchor="ls",
+    img = text(img, (int(w * 0.47), int(h * 0.56)), "SwanStationPS5", int(h * 0.30), FONT_BOLD, anchor="ls",
                glow=int(h * 0.025))
     img = text(img, (int(w * 0.475), int(h * 0.70)), "PlayStation X Super 5", int(h * 0.085),
                FONT_REGULAR, fill=(201, 210, 255, 255), anchor="ls")

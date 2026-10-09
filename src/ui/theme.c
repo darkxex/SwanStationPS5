@@ -1,5 +1,5 @@
 /*
- * PSXS5 - the themes: Classic, Neon Arcade, Memory Card (light and dark) and
+ * SwanStationPS5 - the themes: Classic, Neon Arcade, Memory Card (light and dark) and
  * Record Shelf. Settings > Library > Theme.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */

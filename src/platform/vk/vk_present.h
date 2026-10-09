@@ -1,9 +1,9 @@
 /*
- * PSXS5 v2 - the screen through Vulkan (RADV, VK_KHR_display on VideoOut).
+ * SwanStationPS5 v2 - the screen through Vulkan (RADV, VK_KHR_display on VideoOut).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_VK_PRESENT_H
-#define PSXS5_VK_PRESENT_H
+#ifndef SwanStationPS5_VK_PRESENT_H
+#define SwanStationPS5_VK_PRESENT_H
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -5,8 +5,8 @@ settings menu can offer them and host.c can pass them to the core.
     python3 tools/gen_swanstation_options.py
 
 Reads third_party/swanstation/src/libretro/libretro_core_options.h (the English definitions, with the
-preprocessor evaluated for the PS5: x64, not Windows). The generated files are committed: building PSXS5
-does not need to run this. Options PSXS5 already draws itself, or forces, are left out (SKIP below).
+preprocessor evaluated for the PS5: x64, not Windows). The generated files are committed: building SwanStationPS5
+does not need to run this. Options SwanStationPS5 already draws itself, or forces, are left out (SKIP below).
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 import re
@@ -21,7 +21,7 @@ OUT_C = ROOT / "src/core/swanstation_options.c"
 # Defined for this target when the header is read.
 DEFINES = {"CPU_X64": True}
 
-# Drawn by PSXS5's own settings (and applied in host.c apply_swanstation_options), or forced:
+# Drawn by SwanStationPS5's own settings (and applied in host.c apply_swanstation_options), or forced:
 SKIP = {
     "swanstation_Console_Region",          # Settings > System > Region
     "swanstation_BIOS_PatchFastBoot",      # PS1 startup intro
@@ -29,7 +29,7 @@ SKIP = {
     "swanstation_GPU_ResolutionScale",     # Internal resolution
     "swanstation_GPU_TrueColor",           # True colour
     "swanstation_GPU_PGXPEnable",          # PGXP
-    "swanstation_Main_RunaheadFrameCount", # Run-ahead (PSXS5 does it)
+    "swanstation_Main_RunaheadFrameCount", # Run-ahead (SwanStationPS5 does it)
     "swanstation_GPU_Renderer",            # always Vulkan: the PS5 screen is drawn through it
     "swanstation_CPU_FastmemMode",         # always LUT: MMap does not survive a title's sandbox
     "swanstation_ControllerPorts_MultitapMode",  # Settings > Controls > Players
@@ -153,9 +153,9 @@ def c_str(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-# PSXS5's own defaults where they differ from the core's
+# SwanStationPS5's own defaults where they differ from the core's
 DEFAULT_OVERRIDES = {
-    "swanstation_Display_ShowOSDMessages": "false",  # PSXS5 draws its own toasts
+    "swanstation_Display_ShowOSDMessages": "false",  # SwanStationPS5 draws its own toasts
 }
 
 

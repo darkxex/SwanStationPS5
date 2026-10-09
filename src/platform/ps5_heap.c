@@ -1,12 +1,12 @@
 /*
- * PSXS5 - a real heap for the PS5 build.
+ * SwanStationPS5 - a real heap for the PS5 build.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * On hardware, ordinary malloc() of a few MB failed ("OOM for vout_buf",
- * SDL textures): the C heap a native title gets is small. PSXS5 therefore
+ * SDL textures): the C heap a native title gets is small. SwanStationPS5 therefore
  * reserves a large block of cached direct memory at the first allocation and
  * runs dlmalloc (public domain) on it. The linker's --wrap redirects every
- * malloc/free/... in PSXS5, the core and SDL here (APP_WRAP_SYMBOLS).
+ * malloc/free/... in SwanStationPS5, the core and SDL here (APP_WRAP_SYMBOLS).
  * Memory the system libraries allocated themselves (strdup, fopen buffers)
  * lies outside the block and goes back to the real free/realloc.
  */

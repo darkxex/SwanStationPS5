@@ -1,12 +1,12 @@
 /*
- * PSXS5 - the interface's colours, sizes and timings, and its themes.
+ * SwanStationPS5 - the interface's colours, sizes and timings, and its themes.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The TH_* colours come from the active theme (theme.c), so a theme change
  * shows on the next frame everywhere.
  */
-#ifndef PSXS5_THEME_H
-#define PSXS5_THEME_H
+#ifndef SwanStationPS5_THEME_H
+#define SwanStationPS5_THEME_H
 
 #include <stdbool.h>
 #include <stdint.h>

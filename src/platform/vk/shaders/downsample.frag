@@ -1,4 +1,4 @@
-// PSXS5 - supersampling: a picture rendered bigger than the screen (4x, 8x,
+// SwanStationPS5 - supersampling: a picture rendered bigger than the screen (4x, 8x,
 // 16x internal resolution) averaged down to each screen pixel, instead of
 // bilinear filtering, which skips texels and shimmers when things move.
 // SPDX-License-Identifier: GPL-3.0-or-later

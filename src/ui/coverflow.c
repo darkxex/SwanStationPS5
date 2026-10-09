@@ -1,5 +1,5 @@
 /*
- * PSXS5 - the game shelf (home screen).
+ * SwanStationPS5 - the game shelf (home screen).
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Covers stand on a shelf: the selected one faces you, its neighbours turn
@@ -393,7 +393,7 @@ static PlatTexture *no_cover_icon(void)
     if (!tried)
     {
         tried = true;
-        char path[PSXS5_PATH_MAX];
+        char path[SwanStationPS5_PATH_MAX];
         plat_asset_path(path, sizeof(path), "../sce_sys/icon0.png");
         int w, h, n;
         uint8_t *rgba = stbi_load(path, &w, &h, &n, 4);
@@ -462,12 +462,13 @@ static void draw_details(const Game *g, float t)
             snprintf(ach, sizeof(ach), "%d / %d", st->ach_unlocked, st->ach_total);
     }
     snprintf(discs, sizeof(discs), "%d", g->discs);
-    /* where the game is read from: the games folder holding its own folder, e.g. /data/PSXS5/games */
-    char where[PSXS5_PATH_MAX];
+    /* where the game is read from: the games folder holding its own folder, e.g. /data/SwanStationPS5/games */
+    char where[SwanStationPS5_PATH_MAX];
     str_copy(where, sizeof(where), g->folder);
     {
         char *last = strrchr(where, '/');
-        if (last && strcmp(last + 1, "games") != 0 && strcmp(last + 1, "PSXS5") != 0)
+        if (last && strcmp(last + 1, "games") != 0 && strcmp(last + 1, "SwanStationPS5") != 0 &&
+            strcmp(last + 1, "PSXS5") != 0)
             *last = '\0'; /* a game's own folder: its parent is the games folder */
     }
     /* what DuckStation's database knows: genre, release, players */
@@ -529,7 +530,7 @@ static void draw_details(const Game *g, float t)
     {
         tips_game = g;
         Settings s;
-        char own[PSXS5_PATH_MAX];
+        char own[SwanStationPS5_PATH_MAX];
         app_game_config_path(own, sizeof(own), g);
         config_load_game(&s, &app.global, own);
         tip_count = tips_for(g, &s, tips, 3);
@@ -549,8 +550,8 @@ static void draw_details(const Game *g, float t)
 /* Category chips along the top; the highlight slides between them. */
 static void draw_header(void)
 {
-    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_TITLE);
-    float x = TH_MARGIN + text_width(44, FONT_BOLD, PSXS5_TITLE) + 40, y = 46, h = 46;
+    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, SwanStationPS5_TITLE);
+    float x = TH_MARGIN + text_width(44, FONT_BOLD, SwanStationPS5_TITLE) + 40, y = 46, h = 46;
     for (int c = 0; c < CAT_COUNT; ++c)
     {
         int n = category_size(c);
@@ -672,11 +673,11 @@ static void draw_info(const Game *g, float alpha)
 static void storage_screen(uint32_t pressed)
 {
     shelf_backdrop();
-    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, PSXS5_TITLE);
+    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, SwanStationPS5_TITLE);
     float w = 1200, h = 300, x = CENTER_X - w * 0.5f, y = 330;
     draw_rrect(x, y, w, h, TH_RADIUS, TH_CARD_SOFT);
     icon_draw(ICON_ALERT_TRIANGLE, CENTER_X - 32, y + 40, 64, TH_GOLD);
-    text_draw(CENTER_X, y + 124, 36, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("SwanStationPS5 can't open /data/PSXS5"));
+    text_draw(CENTER_X, y + 124, 36, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("SwanStationPS5 can't open /data/SwanStationPS5"));
     text_draw_fit(CENTER_X, y + 190, 24, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, w - 80,
                   app.storage_error);
     static const int glyphs[] = {GLYPH_SQUARE};
@@ -720,7 +721,7 @@ static struct
     int game;
     int count, cursor; /* entry 0 is "Automatic" */
     float scroll;
-    char (*files)[PSXS5_PATH_MAX];
+    char (*files)[SwanStationPS5_PATH_MAX];
     bool unlisted; /* covers/ could not be listed (sandboxed) */
     PlatTexture *preview;
     int preview_for;
@@ -734,7 +735,7 @@ static bool pick_scan(const char *dir)
     struct dirent *e;
     while ((e = readdir(d)) && P.count < PICK_MAX)
         if (e->d_name[0] != '.' && covers_is_image(e->d_name))
-            path_join(P.files[P.count++], PSXS5_PATH_MAX, dir, e->d_name);
+            path_join(P.files[P.count++], SwanStationPS5_PATH_MAX, dir, e->d_name);
     closedir(d);
     return true;
 }
@@ -757,7 +758,7 @@ static void picker_open(int game)
     P.preview_for = -1;
     P.files[0][0] = '\0';
     pick_scan(app.library.games[game].folder);
-    /* the covers PSXS5 downloaded for it (flat, 3D, by name) */
+    /* the covers SwanStationPS5 downloaded for it (flat, 3D, by name) */
     const char *serial = app.library.games[game].serial;
     for (int k = 0; k < 3 && P.count < PICK_MAX; ++k)
     {
@@ -768,7 +769,7 @@ static void picker_open(int game)
             snprintf(file, sizeof(file), "boxart/%.100s.png", app.library.games[game].id);
         else
             snprintf(file, sizeof(file), k ? "3d/%s.png" : "default/%s.jpg", serial);
-        path_join(P.files[P.count], PSXS5_PATH_MAX, app.paths.covers, file);
+        path_join(P.files[P.count], SwanStationPS5_PATH_MAX, app.paths.covers, file);
         FILE *f = fopen(P.files[P.count], "rb");
         if (f)
         {
@@ -791,10 +792,10 @@ static void picker_close(void)
 static void picker_choose(void)
 {
     const Game *g = &app.library.games[P.game];
-    char dir[PSXS5_PATH_MAX], path[PSXS5_PATH_MAX], name[96];
+    char dir[SwanStationPS5_PATH_MAX], path[SwanStationPS5_PATH_MAX], name[96];
     covers_custom_dir(dir, sizeof(dir));
     static const char *const exts[] = {"png", "jpg", "jpeg"};
-    for (int i = 0; i < 3; ++i) /* only the copies PSXS5 made itself */
+    for (int i = 0; i < 3; ++i) /* only the copies SwanStationPS5 made itself */
     {
         snprintf(name, sizeof(name), "%s.%s", g->id, exts[i]);
         path_join(path, sizeof(path), dir, name);
@@ -886,7 +887,7 @@ static void picker_draw(void)
     if (P.count == 1)
         text_draw_fit(lx, ly + rh * 1.5f, 22, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, t), ALIGN_LEFT, lw,
                       tr(P.unlisted ? "Can't list the covers folder: unlock /data in Settings, System"
-                                    : "No images yet: put .png or .jpg files in /data/PSXS5/covers/"));
+                                    : "No images yet: put .png or .jpg files in /data/SwanStationPS5/covers/"));
 
     /* the preview, decoded once per selected file */
     const float px = x + 860, py = y + 130, pw = 500, ph = 560;
@@ -917,7 +918,7 @@ static void picker_draw(void)
         text_draw(px + pw * 0.5f, py + ph * 0.5f - 12, 22, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, t),
                   ALIGN_CENTER, tr("Can't read this image"));
     text_draw_fit(x + 40, y + h - 56, 20, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, t), ALIGN_LEFT, w - 80,
-                  tr("Images from /data/PSXS5/covers/ and the game's folder. Named like the game, they are used without picking."));
+                  tr("Images from /data/SwanStationPS5/covers/ and the game's folder. Named like the game, they are used without picking."));
 }
 
 /* ---------------------------------------------------------------- grid layout */
@@ -1174,7 +1175,7 @@ static void slideshow_next(void)
         if (g == SS.game && S.view_count > 1)
             continue;
         pick = g;
-        char path[PSXS5_PATH_MAX], file[120];
+        char path[SwanStationPS5_PATH_MAX], file[120];
         snprintf(file, sizeof(file), "art/snaps/%.100s.png", app.library.games[g].id);
         path_join(path, sizeof(path), app.paths.root, file);
         FILE *f = fopen(path, "rb");
@@ -1269,6 +1270,9 @@ void shelf_screen(uint32_t pressed)
     }
     if (slideshow(pressed))
         return;
+
+    /* O pressed with the shelf free: only such a press can start the hold-to-exit */
+    const bool circle_on_shelf = (pressed & BIT(BTN_CIRCLE)) && !(S.dialog || S.details || P.open || S.launch_t > 0.0f);
 
     /* ------------------------------------------------ input */
     if (P.open)
@@ -1406,7 +1410,7 @@ void shelf_screen(uint32_t pressed)
             if (app.global.quick_resume && !ra_hardcore() && play_has_resume(g, &S.resume_age))
             {
                 /* offer to continue */
-                char path[PSXS5_PATH_MAX];
+                char path[SwanStationPS5_PATH_MAX];
                 static uint8_t rgba[THUMB_W * THUMB_H * 4];
                 play_resume_path(g, path, sizeof(path));
                 plat_texture_free(S.resume_thumb);
@@ -1439,14 +1443,18 @@ void shelf_screen(uint32_t pressed)
     /* holding O on the shelf closes the app */
     {
         bool circle = false;
-        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+        for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
             circle |= (app.pads[i].buttons & BIT(BTN_CIRCLE)) != 0;
         static float hold;
-        static bool armed; /* O was first pressed with the shelf free: not carried over from a menu */
+        static bool armed; /* O was pressed on the free shelf: not carried over from a menu, details or a dialog */
         if (!circle)
+        {
+            if (armed && hold > 0.0f && hold < QUIT_HOLD) /* a tap, not a hold */
+                app_toast("Hold to exit SwanStationPS5...");
             hold = 0.0f, armed = false;
+        }
         else if (hold == 0.0f && !armed)
-            armed = !(S.dialog || S.details || P.open || S.launch_t > 0.0f);
+            armed = circle_on_shelf;
         if (circle && armed && !S.dialog && !P.open && S.launch_t <= 0.0f)
         {
             hold += app.dt;
@@ -1552,22 +1560,26 @@ void shelf_screen(uint32_t pressed)
         draw_rrect(x, y, w, h, TH_RADIUS, TH_CARD_SOFT);
         icon_draw(ICON_DISC, CENTER_X - 32, y + 30, 64, TH_FOCUS);
         text_draw(CENTER_X, y + 108, 36, FONT_BOLD, TH_TEXT, ALIGN_CENTER, tr("Your shelf is empty"));
-        char line[PSXS5_PATH_MAX + 64];
+        char line[SwanStationPS5_PATH_MAX + 64];
         snprintf(line, sizeof(line), tr("Games: %s/<Game name>/"), app.paths.games);
-        text_draw(CENTER_X, y + 166, 24, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, line);
+        text_draw(CENTER_X, y + 156, 24, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, line);
+        text_draw(CENTER_X, y + 190, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
+                  tr("Also: /data/PSXS5/games/ and SwanStationPS5 or PSXS5 folders in /mnt/usb0, /mnt/ext1"));
         snprintf(line, sizeof(line), tr("BIOS (optional): %s/"), app.paths.bios);
-        text_draw(CENTER_X, y + 206, 24, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, line);
+        if (strcmp(app.paths.bios, "/data/PSXS5/bios") != 0)
+            strncat(line, " | /data/PSXS5/bios/", sizeof(line) - strlen(line) - 1);
+        text_draw(CENTER_X, y + 226, 24, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, line);
         if (app.sandboxed)
         {
             /* games copied another way can't be found without listing /data */
-            text_draw(CENTER_X, y + 252, 22, FONT_REGULAR, TH_GOLD, ALIGN_CENTER,
+            text_draw(CENTER_X, y + 262, 22, FONT_REGULAR, TH_GOLD, ALIGN_CENTER,
                       tr("Nothing unlocked /data (LegacyJB, etaHEN...), so SwanStationPS5 can't look into the games folder."));
-            text_draw(CENTER_X, y + 286, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
-                      tr("On your PC:  python tools/psxs5_sync.py index --host <PS5 IP>"));
+            text_draw(CENTER_X, y + 294, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
+                      tr("On your PC:  python tools/SwanStationPS5_sync.py index --host <PS5 IP>"));
         }
         else
-            text_draw(CENTER_X, y + 262, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
-                      tr("On your PC:  python tools/psxs5_sync.py upload --host <PS5 IP>"));
+            text_draw(CENTER_X, y + 274, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER,
+                      tr("On your PC:  python tools/SwanStationPS5_sync.py upload --host <PS5 IP>"));
     }
 
     draw_header();

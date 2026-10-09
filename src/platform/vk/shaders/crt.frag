@@ -1,4 +1,4 @@
-// PSXS5 - a light CRT: scanlines that follow the PS1's own lines (whatever
+// SwanStationPS5 - a light CRT: scanlines that follow the PS1's own lines (whatever
 // the internal resolution), an aperture-grille mask and a little bloom.
 // SPDX-License-Identifier: GPL-3.0-or-later
 #version 450

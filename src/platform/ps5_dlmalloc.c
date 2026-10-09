@@ -1,5 +1,5 @@
 /*
- * PSXS5 - dlmalloc 2.8.6 (public domain) built as a single mspace for
+ * SwanStationPS5 - dlmalloc 2.8.6 (public domain) built as a single mspace for
  * ps5_heap.c: no system memory of its own, thread-safe spin locks.
  */
 #if defined(__PROSPERO__)

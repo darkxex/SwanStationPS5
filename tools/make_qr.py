@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# PSXS5 - the project page as a QR code for Settings > About.
+# SwanStationPS5 - the project page as a QR code for Settings > About.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """python -m pip install segno pillow; python tools/make_qr.py -> assets/qr-github.png
-One pixel per module with a 2-module white margin: PSXS5 scales it up crisply."""
+One pixel per module with a 2-module white margin: SwanStationPS5 scales it up crisply."""
 from pathlib import Path
 
 import segno

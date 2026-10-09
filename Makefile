@@ -1,4 +1,4 @@
-# PSXS5 - Linux/WSL build entry points (based on ps5-native-app-boilerplate).
+# SwanStationPS5 - Linux/WSL build entry points (based on ps5-native-app-boilerplate).
 # Copyright (C) 2026 BlackBearReloaded
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -10,26 +10,26 @@ SHELL := /bin/bash
 # v2: Vulkan through the linked RADV driver (APP_VULKAN=0 builds without it).
 APP_VULKAN ?= 1
 ifeq ($(APP_VULKAN),1)
-APP_DEFINITIONS ?= PSXS5_HAVE_CURL=1 PSXS5_VULKAN=1
-PSXS5_VULKAN_INCLUDE := .deps/native/radv-release/include
+APP_DEFINITIONS ?= SwanStationPS5_HAVE_CURL=1 SwanStationPS5_VULKAN=1
+SwanStationPS5_VULKAN_INCLUDE := .deps/native/radv-release/include
 else
-APP_DEFINITIONS ?= PSXS5_HAVE_CURL=1
+APP_DEFINITIONS ?= SwanStationPS5_HAVE_CURL=1
 endif
 # RetroAchievements: rcheevos (MIT), built by tools/build-rcheevos.sh.
-PSXS5_RCHEEVOS := build/rcheevos-ps5/librcheevos.a
-APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include $(PSXS5_VULKAN_INCLUDE)
+SwanStationPS5_RCHEEVOS := build/rcheevos-ps5/librcheevos.a
+APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include $(SwanStationPS5_VULKAN_INCLUDE)
 ifeq ($(APP_VULKAN),1)
 # SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
-PSXS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
+SwanStationPS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
 # Beetle PSX HW is no longer built (SwanStation is the only emulator); APP_BEETLE=1 builds it
 # again, with tools/build-beetle.sh and third_party/beetle-psx checked out.
 APP_BEETLE ?= 0
 ifeq ($(APP_BEETLE),1)
-PSXS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
-APP_DEFINITIONS += PSXS5_BEETLE=1
+SwanStationPS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
+APP_DEFINITIONS += SwanStationPS5_BEETLE=1
 endif
 endif
-APP_STATIC_ARCHIVES ?= $(PSXS5_RCHEEVOS) $(PSXS5_BEETLE) $(PSXS5_SWANSTATION)
+APP_STATIC_ARCHIVES ?= $(SwanStationPS5_RCHEEVOS) $(SwanStationPS5_BEETLE) $(SwanStationPS5_SWANSTATION)
 APP_RUNTIME_MODULES ?=
 # fcntl: console_curl. The allocator family: ps5_heap.c (the C heap is too small).
 APP_WRAP_SYMBOLS ?= fcntl malloc free calloc realloc reallocf memalign posix_memalign aligned_alloc malloc_usable_size
@@ -38,7 +38,7 @@ APP_PARAM ?=
 APP_SCE_SYS ?=
 APP_ASSETS ?= assets
 APP_ROOT_FILES ?=
-# Lapy elevation: needed to list /data/PSXS5 under ShadowMountPlus.
+# Lapy elevation: needed to list /data/SwanStationPS5 under ShadowMountPlus.
 APP_LAPY_HELPER ?= 1
 PACBREW_PACKAGES ?= sdl2 libcurl
 PACBREW_INCLUDE_PATHS ?=
@@ -269,7 +269,7 @@ endif
 
 help:
 	@printf '%s\n' \
-	  'PSXS5:' \
+	  'SwanStationPS5:' \
 	  'make                 Build the PS5 app folder dist/PPSA98510 (core + frontend)' \
 	  'make deploy PS5_HOST=<ip>  Build and upload to /data/homebrew over FTP' \
 	  '' \

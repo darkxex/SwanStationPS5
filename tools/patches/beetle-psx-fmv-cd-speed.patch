@@ -6,13 +6,13 @@ index 6eeb06fb..2480e375 100644
     return environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &new_av_info);
  }
  
-+extern unsigned psxs5_mdec_recent;
++extern unsigned SwanStationPS5_mdec_recent;
 +
  void retro_run(void)
  {
     bool updated = false;
-+   if (psxs5_mdec_recent)
-+      psxs5_mdec_recent--; /* PSXS5: an FMV stopped feeding the decoder a moment ago */
++   if (SwanStationPS5_mdec_recent)
++      SwanStationPS5_mdec_recent--; /* SwanStationPS5: an FMV stopped feeding the decoder a moment ago */
     static int32_t rects[MEDNAFEN_CORE_GEOMETRY_MAX_H];
     MDFN_Surface *frame_surf = surf;
     EmulateSpecStruct spec = {0};
@@ -24,7 +24,7 @@ index 02d569b8..acd4f94e 100644
  }
  
  extern unsigned cd_2x_speedup;
-+extern unsigned psxs5_mdec_recent; /* PSXS5: an FMV is playing (mdec.c) */
++extern unsigned SwanStationPS5_mdec_recent; /* SwanStationPS5: an FMV is playing (mdec.c) */
  extern bool cd_async;
  extern bool cd_warned_slow;
  extern int64_t cd_slow_timeout;
@@ -33,7 +33,7 @@ index 02d569b8..acd4f94e 100644
     if (cdc->Mode & MODE_SPEED) {
        /* We're in 2x mode */
 -      if (cdc->Mode & (MODE_CDDA | MODE_STRSND)) {
-+      if ((cdc->Mode & (MODE_CDDA | MODE_STRSND)) || psxs5_mdec_recent) {
++      if ((cdc->Mode & (MODE_CDDA | MODE_STRSND)) || SwanStationPS5_mdec_recent) {
           /* We're probably streaming audio to the CD drive, keep the */
           /* native speed */
           speed_mul = 2;
@@ -42,7 +42,7 @@ index 02d569b8..acd4f94e 100644
           /* Take twice as long for 1x mode. */
           if (cdc->Mode & MODE_SPEED) {
 -            ret += 1237952 / cd_2x_speedup;
-+            ret += 1237952 / (psxs5_mdec_recent ? 1 : cd_2x_speedup);
++            ret += 1237952 / (SwanStationPS5_mdec_recent ? 1 : cd_2x_speedup);
           } else {
              ret += 1237952 * 2;
           }
@@ -54,13 +54,13 @@ index 06dc079c..4ff01e69 100644
     }
  }
  
-+/* PSXS5: frames since the MDEC (the FMV decoder) was last fed; the CD drive
++/* SwanStationPS5: frames since the MDEC (the FMV decoder) was last fed; the CD drive
 + * keeps its native speed while a video plays (cdc.c) */
-+unsigned psxs5_mdec_recent;
++unsigned SwanStationPS5_mdec_recent;
 +
  void MDEC_DMAWrite(uint32_t V)
  {
-+   psxs5_mdec_recent = 90;
++   SwanStationPS5_mdec_recent = 90;
     if(!FastFIFO_CanWrite(&InFIFO))
        return;
  
@@ -68,7 +68,7 @@ index 06dc079c..4ff01e69 100644
  
  void MDEC_Write(const int32_t timestamp, uint32_t A, uint32_t V)
  {
-+   psxs5_mdec_recent = 90;
++   SwanStationPS5_mdec_recent = 90;
     if(A & 4)
     {
        if(V & 0x80000000) /* Reset? */

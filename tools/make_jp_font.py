@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# PSXS5 - builds the Japanese interface font: a small Noto Sans JP subset.
+# SwanStationPS5 - builds the Japanese interface font: a small Noto Sans JP subset.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Noto Sans JP is ~9 MB; PSXS5 only needs kana, punctuation and the kanji its
+Noto Sans JP is ~9 MB; SwanStationPS5 only needs kana, punctuation and the kanji its
 translations use. This keeps those (plus all kana, so short new strings work)
-and writes assets/fonts/NotoSansJP-PSXS5.ttf (SIL Open Font License 1.1).
+and writes assets/fonts/NotoSansJP-SwanStationPS5.ttf (SIL Open Font License 1.1).
 
   pip install fonttools
   python tools/make_jp_font.py      (run again after adding Japanese text to src/i18n.c)
@@ -21,7 +21,7 @@ from fontTools.varLib import instancer
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = "https://github.com/google/fonts/raw/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf"
 CACHE = ROOT / "build" / "NotoSansJP-wght.ttf"
-OUT = ROOT / "assets" / "fonts" / "NotoSansJP-PSXS5.ttf"
+OUT = ROOT / "assets" / "fonts" / "NotoSansJP-SwanStationPS5.ttf"
 
 
 def wanted_codepoints() -> set[int]:

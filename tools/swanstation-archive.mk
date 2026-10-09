@@ -1,4 +1,4 @@
-# PSXS5 - included after SwanStation's Makefile.libretro by
+# SwanStationPS5 - included after SwanStation's Makefile.libretro by
 # tools/build-swanstation.sh: packs the objects of the libretro build into an
 # archive instead of linking a shared library.
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -9,5 +9,5 @@
 OBJECTS := $(filter-out %xxh_x86dispatch.o,$(OBJECTS))
 src/core/texture_replacements.o: CXXFLAGS += -DXXH_X86DISPATCH_H_13563687684
 
-psxs5-archive: $(OBJECTS)
+SwanStationPS5-archive: $(OBJECTS)
 	$(AR) rcs $(TARGET) $(OBJECTS)

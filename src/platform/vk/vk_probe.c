@@ -1,5 +1,5 @@
 /*
- * PSXS5 v2 - Vulkan bring-up: proves the linked RADV driver works on the
+ * SwanStationPS5 v2 - Vulkan bring-up: proves the linked RADV driver works on the
  * console by creating an instance and listing the GPU, without drawing.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -10,9 +10,9 @@
  */
 #include "vk_probe.h"
 
-#if defined(PSXS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN)
 
-#include "../../psxs5.h"
+#include "../../SwanStationPS5.h"
 
 #include <stdio.h>
 #include <vulkan/vulkan.h>
@@ -34,20 +34,20 @@ static void probe(void)
     LOAD(NULL, vkEnumerateInstanceVersion);
     if (!vkCreateInstance)
     {
-        psxs5_log("vulkan: the driver has no vkCreateInstance");
+        SwanStationPS5_log("vulkan: the driver has no vkCreateInstance");
         return;
     }
     uint32_t version = VK_API_VERSION_1_0;
     if (vkEnumerateInstanceVersion)
         vkEnumerateInstanceVersion(&version);
-    psxs5_log("vulkan: instance version %u.%u.%u", VK_API_VERSION_MAJOR(version),
+    SwanStationPS5_log("vulkan: instance version %u.%u.%u", VK_API_VERSION_MAJOR(version),
               VK_API_VERSION_MINOR(version), VK_API_VERSION_PATCH(version));
 
     VkApplicationInfo app = {0};
     app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app.pApplicationName = PSXS5_NAME;
+    app.pApplicationName = SwanStationPS5_NAME;
     app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app.pEngineName = PSXS5_NAME;
+    app.pEngineName = SwanStationPS5_NAME;
     app.apiVersion = VK_API_VERSION_1_3;
     VkInstanceCreateInfo info = {0};
     info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -56,7 +56,7 @@ static void probe(void)
     VkResult r = vkCreateInstance(&info, NULL, &instance);
     if (r != VK_SUCCESS)
     {
-        psxs5_log("vulkan: vkCreateInstance failed (%d)", (int)r);
+        SwanStationPS5_log("vulkan: vkCreateInstance failed (%d)", (int)r);
         return;
     }
     LOAD(instance, vkEnumeratePhysicalDevices);
@@ -69,7 +69,7 @@ static void probe(void)
     if (count > 4)
         count = 4;
     vkEnumeratePhysicalDevices(instance, &count, devices);
-    psxs5_log("vulkan: %u GPU(s)", count);
+    SwanStationPS5_log("vulkan: %u GPU(s)", count);
     for (uint32_t i = 0; i < count; ++i)
     {
         VkPhysicalDeviceProperties p;
@@ -79,23 +79,23 @@ static void probe(void)
         uint64_t mb = 0;
         for (uint32_t h = 0; h < m.memoryHeapCount; ++h)
             mb += m.memoryHeaps[h].size >> 20;
-        psxs5_log("vulkan: GPU %u: %s, Vulkan %u.%u.%u, %u memory heaps, %llu MB", i, p.deviceName,
+        SwanStationPS5_log("vulkan: GPU %u: %s, Vulkan %u.%u.%u, %u memory heaps, %llu MB", i, p.deviceName,
                   VK_API_VERSION_MAJOR(p.apiVersion), VK_API_VERSION_MINOR(p.apiVersion),
                   VK_API_VERSION_PATCH(p.apiVersion), m.memoryHeapCount, (unsigned long long)mb);
     }
     vkDestroyInstance(instance, NULL);
-    psxs5_log("vulkan: probe finished");
+    SwanStationPS5_log("vulkan: probe finished");
 }
 
 void vk_probe(const char *root)
 {
     /* If the previous probe took the app down, don't try again: delete the
      * marker to retry. */
-    char marker[PSXS5_PATH_MAX];
+    char marker[SwanStationPS5_PATH_MAX];
     path_join(marker, sizeof(marker), root, "vulkan_probe.crashed");
     if (path_exists(marker))
     {
-        psxs5_log("vulkan: skipped, the last probe did not finish (%s)", marker);
+        SwanStationPS5_log("vulkan: skipped, the last probe did not finish (%s)", marker);
         return;
     }
     FILE *f = fopen(marker, "w");

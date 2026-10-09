@@ -1,10 +1,10 @@
 /*
- * PSXS5 - PS5 screen output without SDL's video driver.
+ * SwanStationPS5 - PS5 screen output without SDL's video driver.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * PacBrew's SDL2 PS5 video driver can't hand out a window surface (its
  * CreateWindowFramebuffer leaves format/pixels/pitch unset, which SDL turns
- * into "Out of memory") and registers no render driver. PSXS5 therefore
+ * into "Out of memory") and registers no render driver. SwanStationPS5 therefore
  * draws with SDL's software renderer into its own linear buffer and shows
  * it here, using the same VideoOut sequence as SDL's driver init and the
  * boilerplate demo: two direct-memory framebuffers in the 64 KiB tiled

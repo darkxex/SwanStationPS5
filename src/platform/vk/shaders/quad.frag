@@ -1,4 +1,4 @@
-// PSXS5 v2 - samples the rectangle's picture.
+// SwanStationPS5 v2 - samples the rectangle's picture.
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Compiled into shaders_spv.h by tools/make-shaders.sh.
 #version 450

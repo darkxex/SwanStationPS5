@@ -1,4 +1,4 @@
-// PSXS5 - LCD3x: a handheld LCD look. Dark gaps between the PS1's lines and
+// SwanStationPS5 - LCD3x: a handheld LCD look. Dark gaps between the PS1's lines and
 // an RGB sub-pixel stripe along each of its columns.
 // Ported from Gigaherz's lcd3x (RetroArch slang-shaders, public domain).
 // SPDX-License-Identifier: GPL-3.0-or-later

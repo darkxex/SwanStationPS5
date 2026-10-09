@@ -1,5 +1,5 @@
 /*
- * PSXS5 - asking the HEN to let PSXS5 list /data.
+ * SwanStationPS5 - asking the HEN to let SwanStationPS5 list /data.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * A sandboxed title can open and write files under /data but can't list
@@ -7,16 +7,16 @@
  *  - LegacyJB (Phoenixx) and OnionHEN watch each sandbox for a request file,
  *    {"PID":<pid>} in /download0/etahen_jailbreak, for any app;
  *  - PS5SX2 Helper answers the same file, but only for the title IDs in
- *    /data/whitelist.txt (Settings > System can add PSXS5 there);
+ *    /data/whitelist.txt (Settings > System can add SwanStationPS5 there);
  *  - etaHEN answers a HijackerCommand on TCP 127.0.0.1:9028 when its "Legacy
  *    CMD server" setting is on (LegacyJB listens there too).
  * The file goes first; the TCP command when nothing answered it. Porpoise was killed right after its grant; it asks from a process that
- * already runs threads, so PSXS5 asks first thing in main(), single-threaded,
+ * already runs threads, so SwanStationPS5 asks first thing in main(), single-threaded,
  * after giving itself its own credential.
  *
  * A marker file guards against a crash loop: it is written before asking and
- * removed afterwards. If PSXS5 finds it at start-up, the previous request
- * killed the app, so this route is skipped and PSXS5 runs sandboxed.
+ * removed afterwards. If SwanStationPS5 finds it at start-up, the previous request
+ * killed the app, so this route is skipped and SwanStationPS5 runs sandboxed.
  */
 #if defined(__PROSPERO__)
 #include "ps5_unlock.h"
@@ -40,7 +40,7 @@ static const char *const REQUESTS[] = {
     "/download0/onionhen_jailbreak", /* OnionHEN also takes this name */
 };
 #define REQUEST_COUNT (int)(sizeof(REQUESTS) / sizeof(REQUESTS[0]))
-#define CRASH_MARKER "/download0/psxs5_unlock_attempt"
+#define CRASH_MARKER "/download0/SwanStationPS5_unlock_attempt"
 
 bool ps5_data_listable(void)
 {

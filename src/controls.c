@@ -1,5 +1,5 @@
 /*
- * PSXS5 - what PSXS5 does with the controller while a game runs.
+ * SwanStationPS5 - what SwanStationPS5 does with the controller while a game runs.
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * The light gun: the DualSense's orientation (from its motion sensor) is
@@ -32,7 +32,7 @@ static void load_kinds(void)
     if (kinds_tried)
         return;
     kinds_tried = true;
-    char path[PSXS5_PATH_MAX];
+    char path[SwanStationPS5_PATH_MAX];
     plat_asset_path(path, sizeof(path), "game-kinds.txt");
     FILE *f = fopen(path, "rb");
     if (!f)
@@ -202,14 +202,14 @@ void controls_start(const Game *g, const Settings *s)
     plat_pad_motion(C.gun != 0);
     plat_pad_touch(C.special == 2);
     if (C.gun || C.pedal)
-        psxs5_log("controls: %s%s", C.gun ? (C.gun == 1 ? "GunCon " : "Justifier ") : "",
+        SwanStationPS5_log("controls: %s%s", C.gun ? (C.gun == 1 ? "GunCon " : "Justifier ") : "",
                   C.racing ? "racing" : C.pedal ? "pedal" : "");
 }
 
 void controls_stop(void)
 {
     PlatTrigger off = {0};
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         plat_pad_triggers(i, off, off);
     plat_pad_motion(false);
     plat_pad_touch(false);
@@ -354,9 +354,9 @@ static void update_triggers(int port, const Settings *s)
     plat_pad_triggers(port, l2, r2);
 }
 
-void controls_apply(PadState pads[PSXS5_MAX_PADS], const Settings *s, float dt)
+void controls_apply(PadState pads[SwanStationPS5_MAX_PADS], const Settings *s, float dt)
 {
-    for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+    for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
     {
         PadState *p = &pads[i];
         if (!p->connected)

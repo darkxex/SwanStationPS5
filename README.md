@@ -62,7 +62,7 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 - **A shelf for your games.** A 3D cover flow with reflections and a soft click as you browse.
   - Covers are matched by the serial read from each disc, so every region gets its own art.
   - Missing covers download on the console.
-  - Your own art wins: a `cover.png`/`.jpg` in the game's folder, or an image in `/data/PSXS5/covers/` named like the game's title, its disc file or its serial (`Crash Bandicoot.png`, `SCUS-94900.jpg`).
+  - Your own art wins: a `cover.png`/`.jpg` in the game's folder, or an image in `/data/SwanStationPS5/covers/` named like the game's title, its disc file or its serial (`Crash Bandicoot.png`, `SCUS-94900.jpg`).
   - Or pick one by hand: on the shelf press **Triangle** (Details), then **Square**, and choose any image from `covers/` or the game's folder.
 - **Plays every common format.** `.cue`/`.bin`, `.chd`, `.pbp` (including multi-disc), `.iso`, `.img`, `.mdf`, `.ccd` and `.m3u` playlists for multi-disc games.
 - **Sharp on a 4K TV.**
@@ -89,7 +89,7 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 - **Your BIOS, or none.** SwanStation works best with a BIOS dump of your own console for the game's region (`scph5500.bin` Japan, `scph5501.bin` USA, `scph5502.bin` Europe in `bios/`; the PC tool names them for you). Without one, SwanStation uses its built-in OpenBIOS, which is less compatible.
 - **Five languages.** English, Français, Português (Portugal), Español (Latinoamérica) and 日本語, under Settings → System → Language.
 - **Quiet interface sounds.** Five styles (Soft, Wood, Pop, Chime, Classic), a volume setting, or off.
-- **A PC tool for your library.** `tools/psxs5_sync.py` prepares your games on Windows and uploads them over FTP:
+- **A PC tool for your library.** `tools/SwanStationPS5_sync.py` prepares your games on Windows and uploads them over FTP:
   - unpacks archives
   - writes missing `.cue` sheets and `.m3u` playlists
   - fetches covers and cheats
@@ -110,26 +110,26 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 1. **Download** the `SwanStationPS5-v*.zip` from the [latest release](../../releases/latest) and extract it. Inside is a `PPSA98510` folder and the PC tools.
 2. **Install the app.** Copy the `PPSA98510` folder to `/data/homebrew/` on the PS5 over FTP. Then set its permissions to `777`: in FileZilla, right-click the folder → *File permissions* → `777`, recurse into subdirectories. Without this, the PS5 says *"Can't start the game or app"* (CE-107750-0). The PC tool does all of this for you:
    ```bash
-   python tools/psxs5_sync.py app --app-dir PPSA98510 --host <PS5 IP>
+   python tools/SwanStationPS5_sync.py app --app-dir PPSA98510 --host <PS5 IP>
    ```
 3. **Restart ShadowMountPlus** (or the console). SwanStationPS5 appears on the home screen.
-4. **Start SwanStationPS5 once.** It creates its folders in `/data/PSXS5/` (see [below](#folders-on-the-console)) and shows an empty shelf that tells you where games go.
-5. **Add your games** to `/data/PSXS5/games/`, **one folder per game**, with every file of the game inside it:
+4. **Start SwanStationPS5 once.** It creates its folders in `/data/SwanStationPS5/` (see [below](#folders-on-the-console)) and shows an empty shelf that tells you where games go.
+5. **Add your games** to `/data/SwanStationPS5/games/`, **one folder per game**, with every file of the game inside it:
    ```text
-   /data/PSXS5/games/Final Fantasy VII/   FF7 Disc 1.cue, FF7 Disc 1.bin, ... (any format above)
-   /data/PSXS5/games/Crash Bandicoot/     Crash Bandicoot.chd
+   /data/SwanStationPS5/games/Final Fantasy VII/   FF7 Disc 1.cue, FF7 Disc 1.bin, ... (any format above)
+   /data/SwanStationPS5/games/Crash Bandicoot/     Crash Bandicoot.chd
    ```
    Or let the PC tool prepare and upload a whole folder of games (see [PC tool](#pc-tool)).
 
-   > **Shelf still empty?** When etaHEN doesn't unlock `/data`, SwanStationPS5 can't look into the games folder and only shows the games listed in `/data/PSXS5/library.txt`, which the PC tool writes when it uploads. For games you copied another way (FileZilla, a file manager, a USB drive), let the tool list them:
+   > **Shelf still empty?** When etaHEN doesn't unlock `/data`, SwanStationPS5 can't look into the games folder and only shows the games listed in `/data/SwanStationPS5/library.txt`, which the PC tool writes when it uploads. For games you copied another way (FileZilla, a file manager, a USB drive), let the tool list them:
    > ```bash
-   > python tools/psxs5_sync.py index --host <PS5 IP> --fix-cues
+   > python tools/SwanStationPS5_sync.py index --host <PS5 IP> --fix-cues
    > ```
    > `--fix-cues` repairs `.cue` files that point at a `.bin` that was renamed, for example to `BREATH~1.BIN` by a FAT32 copy.
-6. **Optional, but add your BIOS.** `SCPH1001.BIN` is highly recommended for good emulation. Put your own dump directly in `/data/PSXS5/bios/`, not in a subfolder, and keep its standard name. `scph5501.bin` (US), `scph5500.bin` (Japan) and `scph5502.bin` (Europe) also work, as does `scph101.bin`. *Settings → About* shows whether it was found. From a PC: `python tools/psxs5_sync.py bios scph5501.bin --host <PS5 IP>`.
+6. **Optional, but add your BIOS.** `SCPH1001.BIN` is highly recommended for good emulation. Put your own dump directly in `/data/SwanStationPS5/bios/`, not in a subfolder, and keep its standard name. `scph5501.bin` (US), `scph5500.bin` (Japan) and `scph5502.bin` (Europe) also work, as does `scph101.bin`. *Settings → About* shows whether it was found. From a PC: `python tools/SwanStationPS5_sync.py bios scph5501.bin --host <PS5 IP>`.
 7. **Restart SwanStationPS5.** Covers download the first time, then the shelf opens with your games.
 
-> **Where do things go?** Games: `/data/PSXS5/games/<Game name>/`. BIOS: `/data/PSXS5/bios/`. SwanStationPS5 creates both folders the first time it starts; you can also create them yourself over FTP.
+> **Where do things go?** Games: `/data/SwanStationPS5/games/<Game name>/`. BIOS: `/data/SwanStationPS5/bios/`. SwanStationPS5 creates both folders the first time it starts; you can also create them yourself over FTP.
 
 ### Unlocking /data (so SwanStationPS5 can see your games)
 
@@ -141,15 +141,13 @@ A PS5 app can read and write files in `/data`, but it can't list folders unless 
 | **etaHEN** | Turn on *Legacy CMD server* in the etaHEN toolbox. SwanStationPS5 asks on port 9028. |
 | **PS5SX2 Helper** (the PS2 emulator's helper) | It only unlocks apps listed in `/data/whitelist.txt`. Use *Settings → System → Allow SwanStationPS5 in PS5SX2 Helper*, then reload the helper or restart the console. |
 
-The log shows the result: `storage: unlocked`, or `storage: sandboxed (...)` with the reason. Sandboxed still works, but SwanStationPS5 then only knows the games in `/data/PSXS5/library.txt` (written by the PC tool's `upload` and `index` commands).
+The log shows the result: `storage: unlocked`, or `storage: sandboxed (...)` with the reason. Sandboxed still works, but SwanStationPS5 then only knows the games in `/data/SwanStationPS5/library.txt` (written by the PC tool's `upload` and `index` commands).
 
 ### Folders on the console
 
-The folder names kept PSXS5's (`/data/PSXS5/`, `psxs5.ini`, `psxs5.log`, `tools/psxs5_sync.py`) on purpose, so both apps stay compatible with each other: they use the same games, covers, cheats and BIOS folders, memory cards are the same `.mcd` files, and the PC tool works with either one.
-
 ```text
 /data/homebrew/PPSA98510/     the app
-/data/PSXS5/
+/data/SwanStationPS5/
 ├── games/<Game name>/        your games, one folder per game (a cheats.cht here overrides the library)
 ├── bios/                     optional: your BIOS dump (scph*.bin)
 ├── covers/                   your own cover images (named like the game, or picked on the shelf);
@@ -157,9 +155,9 @@ The folder names kept PSXS5's (`/data/PSXS5/`, `psxs5.ini`, `psxs5.log`, `tools/
 ├── cheats/                   the .cht library
 ├── saves/                    memory cards, one per game
 ├── states/                   save states, 10 slots per game
-├── logs/psxs5.log            the session log (send this with bug reports)
+├── logs/SwanStationPS5.log            the session log (send this with bug reports)
 ├── retroachievements.ini     RetroAchievements sign-in (token only)
-└── psxs5.ini                 settings
+└── SwanStationPS5.ini                 settings
 ```
 
 ## Controls
@@ -187,7 +185,7 @@ The folder names kept PSXS5's (`/data/PSXS5/`, `psxs5.ini`, `psxs5.log`, `tools/
 | Hold the touchpad (0.5 s) or L3 + R3 | The SwanStationPS5 menu |
 | Hold the touchpad + R2 | Fast forward |
 | Hold the touchpad + L2 | Rewind (turn on *Settings → System → Rewind*) |
-| Hold the touchpad + Square | Screenshot (in `/data/PSXS5/screenshots`) |
+| Hold the touchpad + Square | Screenshot (in `/data/SwanStationPS5/screenshots`) |
 | Hold the touchpad + Triangle / Circle | Start or pause / reset the speedrun timer |
 | Hold the touchpad + R1 | Next disc |
 | R3 (light gun games) | Re-centre the aim |
@@ -226,7 +224,7 @@ Video settings apply while you play. Internal resolution, PGXP, region, BIOS, co
 SwanStationPS5 never asks for your password on the console. You sign in once from your PC: the tool swaps your password for a login token, and only the token is copied to the PS5.
 
 ```bash
-python tools/psxs5_sync.py ra-login --host <PS5 IP>
+python tools/SwanStationPS5_sync.py ra-login --host <PS5 IP>
 ```
 
 Restart SwanStationPS5 and it signs in by itself. Start a game, and if it has an achievement set, a banner shows how many you have unlocked.
@@ -234,7 +232,7 @@ Restart SwanStationPS5 and it signs in by itself. Start a game, and if it has an
 With several profiles (Settings → System → Who's playing), each person signs in for their own profile, using its name as shown on the console:
 
 ```bash
-python tools/psxs5_sync.py ra-login --host <PS5 IP> --profile "Player 2"
+python tools/SwanStationPS5_sync.py ra-login --host <PS5 IP> --profile "Player 2"
 ```
 
 - **Your profile** (Settings → Achievements) shows your points, the games you've mastered, recent unlocks and the games closest to mastery. Covers show a trophy badge with your progress.
@@ -251,23 +249,23 @@ In a game, open the SwanStationPS5 menu → **Cheats** and switch codes on and o
 
 ## PC tool
 
-`tools/psxs5_sync.py` runs on Windows with Python 3 (and [7-Zip](https://www.7-zip.org/) for archives).
+`tools/SwanStationPS5_sync.py` runs on Windows with Python 3 (and [7-Zip](https://www.7-zip.org/) for archives).
 
 ```bash
-python tools/psxs5_sync.py plan    --source "D:\Games\PS1"                 # what it would do, read-only
-python tools/psxs5_sync.py sync    --source "D:\Games\PS1" --host <PS5 IP>  # prepare + upload, one game at a time
-python tools/psxs5_sync.py covers  --host <PS5 IP>                     # covers for your games
-python tools/psxs5_sync.py cheats  --host <PS5 IP>                     # the cheat library
-python tools/psxs5_sync.py bios    scph5501.bin --host <PS5 IP>        # your own BIOS dump
-python tools/psxs5_sync.py ra-login --host <PS5 IP>                    # RetroAchievements
-python tools/psxs5_sync.py app     --app-dir PPSA98510 --host <PS5 IP> # install or update the app
+python tools/SwanStationPS5_sync.py plan    --source "D:\Games\PS1"                 # what it would do, read-only
+python tools/SwanStationPS5_sync.py sync    --source "D:\Games\PS1" --host <PS5 IP>  # prepare + upload, one game at a time
+python tools/SwanStationPS5_sync.py covers  --host <PS5 IP>                     # covers for your games
+python tools/SwanStationPS5_sync.py cheats  --host <PS5 IP>                     # the cheat library
+python tools/SwanStationPS5_sync.py bios    scph5501.bin --host <PS5 IP>        # your own BIOS dump
+python tools/SwanStationPS5_sync.py ra-login --host <PS5 IP>                    # RetroAchievements
+python tools/SwanStationPS5_sync.py app     --app-dir PPSA98510 --host <PS5 IP> # install or update the app
 ```
 
 `sync` handles the whole library, one game at a time:
 - unpacks `.7z` / `.rar` / `.zip` archives, including archives inside archives and split archives
 - writes missing `.cue` sheets and `.m3u` playlists for multi-disc games
 - skips duplicates
-- uploads to `/data/PSXS5/games/`
+- uploads to `/data/SwanStationPS5/games/`
 - sets the permissions
 
 It remembers what is already on the console, so you can run it again whenever you add games.
@@ -303,7 +301,7 @@ python3 tools/make_release.py   # optional: build and pack PPSA98510.zip, the re
 | `src/ra/` | RetroAchievements |
 | `src/ui/` | cover flow, text, sounds |
 | `src/platform/` | PS5 video output, input, heap, scaling filters |
-| `tools/psxs5_sync.py` | the PC tool |
+| `tools/SwanStationPS5_sync.py` | the PC tool |
 | `tools/make_release.py` | builds the app and packs PPSA98510.zip, the release asset |
 | `tools/make_dds.py` | converts the two backgrounds to the BC7 `pic0.dds` / `pic1.dds` |
 | `tools/make_art.py` | generates the icon and the home-screen art |

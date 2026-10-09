@@ -1,5 +1,5 @@
 /*
- * PSXS5 - shape helpers built on plat_draw_mesh.
+ * SwanStationPS5 - shape helpers built on plat_draw_mesh.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "draw.h"

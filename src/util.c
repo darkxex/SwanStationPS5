@@ -1,8 +1,8 @@
 /*
- * PSXS5 - logging and path helpers.
+ * SwanStationPS5 - logging and path helpers.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "psxs5.h"
+#include "SwanStationPS5.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -14,14 +14,14 @@
 
 static FILE *log_file;
 
-void psxs5_log_open(const char *path)
+void SwanStationPS5_log_open(const char *path)
 {
     if (log_file)
         fclose(log_file);
     log_file = fopen(path, "w");
 }
 
-void psxs5_log(const char *fmt, ...)
+void SwanStationPS5_log(const char *fmt, ...)
 {
     char line[1024];
     va_list args;
@@ -31,7 +31,7 @@ void psxs5_log(const char *fmt, ...)
 
     size_t len = strlen(line);
     const char *nl = (len > 0 && line[len - 1] == '\n') ? "" : "\n";
-    fprintf(stderr, "[psxs5] %s%s", line, nl);
+    fprintf(stderr, "[SwanStationPS5] %s%s", line, nl);
     if (log_file)
     {
         fprintf(log_file, "%s%s", line, nl);
@@ -73,7 +73,7 @@ bool path_is_dir(const char *path)
 
 bool make_dirs(const char *path)
 {
-    char tmp[PSXS5_PATH_MAX];
+    char tmp[SwanStationPS5_PATH_MAX];
     str_copy(tmp, sizeof(tmp), path);
     for (char *p = tmp + 1; *p; ++p)
     {

@@ -1,11 +1,11 @@
 /*
- * PSXS5 - platform layer (SDL2 on both PS5 and desktop).
+ * SwanStationPS5 - platform layer (SDL2 on both PS5 and desktop).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_PLATFORM_H
-#define PSXS5_PLATFORM_H
+#ifndef SwanStationPS5_PLATFORM_H
+#define SwanStationPS5_PLATFORM_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 bool plat_init(void);
 const char *plat_init_error(void); /* "SDL window failed: <reason>" after plat_init fails */
@@ -13,8 +13,8 @@ const char *plat_init_error(void); /* "SDL window failed: <reason>" after plat_i
 const char *plat_screen_info(void);
 void plat_shutdown(void);
 
-/* PS5: asks the HEN to let PSXS5 list /data. Call before plat_init, while the
- * process is single-threaded. Returns false (with the reason) when PSXS5 stays
+/* PS5: asks the HEN to let SwanStationPS5 list /data. Call before plat_init, while the
+ * process is single-threaded. Returns false (with the reason) when SwanStationPS5 stays
  * sandboxed: files still open and save, but folders can't be listed, so the
  * library comes from the index the sync tool writes. Desktop: always true. */
 bool plat_prepare_storage(char *error, size_t size);
@@ -26,14 +26,14 @@ void plat_set_unlock_disabled(bool disabled);
 void plat_default_root(char *out, size_t size);
 
 /* Reads controllers. `quit` is set when the desktop window is closed. */
-void plat_poll(PadState pads[PSXS5_MAX_PADS], bool *quit);
+void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit);
 void plat_rumble(int port, uint16_t strong, uint16_t weak);
 /* The controller's light bar, 0xRRGGBB (ignored where unsupported). */
 void plat_set_lightbar(int port, uint32_t rgb);
 /* Players: order[player] is the controller that plays it. Ports everywhere
  * (plat_poll, rumble, light bar, triggers) are players. */
-void plat_set_player_order(const int order[PSXS5_MAX_PADS]);
-void plat_player_order(int order[PSXS5_MAX_PADS]);
+void plat_set_player_order(const int order[SwanStationPS5_MAX_PADS]);
+void plat_player_order(int order[SwanStationPS5_MAX_PADS]);
 const char *plat_pad_name(int port); /* the PS5 user holding it, or the controller's name */
 /* DualSense extras; nothing happens where they aren't supported */
 void plat_pad_motion(bool on); /* PadState.quat while on */

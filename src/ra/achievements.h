@@ -1,14 +1,14 @@
 /*
- * PSXS5 - RetroAchievements (retroachievements.org) through rcheevos.
+ * SwanStationPS5 - RetroAchievements (retroachievements.org) through rcheevos.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef PSXS5_ACHIEVEMENTS_H
-#define PSXS5_ACHIEVEMENTS_H
+#ifndef SwanStationPS5_ACHIEVEMENTS_H
+#define SwanStationPS5_ACHIEVEMENTS_H
 
-#include "../psxs5.h"
+#include "../SwanStationPS5.h"
 
 /* Reads <root>/retroachievements.ini (user=, token=, hardcore=) written by
- * `tools/psxs5_sync.py ra-login`, and signs in in the background. */
+ * `tools/SwanStationPS5_sync.py ra-login`, and signs in in the background. */
 void ra_init(const Paths *paths);
 void ra_shutdown(void);
 
@@ -37,7 +37,7 @@ typedef struct
 } RaAchievement;
 /* The loaded game's achievements, unlocked ones first. Returns how many. */
 int ra_list(RaAchievement *out, int max);
-/* The unlocks PSXS5 has seen (its own log), newest first; max <= 64. */
+/* The unlocks SwanStationPS5 has seen (its own log), newest first; max <= 64. */
 typedef struct
 {
     long long when;
