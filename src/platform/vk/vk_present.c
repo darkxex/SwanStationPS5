@@ -878,7 +878,7 @@ static bool fg_ready(uint32_t w, uint32_t h)
         {
             V.fg_pass = VK_NULL_HANDLE;
             V.fg_failed = true;
-            SwanStationPS5_log("framegen: no render pass");
+            /* SwanStationPS5_log("framegen: no render pass"); */
             return false;
         }
     }
@@ -887,13 +887,13 @@ static bool fg_ready(uint32_t w, uint32_t h)
     if (!V.fg)
     {
         V.fg_failed = true; /* not again until the device changes */
-        SwanStationPS5_log("framegen: can't start (%s)", error);
+        /* SwanStationPS5_log("framegen: can't start (%s)", error); */
         return false;
     }
     V.fg_w = w;
     V.fg_h = h;
     V.fg_reset = true;
-    SwanStationPS5_log("framegen: %ux%u frames", w, h);
+    /* SwanStationPS5_log("framegen: %ux%u frames", w, h); */
     return true;
 }
 
@@ -1733,15 +1733,15 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
             FgDecision d = ssfg_pacing_frame(V.fg_pacing, vsyncs, already, V.core_hz > 20.0 ? V.core_hz : 59.94,
                                              V.display_hz > 20.0 ? V.display_hz : 59.94, ts.tv_sec + ts.tv_nsec * 1e-9,
                                              V.speed > 0.0 ? V.speed : 100.0, V.nominal);
+            /* the log of the pacing, off until it is needed again:
             if (d.state != V.fg_state)
-            {
-                V.fg_state = d.state;
                 SwanStationPS5_log("framegen: %s (the game's frames: %.2f vsyncs, %.2f refreshes of %.2f Hz)",
                                    ssfg_pacing_state_name(d.state), d.vsyncs, d.refreshes, V.display_hz);
-            }
             const char *event = ssfg_pacing_event(V.fg_pacing);
             if (event)
                 SwanStationPS5_log("framegen: %s", event);
+            */
+            V.fg_state = d.state;
             V.fg_engaged = d.engaged;
             if (d.engaged)
             {
