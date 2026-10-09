@@ -1510,7 +1510,7 @@ void shelf_screen(uint32_t pressed)
     GameStats *hint_st = game >= 0 ? stats_get(app.library.games[game].id) : NULL;
     const char *const labels[] = {"Play", "Details", S.details ? "Choose a cover" : "Settings",
                                   S.details ? (hint_st && hint_st->hidden ? "Unhide" : "Hide") : "Reload",
-                                  "Favorite", "Memory cards"};
+                                  "Favorite", "M.Card"};
     char right[128];
     snprintf(right, sizeof(right), "%s   \xc2\xb7   %s: %s", tr("L1 / R1  Category"), tr("OPTIONS  Sort"),
              shelf_sort_name(app.global.sort_mode));
