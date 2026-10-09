@@ -13,6 +13,7 @@
 #include <string.h>
 
 #define MAX_DIR_FILES 64
+#define MAX_ROOT_ENTRIES 4096 /* entries read from the games folder (static: 1 MB of names) */
 
 /* Loadable images, best first: a playlist beats a single disc. */
 static int image_rank(const char *name)
@@ -308,10 +309,10 @@ static void scan_root(Library *lib, const char *root)
     DIR *d = opendir(root);
     if (!d)
         return;
-    static NameBuf entries[1024];
+    static NameBuf entries[MAX_ROOT_ENTRIES];
     int n = 0;
     struct dirent *e;
-    while ((e = readdir(d)) && n < 1024)
+    while ((e = readdir(d)) && n < MAX_ROOT_ENTRIES)
     {
         if (e->d_name[0] == '.')
             continue;
@@ -329,7 +330,7 @@ static void scan_root(Library *lib, const char *root)
      * are one game, as in their own folder: the discs a playlist (.m3u) here
      * already lists are skipped, the others get one written, and the shelf
      * shows the game once, from disc 1. */
-    static bool skip[1024];
+    static bool skip[MAX_ROOT_ENTRIES];
     memset(skip, 0, sizeof(skip));
     for (int i = 0; i < n; ++i)
         if (image_rank(entries[i]) == 6)

@@ -1511,7 +1511,8 @@ static void profile_frame_end(void)
     int w = snprintf(line, sizeof(line), "ui profile (ms/frame):");
     for (int i = 0; i < prof.count && w < (int)sizeof(line) - 24; ++i)
         w += snprintf(line + w, sizeof(line) - (size_t)w, " %s %.1f", prof.name[i], prof.us[i] / 120 / 1000.0);
-    psxs5_log("%s", line);
+    /* psxs5_log("%s", line); */ /* per-frame timings: uncomment to profile the UI */
+    (void)line;
     memset(&prof, 0, sizeof(prof));
 }
 
@@ -1537,8 +1538,8 @@ void plat_end_frame(void)
         present_us += shown - drawn;
         if (++frames == 120)
         {
-            psxs5_log("ui: draw %.1f ms, present %.1f ms per frame (avg of 120)",
-                      draw_us / 120 / 1000.0, present_us / 120 / 1000.0);
+            /* psxs5_log("ui: draw %.1f ms, present %.1f ms per frame (avg of 120)",
+                      draw_us / 120 / 1000.0, present_us / 120 / 1000.0); */
             frames = 0;
             draw_us = present_us = 0;
         }

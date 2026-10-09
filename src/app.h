@@ -45,6 +45,7 @@ typedef struct
     float dt;                 /* seconds since the last frame */
     float fps;                /* emulated frames per second */
     PadState pads[PSXS5_MAX_PADS]; /* this frame's controllers, as read (by player) */
+    bool quit_requested;      /* leave the main loop and close the app */
     double play_seconds;      /* how long this game has been played since it started */
 } App;
 

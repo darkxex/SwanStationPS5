@@ -44,6 +44,7 @@
 #define SIDE_SCALE 0.74f
 #define SIDE_SQUEEZE 0.58f /* turned-away covers look narrower */
 #define LAUNCH_TIME 0.3f /* the fade to black */
+#define QUIT_HOLD 3.0f   /* seconds O is held on the shelf to close the app */
 #define DISC_TIME 0.95f  /* before it, with the disc animation: the disc slides out and spins up */
 
 static float launch_total(void)
@@ -58,7 +59,7 @@ static struct
     int cursor; /* position in view */
     float pos;  /* animated position */
     bool details;
-    float details_t, launch_t;
+    float details_t, launch_t, quit_hold;
     bool starting; /* the launch is over: this frame shows "Loading", the next one loads */
     float chip_x, chip_w; /* animated category highlight */
     float tint[3];        /* animated background colour */
@@ -216,6 +217,8 @@ static const char *display_title(const Game *g)
 void shelf_init(int last_game)
 {
     S.last_cursor_game = last_game;
+    app.global.shelf_category = CAT_ALL; /* always starts on All, not on the category it was closed on */
+    app.settings.shelf_category = CAT_ALL;
     srand((unsigned)time(NULL)); /* the screensaver slideshow */
     S.tint[0] = 0x3a / 255.0f;
     S.tint[1] = 0x50 / 255.0f;
@@ -1289,6 +1292,23 @@ void shelf_screen(uint32_t pressed)
                 game = selected_game();
             }
         }
+        if ((pressed & BIT(BTN_L3)) && !S.details)
+        {
+            /* the same search as Settings > Rescan library */
+            int before = app.library.count;
+            app_rescan();
+            sfx_play(SFX_SELECT);
+            if (app.library.count <= before)
+                app_toast("No new games found...");
+            else if (app.global.shelf_category != CAT_ALL)
+            {
+                /* new games: show them all, not the category it was on */
+                app.global.shelf_category = CAT_ALL;
+                app.settings.shelf_category = CAT_ALL;
+                shelf_library_changed();
+            }
+            game = selected_game();
+        }
         if ((pressed & BIT(BTN_MENU)) && !S.details)
         {
             sfx_play(SFX_SELECT);
@@ -1340,6 +1360,28 @@ void shelf_screen(uint32_t pressed)
             config_save(&app.global, app.paths.config);
             app_open_settings(SCREEN_LIBRARY);
         }
+    }
+
+    /* holding O on the shelf closes the app */
+    {
+        bool circle = false;
+        for (int i = 0; i < PSXS5_MAX_PADS; ++i)
+            circle |= (app.pads[i].buttons & BIT(BTN_CIRCLE)) != 0;
+        static float hold;
+        static bool armed; /* O was first pressed with the shelf free: not carried over from a menu */
+        if (!circle)
+            hold = 0.0f, armed = false;
+        else if (hold == 0.0f && !armed)
+            armed = !(S.dialog || S.details || P.open || S.launch_t > 0.0f);
+        if (circle && armed && !S.dialog && !P.open && S.launch_t <= 0.0f)
+        {
+            hold += app.dt;
+            if (hold >= QUIT_HOLD)
+                app.quit_requested = true;
+        }
+        else if (!circle)
+            hold = 0.0f;
+        S.quit_hold = hold;
     }
 
     /* ------------------------------------------------ animation */
@@ -1463,16 +1505,16 @@ void shelf_screen(uint32_t pressed)
         snprintf(dl, sizeof(dl), tr("Getting covers (%d)"), pending);
         text_draw(plat_width() - TH_MARGIN, 104, 20, FONT_REGULAR, TH_TEXT_DIM, ALIGN_RIGHT, dl);
     }
-    const int glyphs[] = {GLYPH_CROSS, GLYPH_TRIANGLE, GLYPH_SQUARE, S.details ? GLYPH_L3 : GLYPH_R3,
-                          GLYPH_TOUCHPAD};
+    const int glyphs[] = {GLYPH_CROSS, GLYPH_TRIANGLE, GLYPH_SQUARE, GLYPH_L3,
+                          GLYPH_R3, GLYPH_TOUCHPAD};
     GameStats *hint_st = game >= 0 ? stats_get(app.library.games[game].id) : NULL;
     const char *const labels[] = {"Play", "Details", S.details ? "Choose a cover" : "Settings",
-                                  S.details ? (hint_st && hint_st->hidden ? "Unhide" : "Hide") : "Favorite",
-                                  "Memory cards"};
+                                  S.details ? (hint_st && hint_st->hidden ? "Unhide" : "Hide") : "Reload",
+                                  "Favorite", "Memory cards"};
     char right[128];
     snprintf(right, sizeof(right), "%s   \xc2\xb7   %s: %s", tr("L1 / R1  Category"), tr("OPTIONS  Sort"),
              shelf_sort_name(app.global.sort_mode));
-    app_draw_hints(glyphs, labels, S.view_count ? (!S.details ? 5 : 4) : 1,
+    app_draw_hints(glyphs, labels, S.view_count ? (!S.details ? 6 : 4) : 1,
                    S.view_count ? right : NULL);
     plat_profile("hints");
 
@@ -1534,6 +1576,17 @@ void shelf_screen(uint32_t pressed)
         if (launch > 0.0f)
             text_draw(CENTER_X, plat_height() - 120, 30, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, launch),
                       ALIGN_CENTER, tr("Loading your game..."));
+    }
+    if (S.quit_hold > 0.5f)
+    {
+        /* O held for a while: a bar fills up to the close */
+        const char *msg = tr("Keep holding O to close the SwanStationPS5...");
+        float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
+        float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
+        draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
+        text_draw(CENTER_X, y + 12, 26, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, msg);
+        draw_rrect(x + 32, y + 56, w - 64, 12, 6, TH_DIVIDER);
+        draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(S.quit_hold / QUIT_HOLD, 1.0f)), 12, 6, TH_DANGER);
     }
     app_draw_toast();
 }

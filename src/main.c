@@ -33,6 +33,9 @@
 
 #include <dirent.h>
 #include <stdio.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -201,7 +204,7 @@ void app_restart_covers(void)
 void app_rescan(void)
 {
     const char *roots[] = {app.paths.games, "/mnt/usb0/PSXS5", "/mnt/usb1/PSXS5",
-                           "/mnt/ext0/PSXS5", "/mnt/ext1/PSXS5"};
+                           "/mnt/ext0/PSXS5", "/mnt/ext1/PSXS5", "/mnt/ext1/PSXS5/games"};
     char index[PSXS5_PATH_MAX];
     path_join(index, sizeof(index), app.paths.root, "library.txt");
     if (app.sandboxed)
@@ -893,6 +896,21 @@ int main(void)
     path_join(log_path, sizeof(log_path), app.paths.logs, "psxs5.log");
     psxs5_log_open(log_path);
     ps5_crash_install(log_path);
+#if defined(__PROSPERO__)
+    /* the log's stderr lines go to klog: nc <PS5 IP> 3232 shows them live */
+    extern int ps5_klog_capture_stderr(const char *prefix);
+    ps5_klog_capture_stderr("");
+#endif
+    /* a second games folder on the extended storage, only when it is mounted */
+    struct stat ext;
+    if (stat("/mnt/ext1", &ext) != 0 || !S_ISDIR(ext.st_mode))
+        psxs5_log("games folder /mnt/ext1/PSXS5/games: /mnt/ext1 is not available");
+    else if (stat("/mnt/ext1/PSXS5/games", &ext) == 0)
+        psxs5_log("games folder /mnt/ext1/PSXS5/games: already exists");
+    else if (make_dirs("/mnt/ext1/PSXS5/games"))
+        psxs5_log("games folder /mnt/ext1/PSXS5/games: created successfully");
+    else
+        psxs5_log("games folder /mnt/ext1/PSXS5/games: could not be created (%s)", strerror(errno));
     psxs5_log("SwanStationPS5 %s starting, data root %s", PSXS5_VERSION, app.paths.root);
     psxs5_log("screen: %s", plat_screen_info());
 #if defined(__PROSPERO__)
@@ -942,6 +960,8 @@ int main(void)
         last = now;
 
         plat_poll(pads, &quit);
+        if (app.quit_requested)
+            quit = true;
         memcpy(app.pads, pads, sizeof(app.pads));
         uint32_t pressed = nav_pressed(pads);
         /* the shelf and settings paint a full-screen backdrop: no clear needed */
@@ -992,13 +1012,32 @@ int main(void)
     }
 
     /* Only the desktop build gets here; the PS5 shell closes the title. */
+    ps5_crash_step("shutdown");
+    psxs5_log("shutdown: leaving the main loop");
     if (app.game)
         app_stop_game();
     config_save(&app.global, app.paths.config);
+    stats_save();
+    psxs5_log("shutdown: settings and stats saved");
+    remote_update(false);
+    ra_shutdown();
+    psxs5_log("shutdown: network and RetroAchievements stopped");
     covers_stop();
+    plat_audio_close();
     icons_shutdown();
     text_shutdown();
     library_free(&app.library);
+    psxs5_log("shutdown: interface freed");
     plat_shutdown();
+    psxs5_log("shutdown: done");
+#if defined(__PROSPERO__)
+    /* The system closes the title: exit()/_exit() raise SIGSYS on the console. */
+    extern int sceSystemServiceGetAppIdOfRunningBigApp(void);
+    extern int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
+    fflush(NULL);
+    sceSystemServiceKillApp(sceSystemServiceGetAppIdOfRunningBigApp(), -1, 0, 0);
+    for (;;)
+        plat_sleep_us(100000); /* until the shell takes the title down */
+#endif
     return 0;
 }

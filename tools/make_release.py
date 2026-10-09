@@ -109,6 +109,8 @@ def main():
         deploy(args.ip, args.port)
     print(f"    publish: gh release create {version} {out.name} --repo darkxex/SwanStationPS5 "
           f"--title \"SwanStationPS5 {version}\" --generate-notes --latest")
+    if args.ip:
+        print(f"    live log (open the app first): nc {args.ip} 3232 | grep --line-buffered psxs5")
 
 
 main()
