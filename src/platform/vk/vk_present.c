@@ -132,6 +132,7 @@ static struct
     /* frame generation (fg_bridge.h): the game drawn into the interpolator's frame,
      * the frame halfway to the previous one shown first, then this one */
     bool fg_wanted; /* Settings > Display > Frame generation */
+    bool fsr_wanted; /* Settings > Display > FSR 1 */
     FgInterpolator *fg;
     uint32_t fg_w, fg_h;
     VkRenderPass fg_pass;
@@ -772,12 +773,12 @@ static VkPipeline game_pipeline(int sh)
 
 /* What the picture's shader reads in `info`, for a picture shown w x h pixels big. Sharp: screen pixels per
  * texel; CRT and LCD3x: the PS1's line count. */
-static void game_info(float info[4], int sh, float w, float h, bool fg)
+static void game_info(float info[4], int sh, float w, float h, float tw, float th, bool cropped)
 {
-    /* with frame generation the picture is the interpolator's frame: already cropped and as big as its place on screen */
-    float shown = fg ? 1.0f : 1.0f - 2.0f * V.game_crop;
+    /* tw x th: the picture being drawn (the core's, the interpolator's or FSR 1's); cropped: its top and bottom are
+     * already cut off (the interpolator's frame) */
+    float shown = cropped ? 1.0f : 1.0f - 2.0f * V.game_crop;
     float lines = V.game_lines * (1.0f - 2.0f * V.game_crop);
-    float tw = fg ? w : V.game_tex[0], th = fg ? h : V.game_tex[1];
     info[0] = tw;
     info[1] = th;
     info[2] = sh == 1 || sh == 3 ? lines : w / (tw > 0 ? tw : 1);
@@ -790,7 +791,7 @@ static void game_info(float info[4], int sh, float w, float h, bool fg)
         float native_w = V.game_tex[0] * native_h / V.game_tex[1];
         float visible = native_h * (1.0f - 2.0f * V.game_crop);
         info[0] = native_w;
-        info[1] = fg ? visible : native_h;
+        info[1] = cropped ? visible : native_h;
         info[2] = w / native_w;
         info[3] = h / visible;
     }
@@ -812,6 +813,11 @@ double vkp_framegen_hz(void)
 }
 
 /* The core said the frame it just gave shows the picture of the last one. */
+void vkp_set_fsr(bool on)
+{
+    V.fsr_wanted = on;
+}
+
 void vkp_frame_repeated(void)
 {
     if (V.new_frames)
@@ -960,7 +966,7 @@ static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
     int sh = V.game_shader == 99 ? 99 : 0;
     vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
     float info[4];
-    game_info(info, sh, (float)V.fg_w, (float)V.fg_h, false);
+    game_info(info, sh, (float)V.fg_w, (float)V.fg_h, V.game_tex[0], V.game_tex[1], false);
     static const float plain[4] = {1, 1, 0, 0}; /* the colours come after, on the screen */
     draw_quad_in(cb, V.game_sets[f], (float)V.fg_w, (float)V.fg_h, 0, 0, (float)V.fg_w, (float)V.fg_h, V.game_crop,
                  1.0f - V.game_crop, info, plain);
@@ -994,7 +1000,7 @@ static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
  * drawn straight into the swapchain, inside the game's rectangle. */
 
 #define SHADER_ROYALE 2     /* the values of Settings > Display > Shader */
-#define SHADER_NTSC_FIRST 5 /* 5 to 8: the four NTSC presets (shaders_ntsc.h) */
+#define SHADER_NTSC_FIRST 5 /* 5 to 8: the four NTSC presets (shaders_ntsc.h); FSR 1 is chain 5, run by its own switch */
 #define SHADER_NTSC_LAST 8
 #define SHADER_SUPERSAMPLE 99 /* not a choice of the settings */
 
@@ -1006,9 +1012,11 @@ static int chain_of_shader(int sh)
     return sh >= SHADER_NTSC_FIRST && sh <= SHADER_NTSC_LAST ? sh - SHADER_NTSC_FIRST + 1 : -1;
 }
 
-static struct
+typedef struct Chain
 {
     bool tried, ok;
+    bool offscreen;           /* the last pass draws into an image too (FSR 1, before the picture's shader) */
+    VkImageLayout source_layout; /* of source_view */
     const RoyalePass *passes; /* the chain being run */
     int n, tex_n, preset;     /* its passes, its textures, which one it is */
     VkRenderPass rp[3]; /* an intermediate image: [0] linear, [1] sRGB, [2] float */
@@ -1036,7 +1044,13 @@ static struct
     int built[4];      /* what the images were made for: native size, viewport size */
     bool have_images;
     uint32_t frames;
-} R;
+} Chain;
+
+/* Two chains can run in a frame: [0] the picture's shader (CRT Royale, NTSC), [1] FSR 1 before it. R is the one
+ * CH points to. */
+static Chain CHS[2];
+static Chain *CH = &CHS[0];
+#define R (*CH)
 
 static void royale_free_images(void)
 {
@@ -1369,7 +1383,7 @@ static bool royale_init(void)
         return false;
     for (int i = 0; i < R.n; ++i)
     {
-        R.pipe[i] = royale_pipeline(&R.passes[i], i == R.n - 1 ? V.pass : R.rp[R.passes[i].srgb]);
+        R.pipe[i] = royale_pipeline(&R.passes[i], i == R.n - 1 && !R.offscreen ? V.pass : R.rp[R.passes[i].srgb]);
         if (!R.pipe[i])
             return false;
     }
@@ -1385,7 +1399,7 @@ static int royale_scale(int type, float scale, int source, int viewport)
 
 /* Sizes of every pass for a PS1 picture of native_w x native_h shown in a
  * viewport_w x viewport_h rectangle; the images are made again when they change. */
-static bool royale_prepare(int preset, int native_w, int native_h, int viewport_w, int viewport_h)
+static bool royale_prepare(int preset, bool offscreen, int native_w, int native_h, int viewport_w, int viewport_h)
 {
     if (!R.passes || R.preset != preset)
     {
@@ -1396,6 +1410,7 @@ static bool royale_prepare(int preset, int native_w, int native_h, int viewport_
         R.passes = preset ? NTSC_PRESETS[preset - 1].passes : ROYALE_PASSES;
         R.n = preset ? NTSC_PRESETS[preset - 1].count : (int)(sizeof(ROYALE_PASSES) / sizeof(ROYALE_PASSES[0]));
         R.tex_n = preset ? 0 : (int)(sizeof(ROYALE_TEXTURES) / sizeof(ROYALE_TEXTURES[0]));
+        R.offscreen = offscreen;
     }
     if (!R.tried)
     {
@@ -1410,6 +1425,7 @@ static bool royale_prepare(int preset, int native_w, int native_h, int viewport_
             R.passes = passes;
             R.n = n;
             R.tex_n = tex_n;
+            R.offscreen = offscreen;
             R.tried = true;
         }
     }
@@ -1431,7 +1447,7 @@ static bool royale_prepare(int preset, int native_w, int native_h, int viewport_
         return true;
     vkDeviceWaitIdle(V.device);
     royale_free_images();
-    for (int i = 0; i < R.n - 1; ++i)
+    for (int i = 0; i < (R.offscreen ? R.n : R.n - 1); ++i)
     {
         const RoyalePass *p = &R.passes[i];
         VkFormat format = p->srgb == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT
@@ -1556,7 +1572,7 @@ static void royale_set(int f, int i)
             if (i == 0)
             {
                 view = R.source_view ? R.source_view : V.game_view; /* the PS1's picture is made from the bigger one, smoothly */
-                layout = R.source_view ? VK_IMAGE_LAYOUT_GENERAL : V.game_layout;
+                layout = R.source_view ? R.source_layout : V.game_layout;
                 sampler = R.sampler[1][1];
             }
             else
@@ -1564,7 +1580,7 @@ static void royale_set(int f, int i)
             break;
         case ROYALE_SAMPLER_ORIGINAL:
             view = R.source_view ? R.source_view : V.game_view;
-            layout = R.source_view ? VK_IMAGE_LAYOUT_GENERAL : V.game_layout;
+            layout = R.source_view ? R.source_layout : V.game_layout;
             sampler = R.sampler[1][1];
             break;
         case ROYALE_SAMPLER_PASS: view = R.out[sm->index].view; break;
@@ -1601,7 +1617,7 @@ static void royale_record(VkCommandBuffer cb, int f)
 {
     for (int i = 0; i < R.n; ++i)
         royale_set(f, i);
-    for (int i = 0; i < R.n - 1; ++i)
+    for (int i = 0; i < (R.offscreen ? R.n : R.n - 1); ++i)
     {
         VkRenderPassBeginInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp.renderPass = R.rp[R.passes[i].srgb];
@@ -1792,6 +1808,31 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
             ++V.fg_already; /* every present of the game's own frame (nothing generated) */
     }
 
+    /* FSR 1, before the picture's shader: the picture (the core's, or the interpolator's frame) scaled to the size it has on
+     * screen, edge-adaptively, and sharpened; the shader then reads that. Only when there is something to scale up. */
+    VkImageView fsr_view = VK_NULL_HANDLE;
+    if (game && V.fsr_wanted && V.game_tex[0] >= 1.0f && V.game_tex[1] >= 1.0f && want_w >= 16 && want_h >= 16)
+    {
+        float full = fg_show ? 1.0f : 1.0f - 2.0f * V.game_crop; /* the interpolator's frame is cropped already */
+        int out_w = (int)want_w, out_h = (int)(want_h / (full > 0.1f ? full : 1.0f) + 0.5f);
+        int src_w = fg_show ? (int)V.fg_w : (int)V.game_tex[0], src_h = fg_show ? (int)V.fg_h : (int)V.game_tex[1];
+        if (src_w < out_w || src_h < out_h)
+        {
+            CH = &CHS[1];
+            if (royale_prepare(5, true, src_w, src_h, out_w, out_h))
+            {
+                R.source_view = fg_show;
+                R.source_layout = VK_IMAGE_LAYOUT_GENERAL;
+                royale_record(cb, f);
+                fsr_view = R.out[R.n - 1].view;
+            }
+            CH = &CHS[0];
+        }
+    }
+    if (fsr_view)
+        point_set(V.fg_sets[f], fsr_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const VkImageView shaded_source = fsr_view ? fsr_view : fg_show; /* what the shader reads instead of the core's picture */
+
     /* CRT Royale: its passes first, each into an image, before the swapchain's render pass */
     int royale_rect[4] = {0, 0, 0, 0};
     bool royale = false;
@@ -1812,9 +1853,11 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
             native_w = 1;
         if (native_h < 1)
             native_h = 1;
-        if (royale_rect[2] >= 1 && royale_rect[3] >= 1 && royale_prepare(chain, native_w, native_h, royale_rect[2], royale_rect[3]))
+        if (royale_rect[2] >= 1 && royale_rect[3] >= 1 && royale_prepare(chain, false, native_w, native_h, royale_rect[2], royale_rect[3]))
         {
-            R.source_view = fg_show; /* frame generation: the chain shades the interpolator's frames */
+            /* the chain shades FSR 1's picture, or the interpolator's frames */
+            R.source_view = shaded_source;
+            R.source_layout = fsr_view ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
             royale_record(cb, f);
             royale = true;
         }
@@ -1832,16 +1875,21 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     VkRect2D scissor = {{0, 0}, V.extent};
     vkCmdSetViewport(cb, 0, 1, &viewport);
     vkCmdSetScissor(cb, 0, 1, &scissor);
-    if (game && fg_show && !royale)
+    if (game && shaded_source && !royale)
     {
-        /* frame generation: the interpolator's frame (the picture as the core drew it), with the picture's shader and
-         * the colours; the chains (CRT Royale, NTSC) read it too, below */
+        /* the interpolator's frame and/or FSR 1's picture (the picture as the core drew it, scaled), with the picture's
+         * shader and the colours; the chains (CRT Royale, NTSC) read it too, above */
         int sh = V.game_shader == 99 ? 0 : V.game_shader;
         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
+        const bool cropped = fg_show != VK_NULL_HANDLE;
+        const float w = V.game_rect[2] * gkx, h = V.game_rect[3] * gky, shown = 1.0f - 2.0f * V.game_crop;
         float info[4];
-        game_info(info, sh, V.game_rect[2] * gkx, V.game_rect[3] * gky, true);
-        draw_quad(cb, V.fg_sets[f], V.game_rect[0] * gkx, V.game_rect[1] * gky, V.game_rect[2] * gkx,
-                  V.game_rect[3] * gky, 0.0f, 1.0f, info, colour_k);
+        if (fsr_view && !cropped)
+            game_info(info, sh, w, h, w, h / (shown > 0.1f ? shown : 1.0f), false);
+        else
+            game_info(info, sh, w, h, w, h, true);
+        draw_quad(cb, V.fg_sets[f], V.game_rect[0] * gkx, V.game_rect[1] * gky, w, h, cropped ? 0.0f : V.game_crop,
+                  cropped ? 1.0f : 1.0f - V.game_crop, info, colour_k);
         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, V.blended);
     }
     else if (game)
@@ -1852,7 +1900,7 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
         int sh = V.game_shader;
         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
         float info[4];
-        game_info(info, sh, V.game_rect[2] * kx, V.game_rect[3] * ky, false);
+        game_info(info, sh, V.game_rect[2] * kx, V.game_rect[3] * ky, V.game_tex[0], V.game_tex[1], false);
         if (royale)
             royale_final(cb, f, royale_rect[0], royale_rect[1], royale_rect[2], royale_rect[3]);
         else
@@ -1929,7 +1977,12 @@ static void destroy_device_objects(void)
         vkDestroyImage(V.device, V.canvas, NULL);
     if (V.canvas_memory)
         vkFreeMemory(V.device, V.canvas_memory, NULL);
-    royale_free();
+    for (int c = 0; c < 2; ++c)
+    {
+        CH = &CHS[c];
+        royale_free();
+    }
+    CH = &CHS[0];
     if (V.pool)
         vkDestroyDescriptorPool(V.device, V.pool, NULL);
     if (V.sampler)

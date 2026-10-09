@@ -410,6 +410,7 @@ void app_draw_game(uint8_t dim)
         }
     }
     plat_set_colour(view.brightness, view.colour, view.sharpen);
+    plat_set_fsr(app.settings.fsr);
     {
         double core_hz = host_fps();
         double speed = app.fps > 1.0f && core_hz > 1.0 ? app.fps * 100.0 / core_hz : 100.0;

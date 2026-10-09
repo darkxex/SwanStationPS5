@@ -1051,6 +1051,15 @@ static float colour_k[3] = {1.0f, 1.0f, 0.0f}; /* brightness, saturation, warmth
 static bool colour_on;
 static uint8_t colour_lut[3][256]; /* per channel: brightness and warmth */
 
+void plat_set_fsr(bool on)
+{
+#if defined(__PROSPERO__)
+    vkp_set_fsr(on);
+#else
+    (void)on;
+#endif
+}
+
 double plat_framegen_hz(void)
 {
 #if defined(__PROSPERO__)

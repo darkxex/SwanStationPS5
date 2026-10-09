@@ -211,6 +211,8 @@ static bool config_apply(Settings *s, const char *path)
             s->fast_effects = as_bool(value);
         else if (strcmp(key, "framegen") == 0)
             s->framegen = as_bool(value);
+        else if (strcmp(key, "fsr") == 0)
+            s->fsr = as_bool(value);
         else if (strcmp(key, "rewind") == 0)
             s->rewind = as_bool(value);
         else if (strcmp(key, "quick_resume") == 0)
@@ -328,8 +330,8 @@ bool config_save(const Settings *s, const char *path)
             s->msaa, s->texture_filter, s->filter_2d, s->supersampling, s->deinterlace, s->pal60, s->game_fixes);
     fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\nnegcon=%d\n",
             s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->negcon);
-    fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\nframegen=%d\n", s->touch_mouse, s->run_ahead,
-            s->fast_effects, s->framegen);
+    fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\nframegen=%d\nfsr=%d\n", s->touch_mouse, s->run_ahead,
+            s->fast_effects, s->framegen, s->fsr);
     for (int i = 0; i < SS_OPT_COUNT; ++i)
     {
         int v = s->ss_opt[i];

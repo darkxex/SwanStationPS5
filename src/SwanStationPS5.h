@@ -162,6 +162,7 @@ typedef struct
     bool touch_mouse;     /* mouse games: the touchpad moves the pointer */
     int run_ahead;        /* 0 off, 1 or 2 frames less input lag */
     bool fast_effects;    /* Beetle on the GPU: screen effects on the GPU, without the software copy */
+    bool fsr;             /* FSR 1 scales the picture before the shader */
     bool framegen;        /* frame interpolation: a frame between two of the game's (120 Hz screen, from the next start) */
     int ss_opt[SS_OPT_COUNT]; /* SwanStation's own core options: the chosen value's index in SS_OPTS[i].values */
 } Settings;

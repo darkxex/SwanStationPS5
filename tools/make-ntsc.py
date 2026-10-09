@@ -16,14 +16,15 @@ import tempfile
 
 root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 base = os.path.join(root, "third_party", "ntsc")
-shader_dir = os.path.join(base, "shaders", "maister")
+bases = {"ntsc": base, "fsr": os.path.join(root, "third_party", "fsr")}
 out_path = os.path.join(root, "src", "platform", "vk", "shaders_ntsc.h")
 glslang = os.environ.get("GLSLANG") or shutil.which("glslang") or shutil.which("glslangValidator")
 if not glslang:
     sys.exit("glslang not found (set GLSLANG)")
 
 # the order of Settings > Display > Shader, from 5 on
-PRESETS = ["ntsc-320px-svideo", "ntsc-320px-composite", "ntsc-256px-svideo", "ntsc-256px-composite"]
+PRESETS = [("ntsc", "ntsc-320px-svideo"), ("ntsc", "ntsc-320px-composite"), ("ntsc", "ntsc-256px-svideo"),
+           ("ntsc", "ntsc-256px-composite"), ("fsr", "fsr")]  # then FSR 1 (AMD): EASU and RCAS
 STOCK = "shaders/maister/ntsc-stock.slang"
 
 
@@ -77,7 +78,7 @@ PUSH_KINDS = {"SourceSize": "SOURCE_SIZE", "OriginalSize": "ORIGINAL_SIZE", "Out
               "FinalViewportSize": "FINAL_SIZE", "FrameCount": "FRAME"}
 
 
-def describe(name, common, frag, text):
+def describe(name, common, frag, text, overrides):
     push = re.search(r"layout\(push_constant\)\s+uniform\s+Push\s*\{(.*?)\}\s*\w+;", common, flags=re.S)
     local = parse_parameters(text)
     members, offset = [], 0
@@ -92,7 +93,7 @@ def describe(name, common, frag, text):
         if member in PUSH_KINDS:
             members.append((offset, PUSH_KINDS[member], -1, 0.0))
         elif member in local:
-            members.append((offset, "PARAM", -1, local[member]))
+            members.append((offset, "PARAM", -1, overrides.get(member, local[member])))
         else:
             sys.exit("%s: push constant %s is not known" % (name, member))
         offset += size
@@ -126,13 +127,14 @@ def c_array(name, words):
     return "\n".join(lines)
 
 
-modules = {}  # shader file -> (id, vert words, frag words, push_size, members, samplers)
+modules = {}  # (preset folder, shader file, parameter values) -> (id, vert words, frag words, push_size, members, samplers)
 
 
-def module_of(rel):
-    if rel in modules:
-        return modules[rel]
-    path = os.path.join(base, rel)
+def module_of(rel, folder, overrides):
+    key = (folder, rel, tuple(sorted(overrides.items())))
+    if key in modules:
+        return modules[key]
+    path = os.path.join(bases[folder], rel)
     text = expand(open(path, encoding="utf-8").read(), os.path.dirname(path))
     common, vertex, fragment = split_stages(text)
     common = push_only(common)
@@ -140,11 +142,11 @@ def module_of(rel):
     vertex = ("#define TexCoord vec2(float(gl_VertexIndex & 1), float(gl_VertexIndex >> 1))\n"
               "#define Position vec4(TexCoord * 2.0 - 1.0, 0.0, 1.0)\n") + push_only(vertex)
     fragment = push_only(fragment)
-    push_size, members, samplers = describe(rel, common, fragment, text)
+    push_size, members, samplers = describe(rel, common, fragment, text, overrides)
     ident = "NTSC_M%d" % len(modules)
     entry = (ident, compile_stage(common + vertex, "vertex", ident), compile_stage(common + fragment, "fragment", ident),
              push_size, members, samplers)
-    modules[rel] = entry
+    modules[key] = entry
     print("%-52s push %3d bytes, %d members, %d samplers" % (rel, push_size, len(members), len(samplers)))
     return entry
 
@@ -159,29 +161,35 @@ def scale_of(preset, i, axis):
 
 
 chains = []
-for name in PRESETS:
-    preset = read_preset(os.path.join(base, name + ".slangp"))
+for folder, name in PRESETS:
+    preset = read_preset(os.path.join(bases[folder], name + ".slangp"))
     count = int(preset["shaders"])
+    # the parameters the preset sets (the shaders' own #pragma parameter defaults otherwise)
+    overrides = {k: float(preset[k]) for k in preset.get("parameters", "").split(";") if k and k in preset}
     passes = []
     for i in range(count):
-        mod = module_of(preset["shader%d" % i])
+        mod = module_of(preset["shader%d" % i], folder, overrides)
         sx, vx = scale_of(preset, i, "x")
         sy, vy = scale_of(preset, i, "y")
         passes.append(dict(mod=mod, sx=sx, vx=vx, sy=sy, vy=vy,
                            linear=1 if preset.get("filter_linear%d" % i, "false") == "true" else 0,
                            fmt=2 if preset.get("float_framebuffer%d" % i, "false") == "true" else 0,
                            mod_frames=int(preset.get("frame_count_mod%d" % i, "0"))))
-    if passes[-1]["sx"] != "SCALE_VIEWPORT" or passes[-1]["sy"] != "SCALE_VIEWPORT":
+    # the last pass is drawn at the viewport's size: of the viewport's, or the same as the pass before (FSR's second)
+    ends_at_viewport = (passes[-1]["sx"] == "SCALE_VIEWPORT" and passes[-1]["sy"] == "SCALE_VIEWPORT") or (
+        len(passes) > 1 and passes[-2]["sx"] == "SCALE_VIEWPORT" and passes[-2]["sy"] == "SCALE_VIEWPORT" and
+        passes[-1]["sx"] == "SCALE_SOURCE" and passes[-1]["vx"] == 1.0 and passes[-1]["vy"] == 1.0)
+    if not ends_at_viewport:
         # the chain ends smaller than the screen: one more pass stretches it, smoothly, as RetroArch does
-        passes.append(dict(mod=module_of(STOCK), sx="SCALE_VIEWPORT", vx=1.0, sy="SCALE_VIEWPORT", vy=1.0, linear=1,
+        passes.append(dict(mod=module_of(STOCK, "ntsc", {}), sx="SCALE_VIEWPORT", vx=1.0, sy="SCALE_VIEWPORT", vy=1.0, linear=1,
                            fmt=0, mod_frames=0))
     chains.append((name, passes))
 
-out = ["/* Generated by tools/make-ntsc.py from third_party/ntsc (the NTSC shader by Themaister). Do not edit. */",
+out = ["/* Generated by tools/make-ntsc.py from third_party/ntsc (the NTSC shader by Themaister) and third_party/fsr (AMD FSR 1). Do not edit. */",
        "#ifndef SwanStationPS5_SHADERS_NTSC_H", "#define SwanStationPS5_SHADERS_NTSC_H", "#include <stdint.h>",
        '#include "shaders_royale.h"', ""]
-for rel, (ident, vert, frag, *_rest) in modules.items():
-    out.append("/* %s */" % rel)
+for (folder, rel, _params), (ident, vert, frag, *_rest) in modules.items():
+    out.append("/* %s/%s */" % (folder, rel))
     out.append(c_array(ident + "_VERT", vert))
     out.append(c_array(ident + "_FRAG", frag))
 out.append("")

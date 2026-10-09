@@ -58,6 +58,7 @@ int plat_pad_battery(int port); /* 0..100, -1 when unknown */
 /* The game picture's colours: Settings brightness (0..3, 1 normal), colour (0..5),
  * and sharpening (0..2, Beetle on the GPU). */
 void plat_set_colour(int brightness, int colour, int sharpen);
+void plat_set_fsr(bool on); /* FSR 1 before the shader (Vulkan) */
 double plat_framegen_hz(void); /* the display's rate while frames are being generated, else 0 */
 void plat_set_framegen(bool on, double core_hz, double speed, bool nominal); /* frame interpolation (Vulkan) */
 void plat_want_high_refresh(bool on); /* before plat_init: the 120 Hz mode */
