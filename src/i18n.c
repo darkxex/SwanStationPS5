@@ -1245,8 +1245,8 @@ static const Entry ENTRIES[] = {
     /* ---- 2.2: controllers, picture, run-ahead */
     {{"Run-ahead", "Anticipation", "Antecipação", "Anticipación",
       "先読み"}},
-    {{"Answers your buttons 1 or 2 frames sooner, for fighting games and platformers. It runs extra frames: at high internal resolutions some games may slow down.", "Répond à vos boutons 1 ou 2 images plus tôt, pour les jeux de combat et de plateforme. Il calcule des images en plus : en haute résolution interne, certains jeux peuvent ralentir.", "Responde aos botões 1 ou 2 fotogramas mais cedo, para jogos de luta e de plataformas. Corre fotogramas extra: em resolução interna alta, alguns jogos podem abrandar.", "Responde a tus botones 1 o 2 cuadros antes, para juegos de pelea y plataformas. Calcula cuadros extra: con resolución interna alta, algunos juegos pueden ralentizarse.",
-      "ボタンへの反応を1〜2フレーム早めます(格闘・アクション向け)。余分にフレームを処理するため、高い内部解像度では重くなるゲームもあります。"}},
+    {{"Answers your buttons 1 or 2 frames sooner, for fighting games and platformers. It runs extra frames: at high internal resolutions some games may slow down. It is not used while Double frames is on.", "Répond à vos boutons 1 ou 2 images plus tôt, pour les jeux de combat et de plateforme. Il calcule des images en plus : en haute résolution interne, certains jeux peuvent ralentir. Inutilisé quand Doubler les images est activé.", "Responde aos botões 1 ou 2 fotogramas mais cedo, para jogos de luta e de plataformas. Corre fotogramas extra: em resolução interna alta, alguns jogos podem abrandar. Não é usado com Duplicar fotogramas ligado.", "Responde a tus botones 1 o 2 cuadros antes, para juegos de pelea y plataformas. Calcula cuadros extra: con resolución interna alta, algunos juegos pueden ralentizarse. No se usa con Duplicar cuadros activado.",
+      "ボタンへの反応を1〜2フレーム早めます(格闘・アクション向け)。余分にフレームを処理するため、高い内部解像度では重くなるゲームもあります。「フレームを2倍にする」がオンの間は使われません。"}},
     {{"1 frame", "1 image", "1 fotograma", "1 cuadro",
       "1フレーム"}},
     {{"2 frames", "2 images", "2 fotogramas", "2 cuadros",

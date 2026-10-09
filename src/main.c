@@ -788,7 +788,8 @@ static void game_screen(PadState *pads)
      * screen answers the buttons that many frames sooner. */
     static void *ahead_state;
     static size_t ahead_size;
-    int ahead = !fast && !back ? app.settings.run_ahead : 0;
+    /* run-ahead shows frames of a look-ahead that are not the game's own: Double frames needs the real ones */
+    int ahead = !fast && !back && !app.global.framegen ? app.settings.run_ahead : 0;
     if (ahead > 0 && runs > 0 && (!ahead_state || host_state_size() != ahead_size))
     {
         free(ahead_state); /* another game's states are another size */
