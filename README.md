@@ -53,7 +53,7 @@ Put the BIOS files directly in the folder, not in a subfolder, and keep their st
 
 SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 home screen. It is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia that runs every game on SwanStation.
 
-It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive the SwanStation core. It does **not** use PSXS5's emulator submodules (PCSX-ReARMed and Beetle PSX HW): SwanStation is the only emulator, and the build no longer includes the others.
+It uses PSXS5's frontend (the shelf, menus, controls and tools) to drive the SwanStation core: SwanStation is the only emulator.
 
 - The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
 - You pick a game from a cover-flow shelf with your covers.
@@ -110,10 +110,6 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 - **Plays every common format.** `.cue`/`.bin`, `.chd`, `.pbp` (including multi-disc), `.iso`, `.img`, `.mdf`, `.ccd` and `.m3u` playlists for multi-disc games.
 - **Sharp on a 4K TV.**
   - Internal resolution: native up to 16x with SwanStation.
-  - Upscale: 1x to 4x, with three filters:
-    - Sharp pixels
-    - Smooth pixels (Scale2x/3x)
-    - xBR, the smoothest edges for 2D art
   - Aspect ratio: auto, 4:3, 16:9, 16:10, 1:1 pixels or stretch, and *Crop black edges* to hide the black lines at the top and bottom.
   - Integer scaling and smooth final scaling on or off (sharp pixels by default).
 - **Built for full speed.** 60 fps (50 for PAL games). SwanStation renders on the GPU; the picture and the menus reach the TV through Vulkan.
@@ -253,7 +249,7 @@ It also shows the time and how long you've been playing.
 
 | Section | Settings |
 |---|---|
-| Display | Upscale filter, aspect ratio, shader (LCD3x, CRT Royale, CRT, sharp bilinear), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, and SwanStation's display options |
+| Display | Aspect ratio, shader (sharp bilinear, CRT Basic, LCD3x, CRT Royale, NTSC), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, load HD textures, double frames, and SwanStation's display options |
 | Graphics | Internal resolution (native to 16x), PGXP, true colour, supersampling, and SwanStation's enhancement options (MSAA, texture filter, widescreen hack, PGXP details...) |
 | Controls | Controller (digital or DualShock), left stick as D-pad, vibration, light bar, players (multitap), player order, dead zone, stick response, rumble feel, trigger effects, gas and brake on R2 / L2, light gun, button mapping, and SwanStation's controller port options |
 | Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, hardcore mode |
@@ -334,7 +330,7 @@ make            # -> dist/PPSA98510/ and dist/PPSA98510.zip
 python3 tools/make_release.py   # optional: build and pack PPSA98510.zip, the release asset
 ```
 
-`make` builds SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation; `APP_BEETLE=1` also builds the old Beetle PSX HW core (`tools/build-beetle.sh`).
+`make` builds SwanStation (`tools/build-swanstation.sh`) and rcheevos (`tools/build-rcheevos.sh`) as static libraries, links the RADV Vulkan driver (`tools/fetch-radv.sh`), compiles `src/` and signs `eboot.bin`. `APP_VULKAN=0` builds without Vulkan and SwanStation.
 
 | Path | What |
 |---|---|
@@ -355,7 +351,7 @@ python3 tools/make_release.py   # optional: build and pack PPSA98510.zip, the re
 SwanStationPS5 is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia and is built on the work of a lot of people. Thank you all.
 
 * **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator SwanStationPS5 runs.
-* **Ryphecha and the Mednafen team, the Beetle PSX contributors and Themaister** (parallel-psx), for [Beetle PSX HW](https://github.com/libretro/beetle-psx-libretro), and **Mihawk-99** for its PS5 port and for the PS5 port of Mesa's RADV Vulkan driver.
+* **Mihawk-99**, for the PS5 port of Mesa's RADV Vulkan driver.
 * **BlackBearReloaded**, for [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate), the build pipeline, runtime and deploy tooling that turn SwanStationPS5 into a home-screen app.
 * **John Törnblom**, for the [ps5-payload-dev](https://github.com/ps5-payload-dev) SDK, and PacBrew's SDL2 and libcurl ports.
 * **SvenGDK**, for [SharpProspero](https://github.com/SvenGDK/SharpProspero), whose ELF converter and FSELF writer sign `eboot.bin`.
@@ -366,7 +362,8 @@ SwanStationPS5 is a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPi
 * **[xlenore/psx-covers](https://github.com/xlenore/psx-covers)**, for the covers the shelf downloads.
 * **The [libretro-database](https://github.com/libretro/libretro-database) contributors**, for the PlayStation cheat library.
 * **Swordpdf**, for [PS5SX2](https://github.com/Swordpdf/PS5SX2). Its shelf and project page inspired SwanStationPS5's, and studying it and the other PS5 emulator ports showed how a native emulator title runs on the console.
-* **Hyllian**, for the xBR upscaler, and **Andrea Mazzoleni** (AdvanceMAME), for Scale2x / Scale3x.
+* **Swordpdf and AMD**, for the frame interpolation behind *Double frames*: [PS5SX2](https://github.com/Swordpdf/PS5SX2)'s port of AMD FSR 3 (FidelityFX SDK), as first integrated in PSXS5 by SynoPiia.
+* **Hans-Kristian Arntzen (Themaister)**, for the NTSC shaders, **TroggleMonkey and Hyllian** for CRT Royale and **Gigaherz** for LCD3x.
 * **Sam Lantinga and the SDL contributors** for [SDL2](https://www.libsdl.org/), **Daniel Stenberg** for [curl](https://curl.se/), **Sean Barrett** for [stb](https://github.com/nothings/stb), **Rasmus Andersson** for the [Inter](https://github.com/rsms/inter) font, **Google and Adobe** for [Noto Sans JP](https://github.com/notofonts/noto-cjk) (the Japanese text), and **Doug Lea** for [dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html).
 * **Microsoft's [DirectXTex](https://github.com/microsoft/DirectXTex)**, **[Pillow](https://python-pillow.org/)** and **[7-Zip](https://www.7-zip.org/)**, for the art pipeline and the PC tool.
 * Developed with the help of [Claude Code](https://claude.com/claude-code).

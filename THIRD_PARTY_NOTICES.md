@@ -156,14 +156,12 @@ No proprietary runtime module, encryption key, or game file is included.
 | [rcheevos](https://github.com/RetroAchievements/rcheevos) v12.5.0 | RetroAchievements client (`third_party/rcheevos`) | MIT |
 | [SDL2](https://www.libsdl.org/) (PacBrew port) | events, controllers, audio, software renderer | zlib |
 | [dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html) 2.8.6 by Doug Lea | allocator for the direct-memory heap (`third_party/dlmalloc`) | Public domain (CC0) |
-| xBR by Hyllian | upscale filter, reimplemented in `src/platform/xbr.c` | algorithm credit (MIT-licensed reference) |
-| Scale2x / Scale3x by Andrea Mazzoleni (AdvanceMAME) | upscale filter, reimplemented in `src/platform/plat_sdl.c` | algorithm credit |
 | [RetroAchievements](https://retroachievements.org) | achievement sets and accounts, used online; not bundled | service terms of retroachievements.org |
 | [Noto Sans JP](https://github.com/notofonts/noto-cjk) (subset by `tools/make_jp_font.py`) | Japanese interface text (`assets/fonts/NotoSansJP-SwanStationPS5.ttf`) | SIL Open Font License 1.1 (`assets/fonts/OFL-NotoSansJP.txt`) |
 | [Tabler Icons](https://tabler.io/icons) 3.31.0 (subset by `tools/make_icon_font.py`) | interface icons (`assets/fonts/tabler-SwanStationPS5.ttf`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
 | [QR Code generator](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki | the phone page QR code (`third_party/qrcodegen`) | MIT |
 | [lcd3x](https://github.com/libretro/slang-shaders) by Gigaherz | the LCD3x shader, ported to GLSL in `src/platform/vk/shaders/lcd3x.frag` | Public domain |
 | [crt-royale](https://github.com/libretro/slang-shaders) (crt-royale-fast) by TroggleMonkey, adapted by Hyllian | the CRT Royale shader, compiled to SPIR-V by `tools/make-royale.py` (`third_party/crt-royale`) | GPL-2.0-or-later (`third_party/crt-royale/LICENSE.TXT`) |
-| [NTSC shaders](https://github.com/libretro/slang-shaders) (ntsc/shaders/maister) by Hans-Kristian Arntzen (Themaister) | the eight NTSC presets (320px / 256px, S-Video / composite, with or without scanlines), compiled to SPIR-V by `tools/make-ntsc.py` (`third_party/ntsc`) | see the libretro/slang-shaders repository (license to be confirmed) |
+| [NTSC shaders](https://github.com/libretro/slang-shaders) (ntsc/shaders/maister) by Hans-Kristian Arntzen (Themaister) | the four NTSC presets (320px / 256px, S-Video / composite), compiled to SPIR-V by `tools/make-ntsc.py` (`third_party/ntsc`) | see the libretro/slang-shaders repository (license to be confirmed) |
 | Frame interpolation from [PS5SX2](https://github.com/Swordpdf/PS5SX2) by Swordpdf (from his RPCS3-PS5 / ps5-framegen), as integrated in [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia | frame interpolation on Vulkan (`third_party/framegen`, built by `tools/build-framegen.sh`) | GPL-3.0-or-later |
 | [AMD FidelityFX SDK](https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK) 2.3.0 (FSR 3 optical flow and frame interpolation) | the frame interpolation shaders (`third_party/framegen/framegen`) | MIT (`third_party/framegen/framegen/LICENSE.txt`) |
