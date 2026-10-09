@@ -1,3 +1,18 @@
+SwanStationPS5 by AngelXex - changes to the SwanStation core for the PS5.
+Repository: https://github.com/darkxex/SwanStationPS5
+
+Thank you:
+  - The SwanStation and libretro teams, for the libretro core and its Vulkan renderer.
+    https://github.com/libretro/swanstation
+  - Elias Daler, for Yume Nikki PS1 (the homebrew that found the CD-ROM Reset bug).
+    https://eliasdaler.itch.io/yume-nikki-ps1
+  - The pcsx-redux and nugget (psyqo) authors, for their PS1 homebrew tools.
+    https://github.com/pcsx-redux/nugget
+    https://github.com/grumpycoders/pcsx-redux
+  - Everyone behind the PS5 homebrew scene: the SDK, etaHEN and the tools this runs on.
+
+Text before the first "diff" line is ignored by git apply.
+
 diff --git a/src/common/file_system.cpp b/src/common/file_system.cpp
 index 014ebdbc..316a86ee 100644
 --- a/src/common/file_system.cpp
