@@ -443,7 +443,14 @@ static void draw_details(const Game *g, float t)
             snprintf(ach, sizeof(ach), "%d / %d", st->ach_unlocked, st->ach_total);
     }
     snprintf(discs, sizeof(discs), "%d", g->discs);
-    const char *folder = strrchr(g->folder, '/');
+    /* where the game is read from: the games folder holding its own folder, e.g. /data/PSXS5/games */
+    char where[PSXS5_PATH_MAX];
+    str_copy(where, sizeof(where), g->folder);
+    {
+        char *last = strrchr(where, '/');
+        if (last && strcmp(last + 1, "games") != 0 && strcmp(last + 1, "PSXS5") != 0)
+            *last = '\0'; /* a game's own folder: its parent is the games folder */
+    }
     /* what DuckStation's database knows: genre, release, players */
     const GameInfo *info = gamedb_get(g->serial);
     char released[160] = "", players[48] = "";
@@ -462,7 +469,7 @@ static void draw_details(const Game *g, float t)
         {"Players", players[0] ? players : tr("Unknown"), ICON_USER},
         {"Played", played[0] ? played : tr("Not yet"), ICON_HISTORY},
         {"Achievements", ach[0] ? ach : tr("Unknown"), ICON_TROPHY},
-        {"Folder", folder ? folder + 1 : g->folder, ICON_FOLDER},
+        {"Folder", where, ICON_FOLDER},
     };
     (void)when;
     for (int i = 0; i < 8; ++i)
@@ -618,10 +625,10 @@ static void draw_info(const Game *g, float alpha)
             if (p[n] == '/' && --slashes == 0)
                 break;
         if (n > 0 && n < 24)
-            snprintf(source, sizeof(source), "%s: %.*s", tr("Storage"), (int)n, p);
+            snprintf(source, sizeof(source), "%s: '%.*s'", tr("Folder"), (int)n, p);
     }
-    const char *tags[6] = {source, shelf_region_name(g->serial), g->serial[0] ? g->serial : tr("No serial"),
-                           discs, played_tag, when};
+    const char *tags[6] = {shelf_region_name(g->serial), g->serial[0] ? g->serial : tr("No serial"),
+                           discs, played_tag, when, source};
     float widths[6], total = 0;
     for (int i = 0; i < 6; ++i)
         if (tags[i][0])
