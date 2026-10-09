@@ -181,7 +181,7 @@ static const Row DISPLAY[] = {
      APPLY_NOW, SP_NONE, false, INT_FIELD(brightness), BRIGHTNESS, 4, 0},
     {NULL, "Colours", "Vivid: richer colours. Soft: gentler. Warm and Cool shift the tint. Black and white, for fun.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(colour), COLOURS, 6, 0},
-    {"Overlay", "Show FPS", "Frames per second in the corner while you play. If the game repeats pictures (a 30 fps game on a 60 fps core), its own rate shows in brackets: 60.0 FPS (game 30.0). With frame interpolation at work, FG and the screen's rate are added.", K_TOGGLE, APPLY_NOW,
+    {"Overlay", "Show FPS", "Frames per second in the corner while you play. If the game repeats pictures (a 30 fps game on a 60 fps core), its own rate shows in brackets: 60.0 FPS (game 30.0). While frames are being doubled, FG and the frames you actually see are added: | FG 50.", K_TOGGLE, APPLY_NOW,
      SP_NONE, false, BOOL_FIELD(show_fps), OFF_ON, 2, 0},
 };
 
