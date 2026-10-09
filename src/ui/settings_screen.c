@@ -71,6 +71,7 @@ enum Special
     SP_PLAYERS,
     SP_PROFILE,
     SP_WHO,
+    SP_HDTEX, /* drives the two core options for texture packs */
 };
 
 typedef struct
@@ -122,7 +123,9 @@ static const char *const BACKGROUNDS[] = {"Dark", "Cover colour"};
 static const char *const CRT_LEVELS[] = {"Off", "Light", "Strong"};
 static const char *const BORDERS[] = {"Black", "Soft glow", "TV frame"};
 static const char *const CROPS[] = {"Off", "A little", "More"};
-static const char *const SHADERS[] = {"Off", "LCD3x", "CRT Royale", "CRT", "Sharp bilinear"};
+static const char *const SHADERS[] = {"Off", "LCD3x", "CRT Royale", "CRT Basic", "Sharp bilinear",
+                                      "NTSC 320px S-Video", "NTSC 320px Composite", "NTSC 256px S-Video",
+                                      "NTSC 256px Composite"};
 static const char *const POPUP_STYLES[] = {"Banner", "Compact", "Big trophy"};
 static const char *const LIGHTBARS[] = {"System", "Player colours", "Game cover colour"};
 static const char *const PLAYERS[] = {"1 or 2", "Up to 4 (multitap)"};
@@ -152,12 +155,18 @@ static const Row DISPLAY[] = {
     */
     {"Picture", "Aspect ratio", "The shape of the picture. Pair 16:9 with a widescreen cheat.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(aspect), ASPECTS, 6, 0},
-    {NULL, "Shader", "Sharp bilinear keeps pixels crisp without shimmer; CRT adds scanlines, an RGB grille and glow; LCD3x looks like a handheld's LCD; CRT Royale is a detailed CRT with bloom and a phosphor mask (heavy).",
-     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 5, 0},
+    {NULL, "Shader", "Sharp bilinear keeps pixels crisp without shimmer. CRT Basic adds scanlines, an RGB grille and glow. LCD3x looks like a handheld's LCD. CRT Royale is a detailed CRT with bloom and a phosphor mask (heavy). NTSC recreates the analog TV signal: Composite shows the colour fringes of old consoles, S-Video is cleaner; pick 320px or 256px to match the game's width (heavy).",
+     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 9, 0},
     {NULL, "Sharpening", "With the shader off: a light, contrast-aware sharpening (AMD FidelityFX CAS) that makes an upscaled picture crisper without halos.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
+    {NULL, "Double frames",
+     "Doubles the game's real frames with AMD FSR 3's frame interpolation: from 30 to 60 fps, or from 60 to 120 fps if your screen supports it; if not, it stays at 60 fps. It works at once, except 60 to 120 fps, which needs it turned on before the app starts.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(framegen), OFF_ON, 2, 0},
+    {NULL, "Load HD textures",
+     "Loads HD texture packs. Over FTP, go to /data/SwanStationPS5/cache/ and create the folder textures if it doesn't exist, then create your game's folder inside it, for example \"SCUS-94900\" (Crash Bandicoot), and put the pack's PNG files there. Needs the GPU renderer. Takes effect with the next game.",
+     K_TOGGLE, APPLY_NEXT_GAME, SP_HDTEX, false, NO_FIELD, OFF_ON, 2, 0},
     {"Screen fit", "Integer scaling", "Whole-number scale factors only: even pixels, black borders.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(integer_scale), OFF_ON, 2, 0},
     {NULL, "Smooth final scaling", "Softens the last step up to your TV's resolution.", K_TOGGLE,
@@ -172,7 +181,7 @@ static const Row DISPLAY[] = {
      APPLY_NOW, SP_NONE, false, INT_FIELD(brightness), BRIGHTNESS, 4, 0},
     {NULL, "Colours", "Vivid: richer colours. Soft: gentler. Warm and Cool shift the tint. Black and white, for fun.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(colour), COLOURS, 6, 0},
-    {"Overlay", "Show FPS", "Frames per second in the corner while you play.", K_TOGGLE, APPLY_NOW,
+    {"Overlay", "Show FPS", "Frames per second in the corner while you play. If the game repeats pictures (a 30 fps game on a 60 fps core), its own rate shows in brackets: 60.0 FPS (game 30.0). With frame interpolation at work, FG and the screen's rate are added.", K_TOGGLE, APPLY_NOW,
      SP_NONE, false, BOOL_FIELD(show_fps), OFF_ON, 2, 0},
 };
 
@@ -491,10 +500,50 @@ static Settings *target(const Row *r)
     return (!r->global_only && S.game_scope && app.game) ? &app.settings : &app.global;
 }
 
+/* "Load HD textures" is the two core options "Enable VRAM Write Texture Replacement" and "Preload Texture
+ * Replacements" together (both stay in System): on turns both on, off turns both off. */
+static const char *const HDTEX_KEYS[] = {"swanstation_TextureReplacements_EnableVRAMWriteReplacements",
+                                         "swanstation_TextureReplacements_PreloadTextures"};
+
+static int ss_index(const char *key)
+{
+    for (int i = 0; i < SS_OPT_COUNT; ++i)
+        if (strcmp(SS_OPTS[i].key, key) == 0)
+            return i;
+    return -1;
+}
+
+static int ss_true_index(int i)
+{
+    for (int v = 0; v < SS_OPTS[i].count; ++v)
+        if (strcmp(SS_OPTS[i].values[v], "true") == 0)
+            return v;
+    return 0;
+}
+
+static bool hdtex_on(const Settings *t)
+{
+    int i = ss_index(HDTEX_KEYS[0]);
+    return i >= 0 && t->ss_opt[i] == ss_true_index(i);
+}
+
+static void hdtex_set(Settings *t, bool on)
+{
+    for (size_t k = 0; k < sizeof(HDTEX_KEYS) / sizeof(HDTEX_KEYS[0]); ++k)
+    {
+        int i = ss_index(HDTEX_KEYS[k]);
+        if (i < 0)
+            continue;
+        int yes = ss_true_index(i);
+        t->ss_opt[i] = on ? yes : (yes + 1) % SS_OPTS[i].count;
+    }
+}
+
 static int read_value(const Row *r)
 {
     switch (r->special)
     {
+    case SP_HDTEX: return hdtex_on(target(r)) ? 1 : 0;
     case SP_HARDCORE: return ra_hardcore();
     case SP_UNLOCK: return app.unlock_setting;
     default: break;
@@ -509,6 +558,16 @@ static void write_value(const Row *r, int v)
 {
     switch (r->special)
     {
+    case SP_HDTEX:
+    {
+        Settings *t = target(r);
+        hdtex_set(t, v != 0);
+        if (t == &app.global && (!app.game || !app.game_has_own))
+            hdtex_set(&app.settings, v != 0);
+        if (app.game)
+            host_apply_settings(&app.settings);
+        return;
+    }
     case SP_HARDCORE:
         if (!ra_user()[0])
         {

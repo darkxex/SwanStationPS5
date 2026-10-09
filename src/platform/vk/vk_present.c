@@ -22,10 +22,13 @@
 #if defined(SwanStationPS5_VULKAN)
 
 #include "../../SwanStationPS5.h"
+#include "fg_bridge.h"
 #include "shaders_royale.h"
+#include "shaders_ntsc.h"
 #include "shaders_spv.h"
 
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #define VK_NO_PROTOTYPES /* every command is a pointer looked up below */
@@ -115,7 +118,7 @@ static struct
     VkSemaphore acquired[FRAMES];
     int frame;
     bool canvas_ready;
-    char description[64];
+    char description[320]; /* the mode in use, then every mode offered (for the log) */
     /* the game picture of a core rendering through Vulkan */
     VkDescriptorSet game_sets[FRAMES];
     VkImageView game_view;
@@ -124,9 +127,38 @@ static struct
     bool game_shown; /* plat asked for the picture this frame */
     float game_rect[4];
     float game_crop; /* share of the picture's height hidden at top and bottom */
-    int game_shader;  /* 0 none, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear, 5 supersampling */
+    int game_shader;  /* 0 none, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear, 5 to 8 NTSC, 99 supersampling */
     float game_tex[2], game_lines;
+    /* frame generation (fg_bridge.h): the game drawn into the interpolator's frame,
+     * the frame halfway to the previous one shown first, then this one */
+    bool fg_wanted; /* Settings > Display > Frame generation */
+    FgInterpolator *fg;
+    uint32_t fg_w, fg_h;
+    VkRenderPass fg_pass;
+    VkImageView fg_views[2]; /* the interpolator's two frames, and their framebuffers */
+    VkFramebuffer fg_fbs[2];
+    VkDescriptorSet fg_sets[FRAMES];
+    VkImageView fg_real; /* the game's last frame, shown after the generated one */
+    bool fg_have, fg_reset;
+    bool fg_failed;
+    /* the core's frames since the last refresh: all of them, and the game's own (the ones that repeat the last are
+     * told by video_refresh with no data) */
+    uint32_t core_frames, new_frames;
+    uint32_t since_new;   /* the core's frames (the console's vsyncs) since the game's last new one */
+    uint64_t refresh;
+    FgPacing *fg_pacing;  /* PS5SX2's pacing: when frames are made and how many presents each gets */
+    bool fg_engaged;      /* the pacing generates frames now */
+    bool fg_made;         /* the interpolator's output holds the frame between the last two of the game's */
+    uint32_t fg_hold;     /* presents of it still to make */
+    uint32_t fg_already;  /* presents of the game's own frames since the last new one, for the pacing */
+    bool fg_counted;
+    int fg_state;
+    double core_hz, display_hz, speed;
+    bool nominal;
 } V;
+
+/* asked before the screen opens (vkp_open clears V): frame generation's 120 Hz mode */
+static bool want_high_refresh;
 
 const char *vkp_describe(void)
 {
@@ -237,19 +269,27 @@ static bool create_surface(char *error, size_t size)
     VkDisplayModePropertiesKHR modes[16];
     uint32_t mode_count = 16;
     vkGetDisplayModePropertiesKHR(V.gpu, display.display, &mode_count, modes);
-    int best = -1;
+    int best = -1, at60 = -1, at120 = -1;
     for (uint32_t i = 0; i < mode_count; ++i)
     {
         const VkDisplayModeParametersKHR *p = &modes[i].parameters;
         SwanStationPS5_log("vulkan: display mode %ux%u @ %.2f Hz", p->visibleRegion.width,
                   p->visibleRegion.height, p->refreshRate / 1000.0);
         bool size_ok = p->visibleRegion.width == (uint32_t)V.cw && p->visibleRegion.height == (uint32_t)V.ch;
-        bool rate_ok = p->refreshRate >= 59000 && p->refreshRate <= 61000;
-        if (size_ok && rate_ok)
-            best = (int)i;
-        else if (size_ok && best < 0)
+        if (size_ok && p->refreshRate >= 59000 && p->refreshRate <= 61000)
+            at60 = (int)i;
+        if (size_ok && p->refreshRate >= 119000 && p->refreshRate <= 121000)
+            at120 = (int)i;
+        if (size_ok && best < 0)
             best = (int)i;
     }
+    /* 60 Hz; 120 for frame generation when it was on at start and the TV has it */
+    if (at60 >= 0)
+        best = at60;
+    if (want_high_refresh && at120 >= 0)
+        best = at120;
+    else if (want_high_refresh)
+        SwanStationPS5_log("vulkan: no 120 Hz mode (frame generation needs a 120 Hz TV)");
     if (best < 0)
     {
         if (mode_count == 0)
@@ -300,9 +340,14 @@ static bool create_surface(char *error, size_t size)
     info.imageExtent = mode->parameters.visibleRegion;
     CHECK(vkCreateDisplayPlaneSurfaceKHR(V.instance, &info, NULL, &V.surface),
           "vkCreateDisplayPlaneSurfaceKHR");
-    snprintf(V.description, sizeof(V.description), "%ux%u @ %.2f Hz",
-             mode->parameters.visibleRegion.width, mode->parameters.visibleRegion.height,
-             mode->parameters.refreshRate / 1000.0);
+    V.display_hz = mode->parameters.refreshRate / 1000.0;
+    int at = snprintf(V.description, sizeof(V.description), "%ux%u @ %.2f Hz%s; modes:",
+                      mode->parameters.visibleRegion.width, mode->parameters.visibleRegion.height,
+                      mode->parameters.refreshRate / 1000.0,
+                      want_high_refresh ? (at120 >= 0 ? " (frame generation: 120 Hz)" : " (frame generation: no 120 Hz mode)") : "");
+    for (uint32_t i = 0; i < mode_count && at > 0 && at < (int)sizeof(V.description) - 24; ++i)
+        at += snprintf(V.description + at, sizeof(V.description) - at, " %ux%u@%.0f", modes[i].parameters.visibleRegion.width,
+                       modes[i].parameters.visibleRegion.height, modes[i].parameters.refreshRate / 1000.0);
     return true;
 }
 
@@ -646,6 +691,7 @@ static bool create_canvas(char *error, size_t size)
     da.descriptorSetCount = FRAMES;
     da.pSetLayouts = layouts;
     CHECK(vkAllocateDescriptorSets(V.device, &da, V.game_sets), "game descriptors");
+    CHECK(vkAllocateDescriptorSets(V.device, &da, V.fg_sets), "frame generation descriptors");
 
     VkCommandPoolCreateInfo cp = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     cp.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -698,16 +744,243 @@ void vkp_set_colour(float brightness, float saturation, float warmth, float shar
     colour_k[3] = sharpen;
 }
 
-static void draw_quad(VkCommandBuffer cb, VkDescriptorSet set, float x, float y, float w, float h, float v0,
-                      float v1, const float info[4], const float colour[4])
+static void draw_quad_in(VkCommandBuffer cb, VkDescriptorSet set, float tw, float th, float x, float y, float w,
+                         float h, float v0, float v1, const float info[4], const float colour[4])
 {
-    float k[16] = {x / V.extent.width * 2.0f - 1.0f, y / V.extent.height * 2.0f - 1.0f,
-                   (x + w) / V.extent.width * 2.0f - 1.0f, (y + h) / V.extent.height * 2.0f - 1.0f,
+    float k[16] = {x / tw * 2.0f - 1.0f, y / th * 2.0f - 1.0f, (x + w) / tw * 2.0f - 1.0f, (y + h) / th * 2.0f - 1.0f,
                    0.0f, v0, 1.0f, v1, info[0], info[1], info[2], info[3],
                    colour[0], colour[1], colour[2], colour[3]};
     vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, V.layout, 0, 1, &set, 0, NULL);
     vkCmdPushConstants(cb, V.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(k), k);
     vkCmdDraw(cb, 6, 1, 0, 0);
+}
+
+static void draw_quad(VkCommandBuffer cb, VkDescriptorSet set, float x, float y, float w, float h, float v0,
+                      float v1, const float info[4], const float colour[4])
+{
+    draw_quad_in(cb, set, (float)V.extent.width, (float)V.extent.height, x, y, w, h, v0, v1, info, colour);
+}
+
+/* The pipeline of each shader value: shaded[] holds sharp, CRT, LCD3x, supersampling (the chains, CRT Royale
+ * and NTSC, draw through their own passes). */
+static VkPipeline game_pipeline(int sh)
+{
+    static const int slot_of[5] = {-1, 2, -1, 1, 0};
+    int slot = sh == 99 ? 3 : sh >= 0 && sh <= 4 ? slot_of[sh] : -1;
+    return slot >= 0 && V.shaded[slot] ? V.shaded[slot] : V.opaque;
+}
+
+/* What the picture's shader reads in `info`, for a picture shown w x h pixels big. Sharp: screen pixels per
+ * texel; CRT and LCD3x: the PS1's line count. */
+static void game_info(float info[4], int sh, float w, float h, bool fg)
+{
+    /* with frame generation the picture is the interpolator's frame: already cropped and as big as its place on screen */
+    float shown = fg ? 1.0f : 1.0f - 2.0f * V.game_crop;
+    float lines = V.game_lines * (1.0f - 2.0f * V.game_crop);
+    float tw = fg ? w : V.game_tex[0], th = fg ? h : V.game_tex[1];
+    info[0] = tw;
+    info[1] = th;
+    info[2] = sh == 1 || sh == 3 ? lines : w / (tw > 0 ? tw : 1);
+    info[3] = h / (th * shown > 0 ? th * shown : 1);
+    if (sh == 4 && V.game_tex[0] >= 1.0f && V.game_tex[1] >= 1.0f)
+    {
+        /* sharp bilinear works on the PS1's own pixels, not on the bigger picture the core draws at the
+         * internal resolution (there a texel is smaller than a screen pixel and nothing would be sharpened) */
+        float native_h = V.game_lines >= 1.0f ? V.game_lines : 240.0f;
+        float native_w = V.game_tex[0] * native_h / V.game_tex[1];
+        float visible = native_h * (1.0f - 2.0f * V.game_crop);
+        info[0] = native_w;
+        info[1] = fg ? visible : native_h;
+        info[2] = w / native_w;
+        info[3] = h / visible;
+    }
+}
+
+/* ---------------------------------------------------------------- frame generation */
+
+void vkp_set_framegen(bool on, double core_hz, double speed, bool nominal)
+{
+    V.fg_wanted = on;
+    V.core_hz = core_hz;
+    V.speed = speed;
+    V.nominal = nominal;
+}
+
+double vkp_framegen_hz(void)
+{
+    return V.fg_wanted && V.fg_engaged && V.fg_made ? V.display_hz : 0.0;
+}
+
+/* The core said the frame it just gave shows the picture of the last one. */
+void vkp_frame_repeated(void)
+{
+    if (V.new_frames)
+        --V.new_frames;
+}
+
+void vkp_want_high_refresh(bool on)
+{
+    want_high_refresh = on;
+}
+
+static void fg_free(void)
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        if (V.fg_fbs[i])
+            vkDestroyFramebuffer(V.device, V.fg_fbs[i], NULL);
+        V.fg_fbs[i] = VK_NULL_HANDLE;
+        V.fg_views[i] = VK_NULL_HANDLE;
+    }
+    ssfg_destroy(V.fg);
+    V.fg = NULL;
+    V.fg_have = false;
+    V.fg_real = VK_NULL_HANDLE;
+}
+
+/* The interpolator for frames of w x h (the picture's size on screen) */
+static bool fg_ready(uint32_t w, uint32_t h)
+{
+    if (V.fg && V.fg_w == w && V.fg_h == h)
+        return true;
+    if (V.fg_failed)
+        return false;
+    vkDeviceWaitIdle(V.device);
+    fg_free();
+    if (!V.fg_pass)
+    {
+        VkAttachmentDescription color = {0};
+        color.format = V.format;
+        color.samples = VK_SAMPLE_COUNT_1_BIT;
+        color.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        color.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        color.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        color.finalLayout = VK_IMAGE_LAYOUT_GENERAL; /* the interpolator's frames stay in GENERAL */
+        VkAttachmentReference ref = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        VkSubpassDescription subpass = {0};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &ref;
+        VkRenderPassCreateInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+        rp.attachmentCount = 1;
+        rp.pAttachments = &color;
+        rp.subpassCount = 1;
+        rp.pSubpasses = &subpass;
+        if (vkCreateRenderPass(V.device, &rp, NULL, &V.fg_pass) != VK_SUCCESS)
+        {
+            V.fg_pass = VK_NULL_HANDLE;
+            V.fg_failed = true;
+            SwanStationPS5_log("framegen: no render pass");
+            return false;
+        }
+    }
+    char error[160] = "";
+    V.fg = ssfg_create(vkGetInstanceProcAddr, V.instance, V.gpu, V.device, w, h, V.format, error, sizeof(error));
+    if (!V.fg)
+    {
+        V.fg_failed = true; /* not again until the device changes */
+        SwanStationPS5_log("framegen: can't start (%s)", error);
+        return false;
+    }
+    V.fg_w = w;
+    V.fg_h = h;
+    V.fg_reset = true;
+    SwanStationPS5_log("framegen: %ux%u frames", w, h);
+    return true;
+}
+
+static VkFramebuffer fg_framebuffer(VkImageView view)
+{
+    for (int i = 0; i < 2; ++i)
+        if (V.fg_views[i] == view)
+            return V.fg_fbs[i];
+    int slot = V.fg_views[0] ? 1 : 0;
+    if (V.fg_fbs[slot])
+        vkDestroyFramebuffer(V.device, V.fg_fbs[slot], NULL);
+    VkFramebufferCreateInfo fb = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+    fb.renderPass = V.fg_pass;
+    fb.attachmentCount = 1;
+    fb.pAttachments = &view;
+    fb.width = V.fg_w;
+    fb.height = V.fg_h;
+    fb.layers = 1;
+    V.fg_fbs[slot] = VK_NULL_HANDLE;
+    if (vkCreateFramebuffer(V.device, &fb, NULL, &V.fg_fbs[slot]) != VK_SUCCESS)
+        return VK_NULL_HANDLE;
+    V.fg_views[slot] = view;
+    return V.fg_fbs[slot];
+}
+
+static void point_set(VkDescriptorSet set, VkImageView view, VkImageLayout layout)
+{
+    VkDescriptorImageInfo di = {V.sampler, view, layout};
+    VkWriteDescriptorSet w = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    w.dstSet = set;
+    w.descriptorCount = 1;
+    w.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    w.pImageInfo = &di;
+    vkUpdateDescriptorSets(V.device, 1, &w, 0, NULL);
+}
+
+/* The game into the interpolator's frame with the picture's shader (not its colours),
+ * then the frame halfway to the previous one (fg_made, ssfg_output_view). Returns the game's own frame. */
+static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
+{
+    /* the last refreshes may still be reading the generated frame this will write */
+    VkMemoryBarrier before = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    before.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    before.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &before, 0, NULL,
+                         0, NULL);
+    if (V.fg_have)
+        ssfg_advance(V.fg); /* the frame shown last becomes the previous one */
+    ssfg_prepare(V.fg, cb);
+    VkImageView target = ssfg_frame_view(V.fg);
+    VkFramebuffer fb = fg_framebuffer(target);
+    if (!fb)
+        return VK_NULL_HANDLE;
+    VkClearValue clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    VkRenderPassBeginInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    rp.renderPass = V.fg_pass;
+    rp.framebuffer = fb;
+    rp.renderArea.extent.width = V.fg_w;
+    rp.renderArea.extent.height = V.fg_h;
+    rp.clearValueCount = 1;
+    rp.pClearValues = &clear;
+    vkCmdBeginRenderPass(cb, &rp, VK_SUBPASS_CONTENTS_INLINE);
+    VkViewport viewport = {0, 0, (float)V.fg_w, (float)V.fg_h, 0, 1};
+    VkRect2D scissor = {{0, 0}, {V.fg_w, V.fg_h}};
+    vkCmdSetViewport(cb, 0, 1, &viewport);
+    vkCmdSetScissor(cb, 0, 1, &scissor);
+    /* the picture as the core drew it (only the supersampling, which brings it down to the screen's size): the picture's
+     * shader comes after the interpolation, on every frame shown */
+    int sh = V.game_shader == 99 ? 99 : 0;
+    vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
+    float info[4];
+    game_info(info, sh, (float)V.fg_w, (float)V.fg_h, false);
+    static const float plain[4] = {1, 1, 0, 0}; /* the colours come after, on the screen */
+    draw_quad_in(cb, V.game_sets[f], (float)V.fg_w, (float)V.fg_h, 0, 0, (float)V.fg_w, (float)V.fg_h, V.game_crop,
+                 1.0f - V.game_crop, info, plain);
+    vkCmdEndRenderPass(cb);
+    VkMemoryBarrier mb = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    mb.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    mb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+    vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, NULL, 0,
+                         NULL);
+    bool made = ssfg_record(V.fg, cb, V.fg_reset || !V.fg_have);
+    V.fg_reset = false;
+    V.fg_have = true;
+    V.fg_real = target;
+    mb.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    mb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1, &mb, 0, NULL, 0, NULL);
+    V.fg_made = made;
+    return target;
 }
 
 
@@ -720,14 +993,25 @@ static void draw_quad(VkCommandBuffer cb, VkDescriptorSet set, float x, float y,
  * (the game is drawn bigger, at the internal resolution); the last one is
  * drawn straight into the swapchain, inside the game's rectangle. */
 
-#define ROYALE_N ((int)(sizeof(ROYALE_PASSES) / sizeof(ROYALE_PASSES[0])))
-#define ROYALE_TEX_N ((int)(sizeof(ROYALE_TEXTURES) / sizeof(ROYALE_TEXTURES[0])))
-#define SHADER_ROYALE 2 /* the value of Settings > Display > Shader */
+#define SHADER_ROYALE 2     /* the values of Settings > Display > Shader */
+#define SHADER_NTSC_FIRST 5 /* 5 to 8: the four NTSC presets (shaders_ntsc.h) */
+#define SHADER_NTSC_LAST 8
+#define SHADER_SUPERSAMPLE 99 /* not a choice of the settings */
+
+/* The chain a shader value runs: 0 CRT Royale, 1 to 4 the NTSC presets; -1 for the others. */
+static int chain_of_shader(int sh)
+{
+    if (sh == SHADER_ROYALE)
+        return 0;
+    return sh >= SHADER_NTSC_FIRST && sh <= SHADER_NTSC_LAST ? sh - SHADER_NTSC_FIRST + 1 : -1;
+}
 
 static struct
 {
     bool tried, ok;
-    VkRenderPass rp[2]; /* an intermediate image: [0] linear, [1] sRGB */
+    const RoyalePass *passes; /* the chain being run */
+    int n, tex_n, preset;     /* its passes, its textures, which one it is */
+    VkRenderPass rp[3]; /* an intermediate image: [0] linear, [1] sRGB, [2] float */
     VkDescriptorSetLayout set_layout;
     VkPipelineLayout layout;
     VkPipeline pipe[8];
@@ -748,6 +1032,7 @@ static struct
     } out[8]; /* the images of every pass but the last */
     int size[8][2];    /* each pass's output size */
     int native[2];     /* the PS1's picture */
+    VkImageView source_view; /* frame generation: the picture the chain reads instead of the core's (GENERAL layout) */
     int built[4];      /* what the images were made for: native size, viewport size */
     bool have_images;
     uint32_t frames;
@@ -801,7 +1086,7 @@ static void royale_free(void)
         vkDestroyPipelineLayout(V.device, R.layout, NULL);
     if (R.set_layout)
         vkDestroyDescriptorSetLayout(V.device, R.set_layout, NULL);
-    for (int s = 0; s < 2; ++s)
+    for (int s = 0; s < 3; ++s)
         if (R.rp[s])
             vkDestroyRenderPass(V.device, R.rp[s], NULL);
     memset(&R, 0, sizeof(R));
@@ -888,7 +1173,7 @@ static bool royale_textures(void)
     VkCommandBufferBeginInfo begin = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer(cb, &begin);
-    for (int t = 0; t < ROYALE_TEX_N; ++t)
+    for (int t = 0; t < R.tex_n; ++t)
     {
         const RoyaleTexture *tex = &ROYALE_TEXTURES[t];
         VkDeviceSize bytes = (VkDeviceSize)tex->width * tex->height * 4;
@@ -960,10 +1245,10 @@ done:
 static bool royale_init(void)
 {
     R.tried = true;
-    for (int s = 0; s < 2; ++s)
+    for (int s = 0; s < 3; ++s)
     {
         VkAttachmentDescription a = {0};
-        a.format = s ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+        a.format = s == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT : s ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
         a.samples = VK_SAMPLE_COUNT_1_BIT;
         a.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; /* every pass covers its whole image */
         a.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1082,9 +1367,9 @@ static bool royale_init(void)
 
     if (!royale_textures())
         return false;
-    for (int i = 0; i < ROYALE_N; ++i)
+    for (int i = 0; i < R.n; ++i)
     {
-        R.pipe[i] = royale_pipeline(&ROYALE_PASSES[i], i == ROYALE_N - 1 ? V.pass : R.rp[ROYALE_PASSES[i].srgb]);
+        R.pipe[i] = royale_pipeline(&R.passes[i], i == R.n - 1 ? V.pass : R.rp[R.passes[i].srgb]);
         if (!R.pipe[i])
             return false;
     }
@@ -1100,15 +1385,31 @@ static int royale_scale(int type, float scale, int source, int viewport)
 
 /* Sizes of every pass for a PS1 picture of native_w x native_h shown in a
  * viewport_w x viewport_h rectangle; the images are made again when they change. */
-static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewport_h)
+static bool royale_prepare(int preset, int native_w, int native_h, int viewport_w, int viewport_h)
 {
+    if (!R.passes || R.preset != preset)
+    {
+        /* another chain than the one made: everything of the old one goes */
+        vkDeviceWaitIdle(V.device);
+        royale_free();
+        R.preset = preset;
+        R.passes = preset ? NTSC_PRESETS[preset - 1].passes : ROYALE_PASSES;
+        R.n = preset ? NTSC_PRESETS[preset - 1].count : (int)(sizeof(ROYALE_PASSES) / sizeof(ROYALE_PASSES[0]));
+        R.tex_n = preset ? 0 : (int)(sizeof(ROYALE_TEXTURES) / sizeof(ROYALE_TEXTURES[0]));
+    }
     if (!R.tried)
     {
         R.ok = royale_init();
         if (!R.ok)
         {
-            SwanStationPS5_log("vulkan: CRT Royale could not be set up");
+            SwanStationPS5_log("vulkan: shader chain %d could not be set up", preset);
+            const RoyalePass *passes = R.passes;
+            int n = R.n, tex_n = R.tex_n;
             royale_free();
+            R.preset = preset;
+            R.passes = passes;
+            R.n = n;
+            R.tex_n = tex_n;
             R.tried = true;
         }
     }
@@ -1117,11 +1418,11 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
     R.native[0] = native_w;
     R.native[1] = native_h;
     int in_w = native_w, in_h = native_h;
-    for (int i = 0; i < ROYALE_N; ++i)
+    for (int i = 0; i < R.n; ++i)
     {
-        const RoyalePass *p = &ROYALE_PASSES[i];
-        int w = i == ROYALE_N - 1 ? viewport_w : royale_scale(p->scale_x_type, p->scale_x, in_w, viewport_w);
-        int h = i == ROYALE_N - 1 ? viewport_h : royale_scale(p->scale_y_type, p->scale_y, in_h, viewport_h);
+        const RoyalePass *p = &R.passes[i];
+        int w = i == R.n - 1 ? viewport_w : royale_scale(p->scale_x_type, p->scale_x, in_w, viewport_w);
+        int h = i == R.n - 1 ? viewport_h : royale_scale(p->scale_y_type, p->scale_y, in_h, viewport_h);
         R.size[i][0] = in_w = w;
         R.size[i][1] = in_h = h;
     }
@@ -1130,10 +1431,11 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
         return true;
     vkDeviceWaitIdle(V.device);
     royale_free_images();
-    for (int i = 0; i < ROYALE_N - 1; ++i)
+    for (int i = 0; i < R.n - 1; ++i)
     {
-        const RoyalePass *p = &ROYALE_PASSES[i];
-        VkFormat format = p->srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+        const RoyalePass *p = &R.passes[i];
+        VkFormat format = p->srgb == 2 ? VK_FORMAT_R16G16B16A16_SFLOAT
+                                       : p->srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
         VkImageCreateInfo ii = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         ii.imageType = VK_IMAGE_TYPE_2D;
         ii.format = format;
@@ -1174,7 +1476,7 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
         }
         if (!ok)
         {
-            SwanStationPS5_log("vulkan: CRT Royale: no memory for its images");
+            SwanStationPS5_log("vulkan: shader chain %d: no memory for its images", preset);
             royale_free_images();
             R.ok = false;
             return false;
@@ -1182,7 +1484,7 @@ static bool royale_prepare(int native_w, int native_h, int viewport_w, int viewp
     }
     memcpy(R.built, key, sizeof(key));
     R.have_images = true;
-    SwanStationPS5_log("vulkan: CRT Royale: PS1 %dx%d, viewport %dx%d", native_w, native_h, viewport_w, viewport_h);
+    SwanStationPS5_log("vulkan: shader chain %d: PS1 %dx%d, viewport %dx%d", preset, native_w, native_h, viewport_w, viewport_h);
     return true;
 }
 
@@ -1197,7 +1499,7 @@ static void royale_size_vec(float *v, int w, int h)
 /* A pass's push constants. */
 static void royale_push(int i, uint8_t *data)
 {
-    const RoyalePass *p = &ROYALE_PASSES[i];
+    const RoyalePass *p = &R.passes[i];
     memset(data, 0, 128);
     int in_w = i == 0 ? R.native[0] : R.size[i - 1][0], in_h = i == 0 ? R.native[1] : R.size[i - 1][1];
     for (int k = 0; k < p->push_count; ++k)
@@ -1209,8 +1511,13 @@ static void royale_push(int i, uint8_t *data)
         case ROYALE_PUSH_SOURCE_SIZE: royale_size_vec(v, in_w, in_h); break;
         case ROYALE_PUSH_ORIGINAL_SIZE: royale_size_vec(v, R.native[0], R.native[1]); break;
         case ROYALE_PUSH_OUTPUT_SIZE: royale_size_vec(v, R.size[i][0], R.size[i][1]); break;
-        case ROYALE_PUSH_FINAL_SIZE: royale_size_vec(v, R.size[ROYALE_N - 1][0], R.size[ROYALE_N - 1][1]); break;
-        case ROYALE_PUSH_FRAME: memcpy(v, &R.frames, sizeof(uint32_t)); break;
+        case ROYALE_PUSH_FINAL_SIZE: royale_size_vec(v, R.size[R.n - 1][0], R.size[R.n - 1][1]); break;
+        case ROYALE_PUSH_FRAME:
+        {
+            uint32_t frame = p->frame_mod ? R.frames % p->frame_mod : R.frames;
+            memcpy(v, &frame, sizeof(uint32_t));
+            break;
+        }
         case ROYALE_PUSH_PASS_SIZE: royale_size_vec(v, R.size[m->index][0], R.size[m->index][1]); break;
         case ROYALE_PUSH_TEXTURE_SIZE:
             royale_size_vec(v, ROYALE_TEXTURES[m->index].width, ROYALE_TEXTURES[m->index].height);
@@ -1224,7 +1531,7 @@ static void royale_push(int i, uint8_t *data)
 /* What a pass reads, written into this frame's descriptor set for it. */
 static void royale_set(int f, int i)
 {
-    const RoyalePass *p = &ROYALE_PASSES[i];
+    const RoyalePass *p = &R.passes[i];
     VkWriteDescriptorSet w[5];
     VkDescriptorImageInfo di[4];
     VkDescriptorBufferInfo bi = {R.ubo, 0, sizeof(ROYALE_UBO) <= 256 ? 256 : sizeof(ROYALE_UBO)};
@@ -1248,16 +1555,16 @@ static void royale_set(int f, int i)
         case ROYALE_SAMPLER_SOURCE:
             if (i == 0)
             {
-                view = V.game_view; /* the PS1's picture is made from the bigger one, smoothly */
-                layout = V.game_layout;
+                view = R.source_view ? R.source_view : V.game_view; /* the PS1's picture is made from the bigger one, smoothly */
+                layout = R.source_view ? VK_IMAGE_LAYOUT_GENERAL : V.game_layout;
                 sampler = R.sampler[1][1];
             }
             else
                 view = R.out[i - 1].view;
             break;
         case ROYALE_SAMPLER_ORIGINAL:
-            view = V.game_view;
-            layout = V.game_layout;
+            view = R.source_view ? R.source_view : V.game_view;
+            layout = R.source_view ? VK_IMAGE_LAYOUT_GENERAL : V.game_layout;
             sampler = R.sampler[1][1];
             break;
         case ROYALE_SAMPLER_PASS: view = R.out[sm->index].view; break;
@@ -1285,19 +1592,19 @@ static void royale_draw(VkCommandBuffer cb, int f, int i)
     vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, R.pipe[i]);
     vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, R.layout, 0, 1, &R.sets[f][i], 0, NULL);
     vkCmdPushConstants(cb, R.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                       ROYALE_PASSES[i].push_size, push);
+                       R.passes[i].push_size, push);
     vkCmdDraw(cb, 4, 1, 0, 0);
 }
 
 /* Every pass but the last, each into its own image (outside the swapchain's render pass). */
 static void royale_record(VkCommandBuffer cb, int f)
 {
-    for (int i = 0; i < ROYALE_N; ++i)
+    for (int i = 0; i < R.n; ++i)
         royale_set(f, i);
-    for (int i = 0; i < ROYALE_N - 1; ++i)
+    for (int i = 0; i < R.n - 1; ++i)
     {
         VkRenderPassBeginInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp.renderPass = R.rp[ROYALE_PASSES[i].srgb];
+        rp.renderPass = R.rp[R.passes[i].srgb];
         rp.framebuffer = R.out[i].fb;
         rp.renderArea.extent = (VkExtent2D){(uint32_t)R.size[i][0], (uint32_t)R.size[i][1]};
         vkCmdBeginRenderPass(cb, &rp, VK_SUBPASS_CONTENTS_INLINE);
@@ -1318,7 +1625,7 @@ static void royale_final(VkCommandBuffer cb, int f, int x, int y, int w, int h)
     VkRect2D scissor = {{x, y}, {(uint32_t)w, (uint32_t)h}};
     vkCmdSetViewport(cb, 0, 1, &viewport);
     vkCmdSetScissor(cb, 0, 1, &scissor);
-    royale_draw(cb, f, ROYALE_N - 1);
+    royale_draw(cb, f, R.n - 1);
     viewport = (VkViewport){0, 0, (float)V.extent.width, (float)V.extent.height, 0, 1};
     scissor = (VkRect2D){{0, 0}, V.extent};
     vkCmdSetViewport(cb, 0, 1, &viewport);
@@ -1375,6 +1682,71 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
 
     bool game = V.game_shown && V.game_view;
     V.game_shown = false;
+    /* frame generation (PS5SX2's way): the game's own frames, counted in the console's vsyncs, against the display's
+     * refreshes; the pacing decides whether frames are generated and how many presents each gets */
+    ++V.refresh;
+    const bool fresh = V.new_frames > 0;
+    V.since_new += V.core_frames;
+    const uint32_t vsyncs = V.since_new;
+    V.core_frames = V.new_frames = 0;
+    if (fresh)
+        V.since_new = 0;
+    float gkx = (float)V.extent.width / V.cw, gky = (float)V.extent.height / V.ch;
+    uint32_t want_w = (uint32_t)(V.game_rect[2] * gkx + 0.5f), want_h = (uint32_t)(V.game_rect[3] * gky + 0.5f);
+    const bool fg_possible = game && V.fg_wanted && want_w >= 16 && want_h >= 16;
+    bool record = false; /* a new frame of the game goes to the interpolator now */
+    uint32_t presents = 0;
+    if (!fg_possible)
+    {
+        V.fg_engaged = false;
+        V.fg_hold = 0;
+        if (V.fg_have)
+            V.fg_reset = true; /* it starts over when it comes back */
+    }
+    else
+    {
+        if (!V.fg_pacing)
+            V.fg_pacing = ssfg_pacing_create();
+        if (fresh && V.fg_pacing)
+        {
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            const uint32_t already = V.fg_already;
+            V.fg_already = 0;
+            V.fg_counted = false;
+            FgDecision d = ssfg_pacing_frame(V.fg_pacing, vsyncs, already, V.core_hz > 20.0 ? V.core_hz : 59.94,
+                                             V.display_hz > 20.0 ? V.display_hz : 59.94, ts.tv_sec + ts.tv_nsec * 1e-9,
+                                             V.speed > 0.0 ? V.speed : 100.0, V.nominal);
+            if (d.state != V.fg_state)
+            {
+                V.fg_state = d.state;
+                SwanStationPS5_log("framegen: %s (the game's frames: %.2f vsyncs, %.2f refreshes of %.2f Hz)",
+                                   ssfg_pacing_state_name(d.state), d.vsyncs, d.refreshes, V.display_hz);
+            }
+            const char *event = ssfg_pacing_event(V.fg_pacing);
+            if (event)
+                SwanStationPS5_log("framegen: %s", event);
+            V.fg_engaged = d.engaged;
+            if (d.engaged)
+            {
+                if (d.reset)
+                    V.fg_reset = true;
+                record = true;
+                presents = d.presents;
+            }
+            else
+            {
+                V.fg_hold = 0;
+                V.fg_made = false;
+                if (V.fg_have)
+                    V.fg_reset = true;
+            }
+        }
+    }
+    bool fg = fg_possible && V.fg_engaged && fg_ready(want_w, want_h);
+    if (!fg)
+        record = false;
+    VkImageView fg_show = VK_NULL_HANDLE;
     if (game)
     {
         /* the core's rendering on this queue, finished before we sample it */
@@ -1390,12 +1762,41 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
         w.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         w.pImageInfo = &di;
         vkUpdateDescriptorSets(V.device, 1, &w, 0, NULL);
+        if (fg)
+        {
+            bool generated = false;
+            if (record)
+            {
+                V.fg_made = false;
+                V.fg_real = fg_new_frame(cb, f);
+                V.fg_hold = V.fg_made ? presents : 0;
+            }
+            if (V.fg_hold > 0 && V.fg_made && V.fg)
+            {
+                /* the frame between the game's last two, as many presents as the pacing gives it */
+                --V.fg_hold;
+                fg_show = ssfg_output_view(V.fg);
+                generated = true;
+            }
+            else
+                fg_show = V.fg_real;
+            if (fg_show)
+                point_set(V.fg_sets[f], fg_show, VK_IMAGE_LAYOUT_GENERAL);
+            if (!generated && !V.fg_counted)
+            {
+                ++V.fg_already; /* the game's own frame, shown once: what the pacing counts */
+                V.fg_counted = true;
+            }
+        }
+        else if (game)
+            ++V.fg_already; /* every present of the game's own frame (nothing generated) */
     }
 
     /* CRT Royale: its passes first, each into an image, before the swapchain's render pass */
     int royale_rect[4] = {0, 0, 0, 0};
     bool royale = false;
-    if (game && V.game_shader == SHADER_ROYALE && V.game_tex[0] >= 1.0f && V.game_tex[1] >= 1.0f)
+    int chain = chain_of_shader(V.game_shader);
+    if (game && chain >= 0 && V.game_tex[0] >= 1.0f && V.game_tex[1] >= 1.0f)
     {
         float kx = (float)V.extent.width / V.cw, ky = (float)V.extent.height / V.ch;
         royale_rect[0] = (int)(V.game_rect[0] * kx + 0.5f);
@@ -1405,10 +1806,15 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
         /* the PS1's own picture: its lines, and as many columns as the game's shape gives */
         int native_h = V.game_lines >= 1.0f ? (int)V.game_lines : 240;
         int native_w = (int)(V.game_tex[0] * native_h / V.game_tex[1] + 0.5f);
+        if (fg_show)
+            native_h = (int)(native_h * (1.0f - 2.0f * V.game_crop) + 0.5f); /* the interpolator's frame is cropped */
         if (native_w < 1)
             native_w = 1;
-        if (royale_rect[2] >= 1 && royale_rect[3] >= 1 && royale_prepare(native_w, native_h, royale_rect[2], royale_rect[3]))
+        if (native_h < 1)
+            native_h = 1;
+        if (royale_rect[2] >= 1 && royale_rect[3] >= 1 && royale_prepare(chain, native_w, native_h, royale_rect[2], royale_rect[3]))
         {
+            R.source_view = fg_show; /* frame generation: the chain shades the interpolator's frames */
             royale_record(cb, f);
             royale = true;
         }
@@ -1426,22 +1832,27 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     VkRect2D scissor = {{0, 0}, V.extent};
     vkCmdSetViewport(cb, 0, 1, &viewport);
     vkCmdSetScissor(cb, 0, 1, &scissor);
-    if (game)
+    if (game && fg_show && !royale)
+    {
+        /* frame generation: the interpolator's frame (the picture as the core drew it), with the picture's shader and
+         * the colours; the chains (CRT Royale, NTSC) read it too, below */
+        int sh = V.game_shader == 99 ? 0 : V.game_shader;
+        vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
+        float info[4];
+        game_info(info, sh, V.game_rect[2] * gkx, V.game_rect[3] * gky, true);
+        draw_quad(cb, V.fg_sets[f], V.game_rect[0] * gkx, V.game_rect[1] * gky, V.game_rect[2] * gkx,
+                  V.game_rect[3] * gky, 0.0f, 1.0f, info, colour_k);
+        vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, V.blended);
+    }
+    else if (game)
     {
         /* the game picture, then the interface over it: the canvas is
          * transparent (premultiplied) where the game shows */
-        float kx = (float)V.extent.width / V.cw, ky = (float)V.extent.height / V.ch;
+        float kx = gkx, ky = gky;
         int sh = V.game_shader;
-        /* the pipeline of each value: shaded[] holds sharp, CRT, LCD3x, supersampling; 2 is CRT Royale */
-        static const int slot_of[6] = {-1, 2, -1, 1, 0, 3};
-        int slot = sh >= 0 && sh <= 5 ? slot_of[sh] : -1;
-        VkPipeline pipe = slot >= 0 && V.shaded[slot] ? V.shaded[slot] : V.opaque;
-        vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe);
-        /* sharp: screen pixels per texel; crt and lcd3x: the PS1's line count */
-        float shown = 1.0f - 2.0f * V.game_crop;
-        float info[4] = {V.game_tex[0], V.game_tex[1],
-                         sh == 1 || sh == 3 ? V.game_lines * shown : V.game_rect[2] * kx / (V.game_tex[0] > 0 ? V.game_tex[0] : 1),
-                         V.game_rect[3] * ky / (V.game_tex[1] * shown > 0 ? V.game_tex[1] * shown : 1)};
+        vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
+        float info[4];
+        game_info(info, sh, V.game_rect[2] * kx, V.game_rect[3] * ky, false);
         if (royale)
             royale_final(cb, f, royale_rect[0], royale_rect[1], royale_rect[2], royale_rect[3]);
         else
@@ -1482,6 +1893,18 @@ static void destroy_device_objects(void)
     if (!V.device)
         return;
     vkDeviceWaitIdle(V.device);
+    fg_free();
+    if (V.fg_pacing)
+        ssfg_pacing_destroy(V.fg_pacing);
+    V.fg_pacing = NULL;
+    V.fg_engaged = false;
+    V.fg_state = 0;
+    if (V.fg_pass)
+        vkDestroyRenderPass(V.device, V.fg_pass, NULL);
+    V.fg_pass = VK_NULL_HANDLE;
+    V.fg_failed = false;
+    for (int f = 0; f < FRAMES; ++f)
+        V.fg_sets[f] = VK_NULL_HANDLE;
     for (int f = 0; f < FRAMES; ++f)
     {
         if (V.done[f])
@@ -1609,6 +2032,11 @@ bool vkp_adopt_device(VkDevice device, VkQueue queue, uint32_t family, char *err
 
 void vkp_set_game_image(VkImage image, VkImageView view, VkImageLayout layout)
 {
+    if (view)
+    {
+        ++V.core_frames; /* frame generation counts the core's frames... */
+        ++V.new_frames;  /* ...and the game's own (vkp_frame_repeated takes back the ones that repeat the last) */
+    }
     V.game_image = image;
     V.game_view = view;
     V.game_layout = layout;

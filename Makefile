@@ -21,6 +21,8 @@ APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_p
 ifeq ($(APP_VULKAN),1)
 # SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
 SwanStationPS5_SWANSTATION := build/swanstation-ps5/libswanstation.a
+# Frame generation (AMD FSR 3's frame interpolation, from PS5SX2), built by tools/build-framegen.sh
+SwanStationPS5_FRAMEGEN := build/framegen-ps5/libframegen.a
 # Beetle PSX HW is no longer built (SwanStation is the only emulator); APP_BEETLE=1 builds it
 # again, with tools/build-beetle.sh and third_party/beetle-psx checked out.
 APP_BEETLE ?= 0
@@ -29,7 +31,7 @@ SwanStationPS5_BEETLE := build/beetle-ps5/libbeetle_psx.a
 APP_DEFINITIONS += SwanStationPS5_BEETLE=1
 endif
 endif
-APP_STATIC_ARCHIVES ?= $(SwanStationPS5_RCHEEVOS) $(SwanStationPS5_BEETLE) $(SwanStationPS5_SWANSTATION)
+APP_STATIC_ARCHIVES ?= $(SwanStationPS5_RCHEEVOS) $(SwanStationPS5_BEETLE) $(SwanStationPS5_SWANSTATION) $(SwanStationPS5_FRAMEGEN)
 APP_RUNTIME_MODULES ?=
 # fcntl: console_curl. The allocator family: ps5_heap.c (the C heap is too small).
 APP_WRAP_SYMBOLS ?= fcntl malloc free calloc realloc reallocf memalign posix_memalign aligned_alloc malloc_usable_size
@@ -265,6 +267,7 @@ ifeq ($(APP_BEETLE),1)
 	@bash tools/build-beetle.sh
 endif
 	@bash tools/build-swanstation.sh
+	@bash tools/build-framegen.sh
 endif
 
 help:

@@ -19,11 +19,12 @@
 
 #include <SDL2/SDL.h>
 #include <stdio.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
-#define APP_DIR "/data/homebrew/PPSA98510"
+#define APP_DIR_DEFAULT "/data/homebrew/PPSA98510"
 
 static SDL_atomic_t state;
 static char version[32], zip_url[512], message[256];
@@ -158,6 +159,74 @@ void update_check(void)
         fail("no thread");
 }
 
+/* Where the running app is stored. The update has to land there, whether it's in /data/homebrew or on an
+ * extended or USB drive (/mnt/ext1/homebrew/PPSA98510 ...). The mount the app runs from (/app0, or the
+ * ShadowMountPlus one) is matched to a folder on disk by its eboot.bin: same size and modification time. */
+static bool same_eboot(const char *dir, const struct stat *running)
+{
+    char file[SwanStationPS5_PATH_MAX];
+    struct stat st;
+    path_join(file, sizeof(file), dir, "eboot.bin");
+    return stat(file, &st) == 0 && st.st_size == running->st_size && st.st_mtime == running->st_mtime;
+}
+
+static const char *app_dir(void)
+{
+    static char found[SwanStationPS5_PATH_MAX];
+    static bool done;
+    if (done)
+        return found;
+    done = true;
+    str_copy(found, sizeof(found), APP_DIR_DEFAULT);
+    static const char *const running_dirs[] = {"/app0", "/system_ex/app/" SwanStationPS5_TITLE_ID};
+    static const char *const roots[] = {"/data", "/mnt/ext0", "/mnt/ext1", "/mnt/usb0", "/mnt/usb1",
+                                        "/mnt/usb2", "/mnt/usb3", "/mnt/usb4", "/mnt/usb5", "/mnt/usb6", "/mnt/usb7"};
+    struct stat running;
+    bool have = false;
+    for (size_t i = 0; i < sizeof(running_dirs) / sizeof(running_dirs[0]) && !have; ++i)
+    {
+        char file[SwanStationPS5_PATH_MAX];
+        path_join(file, sizeof(file), running_dirs[i], "eboot.bin");
+        have = stat(file, &running) == 0;
+    }
+    if (!have)
+        return found;
+    for (size_t r = 0; r < sizeof(roots) / sizeof(roots[0]); ++r)
+    {
+        char dir[SwanStationPS5_PATH_MAX];
+        /* <root>/<id> and <root>/<any folder>/<id>, such as <root>/homebrew/<id> */
+        path_join(dir, sizeof(dir), roots[r], SwanStationPS5_TITLE_ID);
+        if (same_eboot(dir, &running))
+        {
+            str_copy(found, sizeof(found), dir);
+            SwanStationPS5_log("update: the app is in %s", found);
+            return found;
+        }
+        DIR *d = opendir(roots[r]);
+        if (!d)
+            continue;
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL)
+        {
+            if (e->d_name[0] == '.')
+                continue;
+            char sub[SwanStationPS5_PATH_MAX];
+            path_join(sub, sizeof(sub), roots[r], e->d_name);
+            path_join(dir, sizeof(dir), sub, SwanStationPS5_TITLE_ID);
+            if (same_eboot(dir, &running))
+            {
+                str_copy(found, sizeof(found), dir);
+                closedir(d);
+                SwanStationPS5_log("update: the app is in %s", found);
+                return found;
+            }
+        }
+        closedir(d);
+    }
+    SwanStationPS5_log("update: couldn't find where the app is stored, using %s", found);
+    return found;
+}
+
 static int install_thread(void *unused)
 {
     (void)unused;
@@ -186,13 +255,13 @@ static int install_thread(void *unused)
         mz_zip_archive_file_stat st;
         if (!mz_zip_reader_file_stat(&archive, i, &st) || st.m_is_directory)
             continue;
-        /* SwanStationPS5-v1.2.0/PPSA98510/<path> -> APP_DIR/<path> */
+        /* SwanStationPS5-v1.2.0/PPSA98510/<path> -> <where the app is stored>/<path> */
         const char *inside = strstr(st.m_filename, "PPSA98510/");
         if (!inside || strstr(inside, ".."))
             continue;
         inside += strlen("PPSA98510/");
         char target[SwanStationPS5_PATH_MAX], temp[SwanStationPS5_PATH_MAX + 8], parent[SwanStationPS5_PATH_MAX];
-        path_join(target, sizeof(target), APP_DIR, inside);
+        path_join(target, sizeof(target), app_dir(), inside);
         str_copy(parent, sizeof(parent), target);
         char *slash = strrchr(parent, '/');
         if (slash)

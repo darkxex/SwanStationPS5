@@ -27,6 +27,11 @@ bool vkp_game_image_ready(void);
 void vkp_set_colour(float brightness, float saturation, float warmth, float sharpen);
 /* The final scale of the game picture: nearest (sharp pixels) instead of bilinear. Needs no shader. */
 void vkp_set_game_nearest(bool nearest);
+void vkp_set_framegen(bool on, double core_hz, double speed, bool nominal); /* Settings > Display > Frame interpolation;
+                                                                                the core's rate, the emulation's speed (%), and whether it is normal */
+double vkp_framegen_hz(void);         /* the display's rate while frames are being generated, else 0 */
+void vkp_frame_repeated(void);        /* the core's last frame repeats the picture of the one before */
+void vkp_want_high_refresh(bool on);  /* before vkp_open: the 120 Hz mode */
 void vkp_show_game(float x, float y, float w, float h, float crop, int shader, int tex_w, int tex_h, int lines);
 
 #endif

@@ -59,7 +59,7 @@ const char *plat_init_error(void)
     return init_error;
 }
 
-static char screen_info[256] = "SDL window";
+static char screen_info[400] = "SDL window";
 
 const char *plat_screen_info(void)
 {
@@ -1051,6 +1051,33 @@ static float colour_k[3] = {1.0f, 1.0f, 0.0f}; /* brightness, saturation, warmth
 static bool colour_on;
 static uint8_t colour_lut[3][256]; /* per channel: brightness and warmth */
 
+double plat_framegen_hz(void)
+{
+#if defined(__PROSPERO__)
+    return vkp_framegen_hz();
+#else
+    return 0.0;
+#endif
+}
+
+void plat_set_framegen(bool on, double core_hz, double speed, bool nominal)
+{
+#if defined(__PROSPERO__)
+    vkp_set_framegen(on, core_hz, speed, nominal);
+#else
+    (void)on, (void)core_hz, (void)speed, (void)nominal;
+#endif
+}
+
+void plat_want_high_refresh(bool on)
+{
+#if defined(__PROSPERO__)
+    vkp_want_high_refresh(on);
+#else
+    (void)on;
+#endif
+}
+
 void plat_set_colour(int brightness, int colour, int sharpen)
 {
     static int last_b = -1, last_c = -1, last_s = -1;
@@ -1362,7 +1389,7 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
         /* supersampling: a picture bigger than its place on screen, averaged down */
         int shader = settings->shader;
         if (!shader && settings->supersampling && (game_src_w > dw || game_src_h > dh))
-            shader = 5; /* supersampling: its own shader after the user's four */
+            shader = 99; /* supersampling: its own shader, not one of the settings' choices */
         /* "Smooth final scaling" off: sharp pixels (the shaders need the bilinear sampler) */
         vkp_set_game_nearest(!settings->smooth && !shader);
         vkp_show_game((float)hole.x, (float)hole.y, (float)hole.w, (float)hole.h, crop, shader, game_src_w,

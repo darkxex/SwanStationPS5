@@ -30,6 +30,8 @@ float host_rumble_level(int port);
 void host_run_frame(void);
 /* Run-ahead: frames run only to show the future are silent and don't rumble. */
 void host_set_speculative(bool on);
+uint32_t host_frames_new(void);      /* the core's frames so far: the game's own... */
+uint32_t host_frames_repeated(void); /* ...and the ones that repeat the last (a 30 fps game on a 60 fps core) */
 void host_reset(void);
 void host_apply_settings(const Settings *settings); /* takes effect without reloading */
 

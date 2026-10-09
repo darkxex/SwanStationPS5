@@ -12,6 +12,7 @@ void config_load(Settings *s, const char *path);
 /* A game's own settings: the console-wide ones with the game's file over
  * them. Returns false (and *out = *global) when the game has no file. */
 bool config_load_game(Settings *out, const Settings *global, const char *path);
+bool config_peek_bool(const char *path, const char *key);
 bool config_save(const Settings *s, const char *path);
 void config_paths(Paths *p, const char *root);
 

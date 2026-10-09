@@ -367,6 +367,8 @@ static void draw_achievement(void)
 
 static void draw_timer(void);
 
+static bool speed_changed; /* fast forward or rewind: not the game's normal speed */
+
 void app_draw_game(uint8_t dim)
 {
     int w, h, fmt;
@@ -408,6 +410,11 @@ void app_draw_game(uint8_t dim)
         }
     }
     plat_set_colour(view.brightness, view.colour, view.sharpen);
+    {
+        double core_hz = host_fps();
+        double speed = app.fps > 1.0f && core_hz > 1.0 ? app.fps * 100.0 / core_hz : 100.0;
+        plat_set_framegen(app.global.framegen, core_hz, speed, !speed_changed);
+    }
     plat_draw_game(&view, host_aspect(), dim);
     bezel_draw(&view, dim);
     if (app.screen == SCREEN_GAME)
@@ -639,6 +646,7 @@ static void game_screen(PadState *pads)
     /* touchpad held + R2: fast forward; + L2: rewind */
     uint32_t all = pads[0].buttons | pads[1].buttons;
     bool fast = touch && (all & BIT(BTN_R2)), back = touch && (all & BIT(BTN_L2));
+    speed_changed = fast || back;
     if (fast || back)
         touch_used = true; /* a combo, not Select or the menu */
     /* touchpad + Square: screenshot; + Triangle / Circle: timer; + R1: next disc */
@@ -734,6 +742,7 @@ static void game_screen(PadState *pads)
      * exactly, so run 0-2 frames per refresh to keep ~3 frames of sound queued. */
     static uint64_t last_us, fps_window_start;
     static int fps_frames;
+    static uint32_t fps_news_at, fps_repeats_at;
     uint64_t now = plat_ticks_us();
     size_t per_frame = (size_t)(host_sample_rate() / host_fps());
     size_t queued = plat_audio_queued_frames();
@@ -835,6 +844,12 @@ static void game_screen(PadState *pads)
     if (now - fps_window_start >= 1000000)
     {
         app.fps = fps_frames * 1000000.0f / (float)(now - fps_window_start);
+        /* the game's own frames among them: a 30 fps game on a 60 fps core repeats every picture */
+        uint32_t news = host_frames_new(), repeats = host_frames_repeated();
+        uint32_t all_frames = news - fps_news_at + repeats - fps_repeats_at;
+        app.real_fps = all_frames ? app.fps * (float)(news - fps_news_at) / (float)all_frames : app.fps;
+        fps_news_at = news;
+        fps_repeats_at = repeats;
         fps_frames = 0;
         fps_window_start = now;
     }
@@ -854,8 +869,21 @@ static void game_screen(PadState *pads)
     }
     if (app.settings.show_fps)
     {
-        char f[32];
-        snprintf(f, sizeof(f), "%.1f FPS", app.fps);
+        char f[64];
+        int at;
+        if (app.real_fps > 0.0f && app.fps - app.real_fps >= 1.0f)
+            at = snprintf(f, sizeof(f), "%.1f FPS (%s %.1f)", app.fps, tr("game"), app.real_fps);
+        else
+            at = snprintf(f, sizeof(f), "%.1f FPS", app.fps);
+        /* frame interpolation at work: the rate of the screen */
+        double fg_hz = plat_framegen_hz();
+        if (fg_hz > 1.0 && at > 0 && at < (int)sizeof(f) - 12)
+        {
+            /* the frames the eye gets: each of the game's own and one generated, up to the screen's rate (25 -> 50) */
+            double own = app.real_fps > 1.0f ? app.real_fps : app.fps;
+            double shown = own * 2.0 < fg_hz ? own * 2.0 : fg_hz;
+            snprintf(f + at, sizeof(f) - (size_t)at, " | FG %.0f", shown);
+        }
         float w = text_width(26, FONT_BOLD, f) + 40;
         draw_rrect(24, 24, w, 52, 26, 0xb0000000u);
         text_draw(44, 36, 26, FONT_BOLD, TH_GOOD, ALIGN_LEFT, f);
@@ -910,6 +938,8 @@ int main(void)
     /* Unlock before SDL starts any thread: the HEN changes this process's
      * credentials, which Porpoise did not survive with threads running. */
     app.sandboxed = !plat_prepare_storage(app.sandbox_reason, sizeof(app.sandbox_reason));
+    /* frame interpolation wants the 120 Hz mode, chosen when the screen opens */
+    plat_want_high_refresh(config_peek_bool(app.paths.config, "framegen"));
 
     if (!plat_init())
     {
@@ -999,6 +1029,8 @@ int main(void)
     bool quit = false;
     PadState pads[SwanStationPS5_MAX_PADS];
     uint64_t last = plat_ticks_us();
+    const uint64_t opened = last;
+    bool auto_update_tried = false;
     while (!quit)
     {
         uint64_t now = plat_ticks_us();
@@ -1006,6 +1038,14 @@ int main(void)
         if (app.dt > 0.1f)
             app.dt = 0.1f;
         last = now;
+
+        /* An update found at start installs by itself, once, a second after the app opened (or when found, if later) */
+        if (!auto_update_tried && update_state() == UPDATE_AVAILABLE && now - opened >= 1000000)
+        {
+            auto_update_tried = true;
+            app_toast_for("An update is available and will be installed on your next restart.", 4.0f);
+            update_install();
+        }
 
         plat_poll(pads, &quit);
         if (app.quit_requested)

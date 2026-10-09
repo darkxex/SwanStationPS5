@@ -1,0 +1,16 @@
+fg_shaders.inc is generated from the SPIR-V of the shaders in Swordpdf's ps5-framegen (shaders/, tools/build-shaders.sh):
+AMD FidelityFX SDK 2.3.0's optical flow and frame interpolation passes, some cut down for RPCS3-PS5. That folder's
+LICENSE.txt, which covers them and this file, follows.
+
+The files in this directory come from AMD FidelityFX SDK 2.3.0 ("FSR SDK 2.3.0"), Kits/FidelityFX, some of them modified for
+RPCS3-PS5 (see README.md). The SDK's docs/license.md puts each of them (api/internal/gpu/*.h, framegeneration/fsr3/include/gpu/**
+and framegeneration/fsr3/internal/shaders/ffx_opticalflow_*.hlsl) under the license below, and their own headers say the same. The
+fg_fi_*.hlsl passes are RPCS3-PS5's, cut down from the SDK's passes of the same purpose, under the same license.
+
+Copyright (C) Advanced Micro Devices, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

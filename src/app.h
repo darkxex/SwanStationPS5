@@ -45,6 +45,7 @@ typedef struct
     char sandbox_reason[200];
     float dt;                 /* seconds since the last frame */
     float fps;                /* emulated frames per second */
+    float real_fps;           /* and the game's own among them (a 30 fps game repeats each picture on a 60 fps core) */
     PadState pads[SwanStationPS5_MAX_PADS]; /* this frame's controllers, as read (by player) */
     bool quit_requested;      /* leave the main loop and close the app */
     double play_seconds;      /* how long this game has been played since it started */

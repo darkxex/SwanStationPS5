@@ -167,6 +167,7 @@ static const void *frame_data;
 static unsigned frame_w, frame_h;
 static size_t frame_pitch;
 static bool frame_fresh;
+static uint32_t frames_new, frames_repeated; /* the core's frames: the game's own, and the ones that repeat the last */
 
 /* ---------------------------------------------------------------- options */
 
@@ -864,7 +865,16 @@ static void RETRO_CALLCONV video_cb(const void *data, unsigned width, unsigned h
                                     size_t pitch)
 {
     if (!data)
-        return; /* duplicate frame: keep showing the previous one */
+    {
+        /* duplicate frame: keep showing the previous one. SwanStation says so when the picture it shows is the one of
+         * the last frame (a 30 fps game on a 60 fps core): frame interpolation takes only the game's own frames. */
+#if defined(SwanStationPS5_VULKAN)
+        vkp_frame_repeated();
+#endif
+        ++frames_repeated;
+        return;
+    }
+    ++frames_new;
     if (data == RETRO_HW_FRAME_BUFFER_VALID)
     {
         /* rendered on the GPU: the image went through set_image */
@@ -879,6 +889,16 @@ static void RETRO_CALLCONV video_cb(const void *data, unsigned width, unsigned h
     frame_h = height;
     frame_pitch = pitch;
     frame_fresh = true;
+}
+
+uint32_t host_frames_new(void)
+{
+    return frames_new;
+}
+
+uint32_t host_frames_repeated(void)
+{
+    return frames_repeated;
 }
 
 void host_set_speculative(bool on)

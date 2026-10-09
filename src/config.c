@@ -144,7 +144,7 @@ static bool config_apply(Settings *s, const char *path)
         else if (strcmp(key, "hd_textures") == 0)
             s->hd_textures = as_bool(value);
         else if (strcmp(key, "shader") == 0)
-            s->shader = atoi(value) % 5;
+            s->shader = atoi(value) % 9;
         else if (strcmp(key, "crop_edges") == 0)
             s->crop_edges = atoi(value) % 3;
         else if (strcmp(key, "ra_popups") == 0)
@@ -209,6 +209,8 @@ static bool config_apply(Settings *s, const char *path)
             s->run_ahead = atoi(value) % 3;
         else if (strcmp(key, "fast_effects") == 0)
             s->fast_effects = as_bool(value);
+        else if (strcmp(key, "framegen") == 0)
+            s->framegen = as_bool(value);
         else if (strcmp(key, "rewind") == 0)
             s->rewind = as_bool(value);
         else if (strcmp(key, "quick_resume") == 0)
@@ -274,6 +276,23 @@ bool config_load_game(Settings *out, const Settings *global, const char *path)
     return true;
 }
 
+/* One setting read straight from a settings file, before the rest is loaded
+ * (frame interpolation's 120 Hz mode is chosen when the screen opens) */
+bool config_peek_bool(const char *path, const char *key)
+{
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return false;
+    char line[256];
+    size_t n = strlen(key);
+    bool on = false;
+    while (fgets(line, sizeof(line), f))
+        if (!strncmp(line, key, n) && line[n] == '=')
+            on = atoi(line + n + 1) != 0;
+    fclose(f);
+    return on;
+}
+
 bool config_save(const Settings *s, const char *path)
 {
     char temp[SwanStationPS5_PATH_MAX];
@@ -309,7 +328,8 @@ bool config_save(const Settings *s, const char *path)
             s->msaa, s->texture_filter, s->filter_2d, s->supersampling, s->deinterlace, s->pal60, s->game_fixes);
     fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\nnegcon=%d\n",
             s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->negcon);
-    fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\n", s->touch_mouse, s->run_ahead, s->fast_effects);
+    fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\nframegen=%d\n", s->touch_mouse, s->run_ahead,
+            s->fast_effects, s->framegen);
     for (int i = 0; i < SS_OPT_COUNT; ++i)
     {
         int v = s->ss_opt[i];

@@ -154,12 +154,192 @@ index adfb7057..c989f93e 100644
  #define USE_STATIC_CODE_BUFFER 1
  #endif
  
+diff --git a/src/core/gpu_hw.cpp b/src/core/gpu_hw.cpp
+index 99582d73..380be163 100644
+--- a/src/core/gpu_hw.cpp
++++ b/src/core/gpu_hw.cpp
+@@ -762,7 +762,7 @@ void GPU_HW::LoadVertices()
+         const uint32_t clip_bottom =
+           static_cast<uint32_t>(std::clamp<int32_t>(max_y, m_drawing_area.top, m_drawing_area.bottom)) + 1u;
+ 
+-        m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom);
++        { m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom); m_frame_touched.Include(clip_left, clip_right, clip_top, clip_bottom); }
+         AddDrawTriangleTicks(native_vertex_positions[0][0], native_vertex_positions[0][1],
+                              native_vertex_positions[1][0], native_vertex_positions[1][1],
+                              native_vertex_positions[2][0], native_vertex_positions[2][1], rc.shading_enable,
+@@ -793,7 +793,7 @@ void GPU_HW::LoadVertices()
+           const uint32_t clip_bottom =
+             static_cast<uint32_t>(std::clamp<int32_t>(max_y_123, m_drawing_area.top, m_drawing_area.bottom)) + 1u;
+ 
+-          m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom);
++          { m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom); m_frame_touched.Include(clip_left, clip_right, clip_top, clip_bottom); }
+           AddDrawTriangleTicks(native_vertex_positions[2][0], native_vertex_positions[2][1],
+                                native_vertex_positions[1][0], native_vertex_positions[1][1],
+                                native_vertex_positions[3][0], native_vertex_positions[3][1], rc.shading_enable,
+@@ -910,7 +910,7 @@ void GPU_HW::LoadVertices()
+       const uint32_t clip_bottom =
+         static_cast<uint32_t>(std::clamp<int32_t>(pos_y + rectangle_height, m_drawing_area.top, m_drawing_area.bottom)) + 1u;
+ 
+-      m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom);
++      { m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom); m_frame_touched.Include(clip_left, clip_right, clip_top, clip_bottom); }
+       AddDrawRectangleTicks(clip_right - clip_left, clip_bottom - clip_top, rc.texture_enable, rc.transparency_enable);
+ 
+       if (m_sw_renderer)
+@@ -969,7 +969,7 @@ void GPU_HW::LoadVertices()
+         const uint32_t clip_bottom =
+           static_cast<uint32_t>(std::clamp<int32_t>(max_y, m_drawing_area.top, m_drawing_area.bottom)) + 1u;
+ 
+-        m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom);
++        { m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom); m_frame_touched.Include(clip_left, clip_right, clip_top, clip_bottom); }
+         AddDrawLineTicks(clip_right - clip_left, clip_bottom - clip_top, rc.shading_enable);
+ 
+         // TODO: Should we do a PGXP lookup here? Most lines are 2D.
+@@ -1034,7 +1034,7 @@ void GPU_HW::LoadVertices()
+             const uint32_t clip_bottom =
+               static_cast<uint32_t>(std::clamp<int32_t>(max_y, m_drawing_area.top, m_drawing_area.bottom)) + 1u;
+ 
+-            m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom);
++            { m_vram_dirty_rect.Include(clip_left, clip_right, clip_top, clip_bottom); m_frame_touched.Include(clip_left, clip_right, clip_top, clip_bottom); }
+             AddDrawLineTicks(clip_right - clip_left, clip_bottom - clip_top, rc.shading_enable);
+ 
+             // TODO: Should we do a PGXP lookup here? Most lines are 2D.
+@@ -1153,6 +1153,7 @@ GPU_HW::VRAMCopyUBOData GPU_HW::GetVRAMCopyUBOData(uint32_t src_x, uint32_t src_
+ void GPU_HW::IncludeVRAMDirtyRectangle(const Common::Rectangle<uint32_t>& rect)
+ {
+   m_vram_dirty_rect.Include(rect);
++  m_frame_touched.Include(rect);
+ 
+   // the vram area can include the texture page, but the game can leave it as-is. in this case, set it as dirty so the
+   // shadow texture is updated
+diff --git a/src/core/gpu_hw.h b/src/core/gpu_hw.h
+index 3741e75c..06c11dc4 100644
+--- a/src/core/gpu_hw.h
++++ b/src/core/gpu_hw.h
+@@ -558,6 +558,9 @@ protected:
+   // Bounding box of VRAM area that the GPU has drawn into.
+   Common::Rectangle<uint32_t> m_vram_dirty_rect;
+ 
++  // SwanStationPS5: the same, since the last display update (to tell whether the picture shown changed).
++  Common::Rectangle<uint32_t> m_frame_touched;
++
+   // Changed state
+   bool m_batch_ubo_dirty = true;
+ 
+diff --git a/src/core/gpu_hw_vulkan.cpp b/src/core/gpu_hw_vulkan.cpp
+index 39ba4446..e99202a3 100644
+--- a/src/core/gpu_hw_vulkan.cpp
++++ b/src/core/gpu_hw_vulkan.cpp
+@@ -59,6 +59,10 @@ void* LibretroVulkanHostDisplay::GetRenderContext() const
+   return nullptr;
+ }
+ 
++// SwanStationPS5: the picture shown at this display update is the one of the last (the game did not change it): the
++// frontend is told with a duplicate frame (video_refresh with no data), as libretro does it.
++static bool s_frame_repeated = false;
++
+ static constexpr std::array<VkFormat, static_cast<uint32_t>(HostDisplayPixelFormat::Count)> s_display_pixel_format_mapping =
+   {{VK_FORMAT_UNDEFINED, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R5G6B5_UNORM_PACK16,
+     VK_FORMAT_A1R5G5B5_UNORM_PACK16}};
+@@ -522,7 +526,9 @@ bool LibretroVulkanHostDisplay::Render()
+   m_ri->unlock_queue(m_ri->handle);
+   g_vulkan_context->MoveToNextCommandBuffer();
+ 
+-  g_retro_video_refresh_callback(RETRO_HW_FRAME_BUFFER_VALID, display_width, display_height, 0);
++  const bool repeated = s_frame_repeated;
++  s_frame_repeated = false;
++  g_retro_video_refresh_callback(repeated ? nullptr : RETRO_HW_FRAME_BUFFER_VALID, display_width, display_height, 0);
+   return true;
+ }
+ 
+@@ -3133,6 +3139,24 @@ void GPU_HW_Vulkan::UpdateDisplay()
+     const uint32_t scaled_display_height = display_height * resolution_scale;
+     const InterlacedRenderMode interlaced = GetInterlacedRenderMode();
+ 
++    {
++      // Is the picture the one shown last time? It is when the VRAM area shown is the same and nothing was drawn
++      // or written into it since (a game that flips two buffers changes the area; one that draws straight into the
++      // shown buffer touches it). Anything else this code does not draw straight from the VRAM counts as new.
++      const bool direct = !IsDisplayDisabled() && !m_GPUSTAT.display_area_color_depth_24 &&
++                          interlaced == InterlacedRenderMode::None && !IsUsingMultisampling() &&
++                          (scaled_vram_offset_x + scaled_display_width) <= m_vram_texture.GetWidth() &&
++                          (scaled_vram_offset_y + scaled_display_height) <= m_vram_texture.GetHeight();
++      const uint32_t area[4] = {vram_offset_x, vram_offset_y, display_width, display_height};
++      const Common::Rectangle<uint32_t> shown =
++        Common::Rectangle<uint32_t>::FromExtents(vram_offset_x, vram_offset_y, display_width, display_height);
++      s_frame_repeated = direct && m_last_display_area_valid &&
++                         std::memcmp(area, m_last_display_area, sizeof(area)) == 0 && !m_frame_touched.Intersects(shown);
++      m_last_display_area_valid = direct;
++      std::memcpy(m_last_display_area, area, sizeof(area));
++      m_frame_touched = Common::Rectangle<uint32_t>();
++    }
++
+     if (IsDisplayDisabled())
+     {
+       m_host_display->ClearDisplayTexture();
+diff --git a/src/core/gpu_hw_vulkan.h b/src/core/gpu_hw_vulkan.h
+index fa0d5ef3..1b804518 100644
+--- a/src/core/gpu_hw_vulkan.h
++++ b/src/core/gpu_hw_vulkan.h
+@@ -122,6 +122,9 @@ protected:
+ 
+ private:
+   static constexpr uint32_t MAX_PUSH_CONSTANTS_SIZE = 64, TEXTURE_REPLACEMENT_BUFFER_SIZE = 64 * 1024 * 1024;
++  // SwanStationPS5: the VRAM area shown at the last display update, to tell a repeated picture
++  uint32_t m_last_display_area[4] = {};
++  bool m_last_display_area_valid = false;
+   void SetCapabilities();
+   void DestroyResources();
+ 
+diff --git a/src/core/host_interface.h b/src/core/host_interface.h
+index 6b00b18d..f49ab5b6 100644
+--- a/src/core/host_interface.h
++++ b/src/core/host_interface.h
+@@ -110,6 +110,7 @@ public:
+ 
+   /// Returns the path to the shader cache directory.
+   std::string GetShaderCacheBasePath() const;
++  std::string GetTextureBasePath() const;
+ 
+   /// Returns a setting value from the configuration.
+   std::string GetStringSettingValue(const char* section, const char* key, const char* default_value = "");
+diff --git a/src/core/texture_replacements.cpp b/src/core/texture_replacements.cpp
+index 2afd38ab..3d659438 100644
+--- a/src/core/texture_replacements.cpp
++++ b/src/core/texture_replacements.cpp
+@@ -86,8 +86,8 @@ void TextureReplacements::Shutdown()
+ 
+ std::string TextureReplacements::GetSourceDirectory() const
+ {
+-  // Use the shader cache path as base for the textures folder
+-  std::string cache_folder = g_host_interface_storage.GetShaderCacheBasePath();
++  // SwanStationPS5: the textures folder sits straight in the frontend's cache directory
++  std::string cache_folder = g_host_interface_storage.GetTextureBasePath();
+   return g_host_interface->GetUserDirectoryRelativePath("%s" "textures" FS_OSPATH_SEPARATOR_STR "%s", cache_folder.c_str(), m_game_id.c_str());
+ }
+ 
 diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
-index a0613fb4..3b9b5960 100644
+index a0613fb4..2ca51e99 100644
 --- a/src/libretro/libretro_host_interface.cpp
 +++ b/src/libretro/libretro_host_interface.cpp
-@@ -440,12 +440,13 @@ std::string HostInterface::GetGameMemoryCardPath(const char* game_code, uint32_t
+@@ -438,14 +438,30 @@ std::string HostInterface::GetGameMemoryCardPath(const char* game_code, uint32_t
+                                          slot + 1);
+ }
  
++// SwanStationPS5: the texture packs sit straight in the frontend's cache directory (cache/textures/<game id>/), not
++// below the "swanstation" folder of the shader cache.
++std::string HostInterface::GetTextureBasePath() const
++{
++  const char* directory_ptr = nullptr;
++  if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY, &directory_ptr) || !directory_ptr)
++  {
++    directory_ptr = nullptr;
++    if (!g_retro_environment_callback(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &directory_ptr) || !directory_ptr)
++      return std::string();
++  }
++
++  return StringUtil::StdStringFromFormat("%s" FS_OSPATH_SEPARATOR_STR, directory_ptr);
++}
++
  std::string HostInterface::GetShaderCacheBasePath() const
  {
 -  // Use the system directory, and failing that, the downloads directory.
@@ -175,7 +355,7 @@ index a0613fb4..3b9b5960 100644
          !cache_directory_ptr)
      {
        Log_WarningPrint("No shader cache directory available, startup will be slower.");
-@@ -2188,7 +2189,11 @@ void HostInterface::SwitchToSoftwareRenderer()
+@@ -2188,7 +2204,11 @@ void HostInterface::SwitchToSoftwareRenderer()
    m_display = std::make_unique<LibretroHostDisplay>();
    m_display->CreateRenderDevice(wi, {}, false, false);
    m_display->InitializeRenderDevice({}, false, false);

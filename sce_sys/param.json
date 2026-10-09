@@ -6,11 +6,11 @@
   "applicationDrmType": "free",
   "attribute": 0,
   "attribute2": 0,
-  "attribute3": 0,
+  "attribute3": 524352,
   "conceptId": "98510",
   "contentBadgeType": 1,
   "contentId": "UP9000-PPSA98510_00-SWANSTATIONPS501",
-  "contentVersion": "01.000.006",
+  "contentVersion": "01.001.000",
   "downloadDataSize": 256,
   "gameIntent": {
     "permittedIntents": [
