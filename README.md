@@ -87,13 +87,20 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 - **Save states with pictures.** Ten slots per game, each showing a thumbnail and how long ago it was saved.
 - **Widescreen.** SwanStation's widescreen hack (Settings → Graphics) draws the 3D picture in 16:9.
 - **CRT look.** Light or strong scanlines, and a soft glow or a 90s TV around the picture.
+- **Shaders for the picture** (Settings → Display → Shader): Sharp bilinear (crisp PS1 pixels at any internal resolution), CRT Basic (scanlines, an RGB grille and glow), LCD3x (a handheld's LCD), CRT Royale (a detailed CRT with bloom and a phosphor mask) and four NTSC ones (320px or 256px, S-Video or Composite) that recreate the analog TV signal.
+- **Double frames.** AMD FSR 3's frame interpolation doubles the game's real frames: a 30 fps game is shown at 60, and a 60 fps one at 120 if your TV supports it (otherwise it stays at 60). SwanStation tells the app when a picture is a repeat, so the doubling starts from the game's real rate. The shaders run after it, CRT Royale and NTSC included.
+- **Show FPS that tells the truth.** It shows the emulated frames, the game's own rate when the game repeats pictures (`60.0 FPS (game 25.0)`) and the frames you actually see while doubling (`| FG 50`).
+- **HD texture packs.** The *Load HD textures* switch turns on SwanStation's texture replacement; put a pack's PNG files in `/data/SwanStationPS5/cache/textures/<serial>/` (for example `SCUS-94900`).
+- **PS1 homebrew.** Homebrew discs boot too: [Yume Nikki PS1](https://eliasdaler.itch.io/yume-nikki-ps1) and [Doki Doki Literature Club PSX](https://www.psxhomebrewgames.com/2025/09/doki-doki-literature-club-psx.html) are confirmed.
+- **PSXS5 friendly.** It still reads PSXS5's games and BIOS folders (see [supported folders](#supported-folders-for-games-and-bios)), so a PSXS5 library keeps working.
+- **Close the app from the controller.** Hold O for 2 seconds. Menus show the title from the game database, and the game menu has pills with the serial and the folder.
 - **Up to 4 players.** A multitap for the games that support it: each PS5 controller is a player.
 - **Fan translations.** Put a `.ppf` patch next to a game and SwanStationPS5 applies it when the game starts.
 - **Memory card manager.** See the saves on every game's card, export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards.
 - **Achievements list.** Every achievement of the game you're playing, with badges, in two tabs: *Achievable* (closest first) and *Achieved*.
   - Counted achievements (18/80 dragons) show a progress bar, and a small tracker pops up in game when they move.
 - **Settings from your phone.** Turn it on and scan the QR code: a settings page opens on any phone on the same network.
-- **Updates from GitHub.** SwanStationPS5 tells you when a new release is out and installs it from *Settings → About*.
+- **Updates from GitHub.** SwanStationPS5 finds a new release when it starts and installs it by itself a second after opening (or from *Settings → About*), into the folder the app is running from: `/data/homebrew`, or an extended or USB drive.
 - **Native app.** A real home-screen title (`PPSA98510`) with its own icon and art. Nothing is streamed and no PC is needed while you play.
 - **A shelf for your games.** A 3D cover flow with reflections and a soft click as you browse.
   - Covers are matched by the serial read from each disc, so every region gets its own art.
