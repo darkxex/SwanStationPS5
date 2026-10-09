@@ -46,7 +46,7 @@
 #define SIDE_SCALE 0.74f
 #define SIDE_SQUEEZE 0.58f /* turned-away covers look narrower */
 #define LAUNCH_TIME 0.3f /* the fade to black */
-#define QUIT_HOLD 3.0f   /* seconds O is held on the shelf to close the app */
+#define QUIT_HOLD 2.0f   /* seconds O is held on the shelf to close the app */
 #define DISC_TIME 0.95f  /* before it, with the disc animation: the disc slides out and spins up */
 
 static float launch_total(void)
@@ -214,6 +214,25 @@ static const char *display_title(const Game *g)
 {
     const GameInfo *info = gamedb_get(g->serial);
     return info && info->name[0] ? info->name : g->title;
+}
+
+const char *shelf_game_title(const Game *g)
+{
+    return display_title(g);
+}
+
+/* "Folder: '/data'": where the game is loaded from ("/data", "/mnt/ext1", "/mnt/usb0"...); "" when unknown */
+void shelf_folder_tag(const Game *g, char *out, size_t size)
+{
+    const char *p = g->path;
+    int slashes = strncmp(p, "/mnt/", 5) == 0 ? 3 : 2; /* mounts: the first two parts, else the first */
+    size_t n = 0;
+    for (; p[n]; ++n)
+        if (p[n] == '/' && --slashes == 0)
+            break;
+    out[0] = '\0';
+    if (n > 0 && n < 24)
+        snprintf(out, size, "%s: '%.*s'", tr("Folder"), (int)n, p);
 }
 
 void shelf_init(int last_game)
@@ -615,18 +634,8 @@ static void draw_info(const Game *g, float alpha)
             snprintf(played_tag, sizeof(played_tag), tr("Played %s"), played);
         stats_format_when(st->last_played, when, sizeof(when));
     }
-    /* where the game is loaded from: "/data", "/mnt/ext1", "/mnt/usb0"... */
-    char source[64] = "";
-    {
-        const char *p = g->path;
-        int slashes = strncmp(p, "/mnt/", 5) == 0 ? 3 : 2; /* mounts: the first two parts, else the first */
-        size_t n = 0;
-        for (; p[n]; ++n)
-            if (p[n] == '/' && --slashes == 0)
-                break;
-        if (n > 0 && n < 24)
-            snprintf(source, sizeof(source), "%s: '%.*s'", tr("Folder"), (int)n, p);
-    }
+    char source[64];
+    shelf_folder_tag(g, source, sizeof(source));
     const char *tags[6] = {shelf_region_name(g->serial), g->serial[0] ? g->serial : tr("No serial"),
                            discs, played_tag, when, source};
     float widths[6], total = 0;

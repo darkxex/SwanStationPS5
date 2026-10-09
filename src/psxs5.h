@@ -16,7 +16,7 @@
 #define PSXS5_NAME "PSXS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define PSXS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define PSXS5_TITLE_ID "PPSA98510"
-#define PSXS5_VERSION "1.0.5"
+#define PSXS5_VERSION "1.0.6"
 #define PSXS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core

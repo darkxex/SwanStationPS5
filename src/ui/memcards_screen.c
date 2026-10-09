@@ -144,7 +144,7 @@ static void scan(void)
         str_copy(c->title, sizeof(c->title), c->serial);
         for (int i = 0; i < app.library.count; ++i)
             if (!str_icmp(app.library.games[i].serial, c->serial))
-                str_copy(c->title, sizeof(c->title), app.library.games[i].title);
+                str_copy(c->title, sizeof(c->title), shelf_game_title(&app.library.games[i]));
         read_card(c);
     }
     closedir(d);

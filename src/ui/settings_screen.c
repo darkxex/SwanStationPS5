@@ -1194,7 +1194,7 @@ static void draw_header(void)
     text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, tr(S.remap ? "Button mapping" : "Settings"));
     char sub[200];
     if (app.game)
-        snprintf(sub, sizeof(sub), "%s  \xc2\xb7  %s", app.game->title,
+        snprintf(sub, sizeof(sub), "%s  \xc2\xb7  %s", shelf_game_title(app.game),
                  tr(S.game_scope ? "This game" : "All games"));
     else
         str_copy(sub, sizeof(sub), tr("Applies to every game"));
@@ -1633,7 +1633,7 @@ int settings_json(char *out, size_t size)
     size_t at = 0;
     out[0] = '\0';
     PUT("{\"game\":");
-    at = json_text(out, size, at, app.game ? app.game->title : tr("Applies to every game"));
+    at = json_text(out, size, at, app.game ? shelf_game_title(app.game) : tr("Applies to every game"));
     PUT(",\"tabs\":[");
     for (int t = 0; t < TAB_COUNT && at < size; ++t)
     {

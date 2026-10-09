@@ -254,7 +254,7 @@ void profile_screen(uint32_t pressed)
         const Game *g = &app.library.games[P.closest[i]];
         GameStats *st = stats_get(g->id);
         float ry = cy + 78 + i * 84, p = percent_of(P.closest[i]);
-        text_draw_fit(rx + 28, ry, 22, FONT_BOLD, TH_TEXT, ALIGN_LEFT, col - 200, g->title);
+        text_draw_fit(rx + 28, ry, 22, FONT_BOLD, TH_TEXT, ALIGN_LEFT, col - 200, shelf_game_title(g));
         char n[32];
         snprintf(n, sizeof(n), "%d / %d", st ? st->ach_unlocked : 0, st ? st->ach_total : 0);
         text_draw(rx + col - 28, ry, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_RIGHT, n);

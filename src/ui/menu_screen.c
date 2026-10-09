@@ -396,16 +396,32 @@ void menu_screen(uint32_t pressed)
     }
     if (g)
     {
-        text_draw_fit(cx, cy + 20, 32, FONT_BOLD, TH_TEXT, ALIGN_LEFT, px + pw - cx - 40, g->title);
-        text_draw(cx, cy + 70, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT,
-                  g->serial[0] ? g->serial : tr("No serial"));
+        text_draw_fit(cx, cy + 20, 32, FONT_BOLD, TH_TEXT, ALIGN_LEFT, px + pw - cx - 40, shelf_game_title(g));
+        /* the serial and the storage, as pills like the shelf's (the second wraps if it does not fit) */
+        char folder[64];
+        shelf_folder_tag(g, folder, sizeof(folder));
+        const char *tags[2] = {g->serial[0] ? g->serial : tr("No serial"), folder};
+        const float limit = px + pw - 40, pill_h = 38;
+        float tx = cx, ty = cy + 64;
+        for (int i = 0; i < 2; ++i)
+        {
+            if (!tags[i][0])
+                continue;
+            float tw = text_width(20, FONT_REGULAR, tags[i]) + pill_h * 0.9f;
+            if (tx > cx && tx + tw > limit)
+            {
+                tx = cx;
+                ty += pill_h + 8;
+            }
+            tx += draw_pill(tx, ty, pill_h, 20, TH_PILL, TH_TEXT_SOFT, tags[i]) + 10;
+        }
         int unlocked, total;
         if (ra_game_progress(&unlocked, &total))
         {
             char a[64];
             snprintf(a, sizeof(a), tr("%d of %d achievements"), unlocked, total);
-            icon_draw(ICON_TROPHY, cx, cy + 108, 26, TH_GOLD);
-            text_draw(cx + 36, cy + 108, 22, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_LEFT, a);
+            icon_draw(ICON_TROPHY, cx, ty + pill_h + 14, 26, TH_GOLD);
+            text_draw(cx + 36, ty + pill_h + 14, 22, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_LEFT, a);
         }
     }
 
