@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/media/banner.png" alt="SwanStationPS5" width="100%">
-</p>
-
 <h3 align="center">PlayStation 1 emulation, running natively on a jailbroken PS5.</h3>
 
 <p align="center">
@@ -27,19 +23,12 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 ## Screenshots
 
 <p align="center">
-  <img src="docs/media/screens/shelf.jpg" alt="The shelf" width="49%">
-  <img src="docs/media/screens/settings.jpg" alt="Settings" width="49%">
+  <img src="docs/media/screens/SwanStationPS5_20261008232454.jpg" alt="The shelf" width="100%">
 </p>
 <p align="center">
-  <img src="docs/media/screens/menu.jpg" alt="The in-game menu" width="49%">
-  <img src="docs/media/screens/mapping.jpg" alt="Button mapping" width="49%">
+  <img src="docs/media/screens/SwanStationPS5_20261008232916.jpg" alt="The in-game menu" width="49%">
+  <img src="docs/media/screens/SwanStationPS5_20261008232923.jpg" alt="Settings" width="49%">
 </p>
-<p align="center">
-  <img src="docs/media/screens/continue.jpg" alt="Continue where you left off" width="49%">
-  <img src="docs/media/screens/tv.jpg" alt="TV frame with scanlines" width="49%">
-</p>
-
-The in-game shots show a test picture; your games appear there.
 
 ## Highlights
 
@@ -314,7 +303,7 @@ python3 tools/make_release.py   # optional: build and pack PPSA98510.zip, the re
 | `tools/psxs5_sync.py` | the PC tool |
 | `tools/make_release.py` | builds the app and packs PPSA98510.zip, the release asset |
 | `tools/make_dds.py` | converts the two backgrounds to the BC7 `pic0.dds` / `pic1.dds` |
-| `tools/make_art.py` | generates the icon, home-screen art and this page's banner |
+| `tools/make_art.py` | generates the icon and the home-screen art |
 | `docs/boilerplate/` | documentation of the PS5 app boilerplate SwanStationPS5 is built on |
 
 ## Credits
