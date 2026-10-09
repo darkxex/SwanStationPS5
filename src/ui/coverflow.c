@@ -398,7 +398,7 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
 {
     int tw = 1, th = 1;
     plat_texture_size(tex, &tw, &th);
-    float aspect = tex ? (float)tw / th : 0.88f;
+    float aspect = tex ? (float)tw / th : no_cover_icon() ? 1.0f : 0.88f; /* the app icon is square */
     float w = h * aspect * squeeze, x = cx - w * 0.5f, y = cy - h * 0.5f;
     if (selected)
     {
@@ -415,7 +415,7 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
     else if (no_cover_icon())
-        plat_draw_texture(no_cover_icon(), x, cy - w * 0.5f, w, w, tint, false);
+        plat_draw_texture(no_cover_icon(), x, y, w, h, tint, false);
     else
     {
         draw_rrect(x, y, w, h, 10, TH_CARD);
