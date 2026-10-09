@@ -201,6 +201,7 @@ typedef struct
     char cheats[PSXS5_PATH_MAX];
     char covers[PSXS5_PATH_MAX]; /* covers/default/<serial>.jpg, covers/3d/<serial>.png */
     char logs[PSXS5_PATH_MAX];
+    char cache[PSXS5_PATH_MAX];  /* downloads and the emulator's shader cache (cache/swanstation) */
     char config[PSXS5_PATH_MAX];
     char user[PSXS5_PATH_MAX];   /* the profile's folder (saves, states, settings, stats): root for the main one */
 } Paths;

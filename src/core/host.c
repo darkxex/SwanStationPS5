@@ -725,6 +725,9 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
         *(const char **)data = host_paths->bios;
         return true;
+    case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY: /* where the core keeps its shader cache */
+        *(const char **)data = host_paths->cache;
+        return true;
     case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
         *(const char **)data = host_paths->saves;
         return true;

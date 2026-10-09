@@ -330,6 +330,7 @@ void config_paths(Paths *p, const char *root)
 {
     str_copy(p->root, sizeof(p->root), root);
     path_join(p->games, sizeof(p->games), root, "games");
+    path_join(p->cache, sizeof(p->cache), root, "cache");
     path_join(p->bios, sizeof(p->bios), root, "bios");
     path_join(p->saves, sizeof(p->saves), root, "saves");
     path_join(p->states, sizeof(p->states), root, "states");

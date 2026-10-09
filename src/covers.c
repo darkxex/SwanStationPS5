@@ -475,6 +475,11 @@ PlatTexture *covers_get(int index)
     return (slots && index >= 0 && index < slot_count) ? slots[index].texture : NULL;
 }
 
+bool covers_is_placeholder(int index)
+{
+    return slots && index >= 0 && index < slot_count && slots[index].texture && slots[index].placeholder;
+}
+
 uint32_t covers_color(int index)
 {
     return (slots && index >= 0 && index < slot_count && slots[index].texture) ? slots[index].color

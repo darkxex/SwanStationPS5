@@ -464,6 +464,7 @@ static const Entry ENTRIES[] = {
     {{"Interface sound", "Sons de l'interface", "Sons da interface", "Sonidos de la interfaz", "操作音"}},
     {{"Interface volume", "Volume de l'interface", "Volume da interface", "Volumen de la interfaz", "操作音の音量"}},
     {{"Language", "Langue", "Idioma", "Idioma", "言語"}},
+    {{"Storage", "Stockage", "Armazenamento", "Almacenamiento", "ストレージ"}},
     {{"Reload", "Recharger", "Recarregar", "Recargar", "再読み込み"}},
     {{"No new games found...", "Aucun nouveau jeu trouvé...", "Nenhum jogo novo encontrado...",
       "No se encontraron nuevos juegos...", "新しいゲームは見つかりませんでした..."}},

@@ -21,6 +21,8 @@ void covers_update_view(const int *view, int count, int center_pos);
 
 /* Texture for game `index`; a generated title card until the art is ready. */
 PlatTexture *covers_get(int index);
+/* true when the picture is only a generated title card (no real cover found) */
+bool covers_is_placeholder(int index);
 /* Average colour of a loaded cover (0 until it has loaded). */
 uint32_t covers_color(int index);
 

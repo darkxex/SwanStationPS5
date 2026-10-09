@@ -28,6 +28,8 @@
 #include "text.h"
 #include "theme.h"
 
+#include "stb_image.h"
+
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
@@ -364,6 +366,33 @@ static void draw_ach_badge(const Game *g, float right, float bottom, float size)
     text_draw(x + tw - size * 0.6f, y + (h - size) * 0.5f - 1, size, FONT_BOLD, 0xffffffffu, ALIGN_RIGHT, t);
 }
 
+/* The app's icon (sce_sys/icon0.png), for games whose cover has not arrived or does not exist. */
+static PlatTexture *no_cover_icon(void)
+{
+    static PlatTexture *icon;
+    static bool tried;
+    if (!tried)
+    {
+        tried = true;
+        char path[PSXS5_PATH_MAX];
+        plat_asset_path(path, sizeof(path), "../sce_sys/icon0.png");
+        int w, h, n;
+        uint8_t *rgba = stbi_load(path, &w, &h, &n, 4);
+        if (rgba)
+        {
+            icon = plat_texture_create(rgba, w, h, true);
+            stbi_image_free(rgba);
+        }
+    }
+    return icon;
+}
+
+/* the cover on the shelf: NULL for a generated title card, so the app icon shows instead */
+static PlatTexture *shelf_cover(int index)
+{
+    return covers_is_placeholder(index) && no_cover_icon() ? NULL : covers_get(index);
+}
+
 static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, float h, float squeeze,
                        uint32_t tint, bool selected)
 {
@@ -385,6 +414,8 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     }
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
+    else if (no_cover_icon())
+        plat_draw_texture(no_cover_icon(), x, cy - w * 0.5f, w, w, tint, false);
     else
     {
         draw_rrect(x, y, w, h, 10, TH_CARD);
@@ -577,10 +608,22 @@ static void draw_info(const Game *g, float alpha)
             snprintf(played_tag, sizeof(played_tag), tr("Played %s"), played);
         stats_format_when(st->last_played, when, sizeof(when));
     }
-    const char *tags[5] = {shelf_region_name(g->serial), g->serial[0] ? g->serial : tr("No serial"),
+    /* where the game is loaded from: "/data", "/mnt/ext1", "/mnt/usb0"... */
+    char source[64] = "";
+    {
+        const char *p = g->path;
+        int slashes = strncmp(p, "/mnt/", 5) == 0 ? 3 : 2; /* mounts: the first two parts, else the first */
+        size_t n = 0;
+        for (; p[n]; ++n)
+            if (p[n] == '/' && --slashes == 0)
+                break;
+        if (n > 0 && n < 24)
+            snprintf(source, sizeof(source), "%s: %.*s", tr("Storage"), (int)n, p);
+    }
+    const char *tags[6] = {source, shelf_region_name(g->serial), g->serial[0] ? g->serial : tr("No serial"),
                            discs, played_tag, when};
-    float widths[5], total = 0;
-    for (int i = 0; i < 5; ++i)
+    float widths[6], total = 0;
+    for (int i = 0; i < 6; ++i)
         if (tags[i][0])
         {
             widths[i] = text_width(22, FONT_REGULAR, tags[i]) + 36;
@@ -589,7 +632,7 @@ static void draw_info(const Game *g, float alpha)
         else
             widths[i] = 0;
     float x = CENTER_X - (total - 10) * 0.5f, ty = tags_y;
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 6; ++i)
         if (widths[i] > 0)
             x += draw_pill(x, ty, 40, 22, argb_alpha(TH_PILL_A(0xc0), alpha),
                            argb_alpha(TH_TEXT_SOFT, alpha), tags[i]) + 10;
@@ -890,7 +933,7 @@ static void draw_grid(int game, float launch)
         int index = S.view[k];
         const Game *g = &app.library.games[index];
         draw_rrect(x, y, tile, tile, TH_RADIUS_SMALL, TH_CARD);
-        PlatTexture *t = covers_get(index);
+        PlatTexture *t = shelf_cover(index);
         if (t)
         {
             int tw, th;
@@ -898,6 +941,8 @@ static void draw_grid(int game, float launch)
             float k2 = fminf((tile - 20) / tw, (tile - 20) / th), w = tw * k2, h = th * k2;
             plat_draw_texture(t, x + (tile - w) * 0.5f, y + (tile - h) * 0.5f, w, h, 0xffffffffu, true);
         }
+        else if (no_cover_icon())
+            plat_draw_texture(no_cover_icon(), x + 10, y + 10, tile - 20, tile - 20, 0xffffffffu, true);
         else
             icon_draw(ICON_DISC, x + tile * 0.5f - 32, y + tile * 0.5f - 32, 64, TH_TEXT_DIM);
         draw_ach_badge(g, x + tile, y + tile, 15);
@@ -912,7 +957,7 @@ static void draw_grid(int game, float launch)
     const Game *g = &app.library.games[game];
     const float cx = x0 + GRID_COLS * (tile + gap) + 40, cw = plat_width() - TH_MARGIN - cx, cy = y0, ch = 760;
     draw_rrect(cx, cy, cw, ch, TH_RADIUS, TH_CARD);
-    PlatTexture *t = covers_get(game);
+    PlatTexture *t = shelf_cover(game);
     const float art = 340;
     if (t)
     {
@@ -921,6 +966,8 @@ static void draw_grid(int game, float launch)
         float k2 = fminf((cw - 64) / tw, art / th), w = tw * k2, h = th * k2;
         plat_draw_texture(t, cx + (cw - w) * 0.5f, cy + 32, w, h, 0xffffffffu, true);
     }
+    else if (no_cover_icon())
+        plat_draw_texture(no_cover_icon(), cx + (cw - art) * 0.5f, cy + 32, art, art, 0xffffffffu, true);
     float ty = cy + 32 + art + 28;
     float a = 1.0f - launch;
     text_draw_fit(cx + 32, ty, 36, FONT_BOLD, argb_alpha(TH_TEXT, a), ALIGN_LEFT, cw - 64, display_title(g));
@@ -951,7 +998,7 @@ static void draw_spines(float launch)
 {
     const float spine_w = 52, gap = 8, spine_h = 330, base = CENTER_Y + COVER_H * 0.5f + 8;
     const float face_h = COVER_H * 0.9f;
-    PlatTexture *sel = covers_get(S.view[S.cursor]);
+    PlatTexture *sel = shelf_cover(S.view[S.cursor]);
     float face_w = face_h * 0.88f;
     if (sel)
     {
@@ -959,6 +1006,8 @@ static void draw_spines(float launch)
         plat_texture_size(sel, &tw, &th);
         face_w = face_h * tw / th;
     }
+    else if (no_cover_icon())
+        face_w = face_h; /* the app icon is square */
     /* positions relative to the selection, which slides (S.pos) */
     for (int side = -1; side <= 1; side += 2)
         for (int d = 1; d <= 14; ++d)
@@ -971,7 +1020,7 @@ static void draw_spines(float launch)
             if (x + spine_w < 0 || x > plat_width())
                 continue;
             int index = S.view[k];
-            PlatTexture *t = covers_get(index);
+            PlatTexture *t = shelf_cover(index);
             float y = base - spine_h;
             uint32_t shade = d > 8 ? 0xff9a9a9au : 0xffd8d8d8u;
             if (t)
@@ -981,6 +1030,13 @@ static void draw_spines(float launch)
                 plat_texture_size(t, &tw, &th);
                 int sw = tw / 9 > 1 ? tw / 9 : 1;
                 plat_draw_texture_region(t, tw / 2 - sw / 2, 0, sw, th, x, y, spine_w, spine_h, shade);
+            }
+            else if (no_cover_icon())
+            {
+                int tw, th;
+                plat_texture_size(no_cover_icon(), &tw, &th);
+                int sw = tw / 9 > 1 ? tw / 9 : 1;
+                plat_draw_texture_region(no_cover_icon(), tw / 2 - sw / 2, 0, sw, th, x, y, spine_w, spine_h, shade);
             }
             else
                 draw_rrect(x, y, spine_w, spine_h, 3, TH_CARD);
@@ -992,6 +1048,8 @@ static void draw_spines(float launch)
     draw_rrect(fx + 10, fy + 24, face_w, face_h, 8, 0x70000000u); /* shadow */
     if (sel)
         plat_draw_texture(sel, fx, fy, face_w, face_h, 0xffffffffu, true);
+    else if (no_cover_icon())
+        plat_draw_texture(no_cover_icon(), fx, fy, face_w, face_h, 0xffffffffu, true);
     else
         draw_rrect(fx, fy, face_w, face_h, 8, TH_CARD);
     draw_rrect_outline(fx - 5, fy - 5, face_w + 10, face_h + 10, 10, 3, theme.cover_outline);
@@ -1463,7 +1521,7 @@ void shelf_screen(uint32_t pressed)
                 uint8_t s8 = (uint8_t)(255 * shade);
                 uint32_t tint = 0xff000000u | (uint32_t)s8 << 16 | (uint32_t)s8 << 8 | s8;
                 int index = S.view[k];
-                draw_cover(covers_get(index), &app.library.games[index], CENTER_X + ox, flow_y(),
+                draw_cover(shelf_cover(index), &app.library.games[index], CENTER_X + ox, flow_y(),
                            COVER_H * scale, squeeze, tint, selected && ad < 0.25f && launch < 0.5f);
             }
         plat_profile("covers");

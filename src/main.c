@@ -878,7 +878,7 @@ int main(void)
     /* Sandboxed or not, files in /data open and save; only listing differs. */
     const char *dirs[] = {app.paths.root,   app.paths.games,  app.paths.bios,
                           app.paths.saves,  app.paths.states, app.paths.cheats,
-                          app.paths.covers, app.paths.logs};
+                          app.paths.covers, app.paths.logs,   app.paths.cache};
     for (size_t i = 0; i < sizeof(dirs) / sizeof(dirs[0]); ++i)
         make_dirs(dirs[i]);
     char probe[PSXS5_PATH_MAX];
