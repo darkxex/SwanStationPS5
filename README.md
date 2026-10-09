@@ -1,6 +1,10 @@
 <h3 align="center">PlayStation 1 emulation, running natively on a jailbroken PS5.</h3>
 
 <p align="center">
+  <img src="sce_sys/launch-background-source.png" alt="SwanStationPS5" width="100%">
+</p>
+
+<p align="center">
   <img alt="Platform: jailbroken PS5" src="https://img.shields.io/badge/platform-jailbroken%20PS5-3d55c8">
   <img alt="SwanStation" src="https://img.shields.io/badge/emulation-SwanStation-5a6fe0">
   <img alt="Vulkan" src="https://img.shields.io/badge/GPU-Vulkan%20up%20to%2016x-c83d5a">
