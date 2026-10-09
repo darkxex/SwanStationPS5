@@ -131,6 +131,39 @@ It uses only PSXS5's frontend (the shelf, menus, controls and tools) to drive th
 
 > **Where do things go?** Games: `/data/SwanStationPS5/games/<Game name>/`. BIOS: `/data/SwanStationPS5/bios/`. SwanStationPS5 creates both folders the first time it starts; you can also create them yourself over FTP.
 
+## Supported folders for games and BIOS
+
+### GAMES: one folder per game, in any of these places
+
+The games are looked for in all of these folders at once. Inside each, **one folder per game** with every file of the game in it (`.cue` + `.bin`, `.chd`, `.pbp`, `.iso`, `.m3u`...):
+
+| Where | Folder |
+|---|---|
+| **The console** (the default) | `/data/SwanStationPS5/games/<Game name>/` |
+| The console, from PSXS5 | `/data/PSXS5/games/<Game name>/` |
+| **A USB drive** | `/mnt/usb0` or `/mnt/usb1`, then `SwanStationPS5/games/<Game name>/` |
+| An extended storage | `/mnt/ext0` or `/mnt/ext1`, then `SwanStationPS5/games/<Game name>/` |
+
+On each USB drive and extended storage these four also work (`<drive>` is `/mnt/usb0`, `/mnt/usb1`, `/mnt/ext0` or `/mnt/ext1`):
+
+- `<drive>/SwanStationPS5/games/<Game name>/`
+- `<drive>/SwanStationPS5/<Game name>/` (without `games`)
+- `<drive>/PSXS5/games/<Game name>/` (PSXS5's folder)
+- `<drive>/PSXS5/<Game name>/`
+
+Example on a USB drive: `/mnt/usb0/SwanStationPS5/games/Crash Bandicoot/Crash Bandicoot.chd`.
+
+### BIOS: one folder, no subfolders
+
+| Priority | Folder |
+|---|---|
+| 1st | `/data/SwanStationPS5/bios/` |
+| 2nd (only if the first has no `.bin`) | `/data/PSXS5/bios/` (PSXS5's folder) |
+
+Put the BIOS files directly in the folder, not in a subfolder, and keep their standard names: `SCPH1001.BIN` (recommended), `scph5500.bin` (Japan), `scph5501.bin` (USA), `scph5502.bin` (Europe), `scph101.bin`. A BIOS on a USB drive or extended storage is not read. With no BIOS, SwanStation uses its built-in OpenBIOS. *Settings → About* shows which one is in use.
+
+> On a USB drive or extended storage SwanStationPS5 needs `/data` unlocked to list the folders (see below). Sandboxed, it only shows the games listed in `/data/SwanStationPS5/library.txt`.
+
 ### Unlocking /data (so SwanStationPS5 can see your games)
 
 A PS5 app can read and write files in `/data`, but it can't list folders unless something running on the console unlocks it. SwanStationPS5 asks every time it starts. Any one of these answers:
