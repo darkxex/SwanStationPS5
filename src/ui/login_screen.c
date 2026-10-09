@@ -302,8 +302,13 @@ void login_screen(uint32_t pressed)
     else if (L.error[0])
         text_draw_fit(CENTER_X, ky + 14, 26, FONT_BOLD, TH_DANGER, ALIGN_CENTER, plat_width() - 200, L.error);
 
-    text_draw_fit(CENTER_X, 944, 20, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, plat_width() - 160,
-                  tr("If your language can't be typed with this keyboard, sign in from your PC: python tools/psxs5_sync.py ra-login"));
+    /* for languages the keyboard cannot type: the PC script signs in instead (hidden while a status shows) */
+    if (!busy && !L.error[0])
+    {
+        text_draw_fit(CENTER_X, ky + 20, 30, FONT_REGULAR, TH_TEXT_DIM, ALIGN_CENTER, plat_width() - 160,
+                      tr("If your language can't be typed with this keyboard, sign in from your PC:"));
+        text_draw(CENTER_X, ky + 60, 30, FONT_BOLD, TH_TEXT_DIM, ALIGN_CENTER, "python tools/psxs5_sync.py ra-login");
+    }
 
     static const int glyphs[] = {GLYPH_CROSS, GLYPH_SQUARE, GLYPH_TRIANGLE, GLYPH_START, GLYPH_CIRCLE};
     static const char *const labels[] = {"Type", "Delete", "Shift", "Sign in", "Back"};
