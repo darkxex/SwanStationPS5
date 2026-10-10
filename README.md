@@ -29,21 +29,26 @@ It uses PSXS5's frontend (the shelf, menus, controls and tools) to drive the Swa
 ## Screenshots
 
 <p align="center">
-  <img src="docs/media/screens/SwanStationPS5_20261008232454.jpg" alt="The shelf" width="100%">
+  <img src="docs/media/screens/SwanStationPS5_20261010201354.jpg" alt="The shelf: cover flow with reflections, in the Neon Arcade theme" width="100%">
 </p>
 <p align="center">
-  <img src="docs/media/screens/SwanStationPS5_20261008232916.jpg" alt="The in-game menu" width="49%">
-  <img src="docs/media/screens/SwanStationPS5_20261008232923.jpg" alt="Settings" width="49%">
+  <img src="docs/media/screens/SwanStationPS5_20261010201647.jpg" alt="The in-game menu, with the disc switch of a multi-disc game and the save state slots" width="32%">
+  <img src="docs/media/screens/SwanStationPS5_20261010201419.jpg" alt="Settings > System > SwanStationPS5: the GPU interface, the output resolution and the USB games folder" width="32%">
+  <img src="docs/media/screens/SwanStationPS5_20261010201557.jpg" alt="The memory card manager, with each save's icon" width="32%">
 </p>
 
 ## Highlights
 
-- **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x, at full speed.
+- **The shelf and menus on the GPU too.** The interface is drawn through Vulkan, with a floor reflection under every cover. Settings → System → SwanStationPS5 turns it off, and the change is at once; with it off, the interface is drawn by the CPU as before.
+- **Output resolution up to 4K.** 1080p, 1440p or 4K (4K by default), changed at once with no restart. It needs the GPU interface, and it falls back to 1080p if the TV lacks the mode.
+- **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x (4x by default), at full speed.
 - **No more wobbly 3D.** PGXP (precise geometry) keeps polygons still and textures straight.
 - **One emulator, nothing to choose.** Every game runs on SwanStation. Memory cards are saved per game.
 - **SwanStation's own options.** 104 of its core options (MSAA, texture filter, widescreen hack, PGXP details, controller ports, CPU overclock...) in Settings → Display, Graphics, Controls and System. They are in English and only on the console.
 
-- **Five themes.** Classic, Neon Arcade, Memory Card (light and dark, a grid of covers) and Record Shelf (spines on a shelf), each with its own colours and fonts.
+- **Five themes.** Neon Arcade (the default), Classic, Memory Card (light and dark, a grid of covers) and Record Shelf (spines on a shelf), each with its own colours and fonts. Around a 4:3 picture: black, the current background or a 90s TV, or the game's own artwork frame (on by default).
+- **Games on a USB drive, by one name.** *Games folder on USB drives* (`psx` by default, typed with an on-screen keyboard) is looked for on `/mnt/usb0/` and `/mnt/usb1/` at once, so it still works when the console numbers your drives differently.
+- **Multi-disc games.** Change disc from the in-game menu and it happens as soon as you choose; the disc you leave a game on is the one it starts on next time. A `.m3u` playlist of `.chd` discs gets its serial (and so its cover and data) from the first disc's name.
 - **The DualSense as a light gun.** Point the controller at the screen in GunCon games (Time Crisis, Point Blank...); R2 fires.
 - **Adaptive triggers.** R2 feels like a gas pedal in racing games, and R2 / L2 can be the gas and brake.
 - **Profiles.** Each person keeps their own memory cards, save states, settings, play time and RetroAchievements sign-in.
@@ -63,23 +68,24 @@ It uses PSXS5's frontend (the shelf, menus, controls and tools) to drive the Swa
 - **Close the app from the controller.** Hold O for 2 seconds. Menus show the title from the game database, and the game menu has pills with the serial and the folder.
 - **Up to 4 players.** A multitap for the games that support it: each PS5 controller is a player.
 - **Fan translations.** Put a `.ppf` patch next to a game and SwanStationPS5 applies it when the game starts.
-- **Memory card manager.** See the saves on every game's card, export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards.
+- **Memory card manager.** See the saves on every game's card with each save's own icon (animated, as on a PS1), export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards.
 - **Achievements list.** Every achievement of the game you're playing, with badges, in two tabs: *Achievable* (closest first) and *Achieved*.
   - Counted achievements (18/80 dragons) show a progress bar, and a small tracker pops up in game when they move.
 - **Settings from your phone.** Turn it on and scan the QR code: a settings page opens on any phone on the same network.
-- **Updates from GitHub.** SwanStationPS5 finds a new release when it starts and installs it by itself a second after opening (or from *Settings → About*), into the folder the app is running from: `/data/homebrew`, or an extended or USB drive.
+- **Updates from GitHub.** SwanStationPS5 finds a new release when it starts and installs it by itself a second after opening (or from *Settings → About*), into the folder the app is running from: `/data/homebrew`, or an extended or USB drive. After an update it asks once whether to start from the new version's factory settings (✕ resets, ○ keeps yours).
 - **Native app.** A real home-screen title (`PPSA98510`) with its own icon and art. Nothing is streamed and no PC is needed while you play.
-- **A shelf for your games.** A 3D cover flow with reflections and a soft click as you browse.
+- **A shelf for your games.** A cover flow with depth, a reflection under every cover (with the GPU interface) and a soft click as you browse.
   - Covers are matched by the serial read from each disc, so every region gets its own art.
   - Missing covers download on the console.
   - Your own art wins: a `cover.png`/`.jpg` in the game's folder, or an image in `/data/SwanStationPS5/covers/` named like the game's title, its disc file or its serial (`Crash Bandicoot.png`, `SCUS-94900.jpg`).
   - Or pick one by hand: on the shelf press **Triangle** (Details), then **Square**, and choose any image from `covers/` or the game's folder.
 - **Plays every common format.** `.cue`/`.bin`, `.chd`, `.pbp` (including multi-disc), `.iso`, `.img`, `.mdf`, `.ccd` and `.m3u` playlists for multi-disc games.
 - **Sharp on a 4K TV.**
+  - Output: 1080p, 1440p or 4K (Settings → System → SwanStationPS5), changed at once.
   - Internal resolution: native up to 16x with SwanStation.
   - Aspect ratio: auto, 4:3, 16:9, 16:10, 1:1 pixels or stretch, and *Crop black edges* to hide the black lines at the top and bottom.
   - Integer scaling and smooth final scaling on or off (sharp pixels by default).
-- **Built for full speed.** 60 fps (50 for PAL games). SwanStation renders on the GPU; the picture and the menus reach the TV through Vulkan.
+- **Built for full speed.** 60 fps (50 for PAL games). SwanStation renders on the GPU, and so do the shelf and the menus; everything reaches the TV through Vulkan.
 - **RetroAchievements.** Earn [RetroAchievements](https://retroachievements.org) as you play.
   - Unlocks and leaderboard results pop up on screen.
   - Optional hardcore mode.
