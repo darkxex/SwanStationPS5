@@ -125,10 +125,9 @@ typedef struct
     int border;           /* around the picture: 0 black, 1 glow, 2 TV frame */
     bool remote;          /* settings page for phones on the local network */
     bool update_check;    /* look for new SwanStationPS5 releases at start */
-    int emulator;         /* enum Emulator */
-    bool pgxp;            /* Beetle: precise geometry, no wobbling polygons */
-    int shader;           /* Beetle on the GPU: 0 off, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear */
-    bool hd_textures;     /* Beetle: use a texture pack beside the game when there is one */
+    bool pgxp;            /* precise geometry, no wobbling polygons */
+    int shader;           /* 0 off, 1 LCD3x, 2 CRT Royale, 3 CRT, 4 sharp bilinear */
+    bool hd_textures;     /* use a texture pack beside the game when there is one */
     int theme;            /* enum ThemeId in ui/theme.h */
     int crop_edges;       /* 0 off, 1: 8 lines top and bottom, 2: 16 (the black a CRT hid) */
     bool ra_popups;       /* achievement unlock banners while playing */
@@ -146,35 +145,26 @@ typedef struct
     int colour;           /* 0 natural, 1 vivid, 2 soft, 3 warm, 4 cool, 5 black and white */
     int autosave;         /* 0 off, else every 5, 10 or 15 minutes into the auto slots */
     bool bezel;           /* the game's artwork around a 4:3 picture, when downloaded */
-    int msaa;             /* Beetle on the GPU: anti-aliasing 0 off, 1..4 = 2x, 4x, 8x, 16x */
-    int texture_filter;   /* Beetle: 0 off, 1 bilinear, 2 xBR, 3 SABR, 4 JINC2, 5 3-point */
+    int msaa;             /* anti-aliasing 0 off, 1..4 = 2x, 4x, 8x, 16x */
+    int texture_filter;   /* 0 off, 1 bilinear, 2 xBR, 3 SABR, 4 JINC2, 5 3-point */
     bool filter_2d;       /* filter 2D sprites and menus too (off keeps them sharp) */
-    bool supersampling;   /* Beetle: render at the internal resolution, then scale down */
-    int deinterlace;      /* Beetle: 0 weave, 1 bob, 2 motion-adaptive */
-    bool pal60;           /* Beetle: European games at 60 Hz */
+    bool supersampling;   /* render at the internal resolution, then scale down */
+    int deinterlace;      /* 0 weave, 1 bob, 2 motion-adaptive */
+    bool pal60;           /* European games at 60 Hz */
     bool game_fixes;      /* turn off what DuckStation's database says a game breaks with */
-    bool fmv_smooth;      /* Beetle: smooth the colour blocks of FMVs (MDEC chroma filter) */
-    bool true_colour;     /* Beetle: 32-bit colour, no dithering */
+    bool fmv_smooth;      /* smooth the colour blocks of FMVs (MDEC chroma filter) */
+    bool true_colour;     /* 32-bit colour, no dithering */
     bool boot_intro;      /* the PS1's startup logo and sound before the game (a real BIOS) */
-    int sharpen;          /* Beetle on the GPU: 0 off, 1 light, 2 strong (AMD FidelityFX CAS) */
+    int sharpen;          /* 0 off, 1 light, 2 strong (AMD FidelityFX CAS) */
     bool disc_animation;  /* the disc slides out of its case when a game starts */
     bool negcon;          /* racing games that take a NeGcon: analog gas and brake on R2 / L2 */
     bool touch_mouse;     /* mouse games: the touchpad moves the pointer */
     int run_ahead;        /* 0 off, 1 or 2 frames less input lag */
-    bool fast_effects;    /* Beetle on the GPU: screen effects on the GPU, without the software copy */
+    bool fast_effects;    /* screen effects on the GPU, without the software copy */
     bool fsr;             /* FSR 1 scales the picture before the shader */
     bool framegen;        /* frame interpolation: a frame between two of the game's (120 Hz screen, from the next start) */
     int ss_opt[SS_OPT_COUNT]; /* SwanStation's own core options: the chosen value's index in SS_OPTS[i].values */
 } Settings;
-
-enum Emulator
-{
-    EMU_AUTO,   /* kept for old config files: SwanStation is the only emulator */
-    EMU_PCSX,
-    EMU_BEETLE,
-    EMU_SWANSTATION,
-    EMU_COUNT
-};
 
 enum StickDpad
 {

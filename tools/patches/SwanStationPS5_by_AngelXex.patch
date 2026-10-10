@@ -154,6 +154,149 @@ index fb62e9db..55ce96bc 100644
  #define USE_STATIC_CODE_BUFFER 1
  #endif
  
+diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
+index bd443b7c..fa70d696 100644
+--- a/src/core/gpu.cpp
++++ b/src/core/gpu.cpp
+@@ -72,6 +72,7 @@ void GPU::Reset(bool clear_vram)
+   m_crtc_state.current_scanline = 0;
+   m_crtc_state.in_hblank = false;
+   m_crtc_state.in_vblank = false;
++  m_borders_valid = false;
+   m_crtc_state.interlaced_field = 0;
+   m_crtc_state.interlaced_display_field = 0;
+   SoftReset();
+@@ -629,6 +630,27 @@ void GPU::UpdateCRTCDisplayParameters()
+   const uint16_t vertical_display_start = std::min<uint16_t>(cs.regs.Y1, vertical_total);
+   const uint16_t vertical_display_end = std::min<uint16_t>(cs.regs.Y2, vertical_total);
+ 
++  // the range "All Borders" shows: the game's display range, held steady (see StabilizeBorders)
++  auto borders_range = [&](uint16_t& hs, uint16_t& he, uint16_t& vs, uint16_t& ve) {
++    m_borders_raw[0] = static_cast<uint16_t>(horizontal_display_start + g_settings.display_active_start_offset);
++    m_borders_raw[1] = static_cast<uint16_t>(horizontal_display_end + g_settings.display_active_end_offset);
++    m_borders_raw[2] = static_cast<uint16_t>(vertical_display_start + g_settings.display_line_start_offset);
++    m_borders_raw[3] = static_cast<uint16_t>(vertical_display_end + g_settings.display_line_end_offset);
++    if (!m_borders_valid)
++    {
++      std::memcpy(m_borders_applied, m_borders_raw, sizeof(m_borders_applied));
++      std::memcpy(m_borders_candidate, m_borders_raw, sizeof(m_borders_candidate));
++      m_borders_stable_frames = 0;
++      m_borders_valid = true;
++    }
++    hs = m_borders_applied[0];
++    he = m_borders_applied[1];
++    vs = m_borders_applied[2];
++    ve = m_borders_applied[3];
++  };
++  if (crop_mode != DisplayCropMode::Borders)
++    m_borders_valid = false;
++
+   if (m_GPUSTAT.pal_mode)
+   {
+     // TODO: Verify PAL numbers.
+@@ -652,10 +674,8 @@ void GPU::UpdateCRTCDisplayParameters()
+ 
+       case DisplayCropMode::Borders:
+       default:
+-        cs.horizontal_visible_start = (horizontal_display_start + g_settings.display_active_start_offset);
+-        cs.horizontal_visible_end = (horizontal_display_end + g_settings.display_active_end_offset);
+-        cs.vertical_visible_start = (vertical_display_start + g_settings.display_line_start_offset);
+-        cs.vertical_visible_end = (vertical_display_end + g_settings.display_line_end_offset);
++        borders_range(cs.horizontal_visible_start, cs.horizontal_visible_end, cs.vertical_visible_start,
++                      cs.vertical_visible_end);
+         break;
+     }
+     cs.horizontal_visible_start =
+@@ -689,10 +709,8 @@ void GPU::UpdateCRTCDisplayParameters()
+ 
+       case DisplayCropMode::Borders:
+       default:
+-        cs.horizontal_visible_start = (horizontal_display_start + g_settings.display_active_start_offset);
+-        cs.horizontal_visible_end = (horizontal_display_end + g_settings.display_active_end_offset);
+-        cs.vertical_visible_start = (vertical_display_start + g_settings.display_line_start_offset);
+-        cs.vertical_visible_end = (vertical_display_end + g_settings.display_line_end_offset);
++        borders_range(cs.horizontal_visible_start, cs.horizontal_visible_end, cs.vertical_visible_start,
++                      cs.vertical_visible_end);
+         break;
+     }
+     cs.horizontal_visible_start =
+@@ -780,6 +798,46 @@ void GPU::UpdateCRTCDisplayParameters()
+   cs.display_vram_height = std::min<uint16_t>(cs.display_vram_height, cs.display_height - cs.display_origin_top);
+ }
+ 
++void GPU::StabilizeBorders()
++{
++  if (g_settings.display_crop_mode != DisplayCropMode::Borders || !m_borders_valid)
++    return;
++
++  constexpr uint32_t SHRINK_AFTER_FRAMES = 24;
++  uint16_t widened[4] = {std::min(m_borders_applied[0], m_borders_raw[0]), std::max(m_borders_applied[1], m_borders_raw[1]),
++                         std::min(m_borders_applied[2], m_borders_raw[2]), std::max(m_borders_applied[3], m_borders_raw[3])};
++  bool changed = false;
++  if (std::memcmp(widened, m_borders_applied, sizeof(widened)) != 0)
++  {
++    // the game shows more than the picture holds: widen now, nothing is cut off
++    std::memcpy(m_borders_applied, widened, sizeof(widened));
++    m_borders_stable_frames = 0;
++    changed = true;
++  }
++  else if (std::memcmp(m_borders_raw, m_borders_applied, sizeof(m_borders_raw)) != 0)
++  {
++    // a narrower range: only when it has held still
++    if (std::memcmp(m_borders_raw, m_borders_candidate, sizeof(m_borders_raw)) != 0)
++    {
++      std::memcpy(m_borders_candidate, m_borders_raw, sizeof(m_borders_candidate));
++      m_borders_stable_frames = 1;
++    }
++    else if (++m_borders_stable_frames >= SHRINK_AFTER_FRAMES)
++    {
++      std::memcpy(m_borders_applied, m_borders_raw, sizeof(m_borders_applied));
++      m_borders_stable_frames = 0;
++      changed = true;
++    }
++  }
++  else
++  {
++    m_borders_stable_frames = 0;
++  }
++
++  if (changed)
++    UpdateCRTCDisplayParameters();
++}
++
+ TickCount GPU::GetPendingCRTCTicks() const
+ {
+   const TickCount pending_sysclk_ticks = m_crtc_tick_event->GetTicksSinceLastExecution();
+@@ -909,6 +967,8 @@ void GPU::CRTCTickEvent(TickCount ticks)
+       {
+         g_interrupt_controller.InterruptRequest(InterruptController::IRQ::VBLANK);
+ 
++        StabilizeBorders();
++
+         // flush any pending draws and "scan out" the image
+         FlushRender();
+         UpdateDisplay();
+diff --git a/src/core/gpu.h b/src/core/gpu.h
+index 0a0959f0..24df5684 100644
+--- a/src/core/gpu.h
++++ b/src/core/gpu.h
+@@ -473,6 +473,16 @@ protected:
+     uint8_t active_line_lsb;
+   } m_crtc_state = {};
+ 
++  // "All Borders" crop follows the game's display range. A game that changes the range every few frames (Spyro 3's
++  // loading screens) made the picture grow and shrink; the visible range now widens at once but only narrows after
++  // it has stayed the same for a while.
++  void StabilizeBorders();
++  bool m_borders_valid = false;
++  uint16_t m_borders_applied[4] = {};
++  uint16_t m_borders_raw[4] = {};
++  uint16_t m_borders_candidate[4] = {};
++  uint32_t m_borders_stable_frames = 0;
++
+   BlitterState m_blitter_state = BlitterState::Idle;
+   uint32_t m_command_total_words = 0;
+   TickCount m_pending_command_ticks = 0;
 diff --git a/src/core/gpu_hw.cpp b/src/core/gpu_hw.cpp
 index 99582d73..380be163 100644
 --- a/src/core/gpu_hw.cpp

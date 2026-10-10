@@ -11,7 +11,7 @@
  * The canvas is still drawn by the CPU (SDL's software renderer); each frame
  * it is copied into a mapped staging buffer and then into a sampled image.
  *
- * A core that renders through Vulkan (Beetle PSX HW) creates the VkDevice
+ * A core that renders through Vulkan (SwanStation) creates the VkDevice
  * itself, through libretro's context negotiation: the presenter then moves
  * onto that device (vkp_adopt_device) and draws the core's image under the
  * canvas, which leaves a transparent hole where the game shows.

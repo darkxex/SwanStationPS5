@@ -15,8 +15,8 @@ void host_unload(void);
 bool host_loaded(void);
 /* "SwanStation": the emulator of the loaded game */
 const char *host_core_name(void);
-/* The emulator a game would get with these settings ("SwanStation"); *why_not_beetle is always NULL. */
-const char *host_emulator_for(const Settings *settings, const char *serial, const char **why_not_beetle);
+/* The emulator a game would get with these settings ("SwanStation"). */
+const char *host_emulator_for(const Settings *settings, const char *serial);
 
 void host_set_pads(const PadState pads[SwanStationPS5_MAX_PADS]);
 /* Port 1's device for the next host_load: 0 a pad, 1 GunCon, 2 Justifier. */
@@ -66,7 +66,5 @@ bool host_disc_select(int index);
 /* GameShark codes, to the running core */
 void host_cheat_reset(void);
 void host_cheat_set(unsigned index, const char *code);
-/* Beetle PSX HW: its renderer's widescreen mode (no-op for other cores). */
-void host_beetle_widescreen(bool on);
 
 #endif

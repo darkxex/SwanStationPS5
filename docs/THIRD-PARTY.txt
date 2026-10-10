@@ -11,11 +11,6 @@ SwanStation (DuckStation's libretro core)
   LICENSE-swanstation.txt
   https://github.com/libretro/swanstation
 
-Beetle PSX HW (Mednafen PSX, libretro port, PS5 fork by Mihawk-99)
-  GNU GPL v2 or later (Mednafen); the Vulkan renderer (parallel-psx / rhi) is MIT
-  COPYING-beetle-psx.txt
-  https://github.com/mihawk-99/PS5_BeetlePSX, https://github.com/libretro/beetle-psx-libretro
-
 RADV, Mesa's Vulkan driver for AMD GPUs (PS5 port by Mihawk-99)
   MIT License
   https://gitlab.freedesktop.org/mesa/mesa

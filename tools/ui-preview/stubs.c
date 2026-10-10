@@ -36,8 +36,8 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
 void host_unload(void) { loaded = false; }
 bool host_loaded(void) { return loaded; }
 const char *host_core_name(void) { return "SwanStation"; }
-const char *host_emulator_for(const Settings *s, const char *serial, const char **why)
-{ (void)s; (void)serial; *why = NULL; return "Beetle PSX HW"; }
+const char *host_emulator_for(const Settings *s, const char *serial)
+{ (void)s; (void)serial; return "SwanStation"; }
 bool host_hash_disc_begin(const char *p) { (void)p; return false; }
 void host_hash_disc_end(void) {}
 void *host_memory_data(unsigned id) { (void)id; return NULL; }
@@ -74,7 +74,6 @@ bool host_disc_select(int index) { (void)index; return true; }
 
 void retro_cheat_reset(void) {}
 void host_cheat_reset(void) {}
-void host_beetle_widescreen(bool on) { (void)on; }
 void host_cheat_set(unsigned index, const char *code) { (void)index, (void)code; }
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {

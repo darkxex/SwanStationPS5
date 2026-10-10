@@ -250,8 +250,21 @@ void menu_screen(uint32_t pressed)
     int discs = host_disc_count();
     if (M.cursor == MI_DISC && discs > 1 && (left || right))
     {
+        /* the disc is swapped as soon as it's chosen: no confirming */
+        int previous = M.disc_choice;
         M.disc_choice = (M.disc_choice + (right ? 1 : discs - 1)) % discs;
-        sfx_play(SFX_CLICK);
+        if (host_disc_select(M.disc_choice))
+        {
+            char note[96];
+            snprintf(note, sizeof(note), tr("Disc %d inserted"), M.disc_choice + 1);
+            app_toast(note);
+            sfx_play(SFX_CLICK);
+        }
+        else
+        {
+            M.disc_choice = previous;
+            app_toast("Disc change failed");
+        }
     }
     if (pressed & (BIT(BTN_CIRCLE) | BIT(BTN_MENU)))
     {
@@ -322,6 +335,11 @@ void menu_screen(uint32_t pressed)
             guide_open();
             return;
         case MI_DISC:
+            if (M.disc_choice == host_disc_index()) /* already inserted by choosing it */
+            {
+                app.screen = SCREEN_GAME;
+                return;
+            }
             if (host_disc_select(M.disc_choice))
             {
                 snprintf(msg, sizeof(msg), tr("Disc %d inserted"), M.disc_choice + 1);

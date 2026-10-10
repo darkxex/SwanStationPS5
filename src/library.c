@@ -132,6 +132,28 @@ static void clean_title(const char *raw, char *out, size_t size)
     str_copy(out, size, result[0] ? result : raw);
 }
 
+/* The serial in the name of the first disc a playlist lists ("... [SLES-01734] [CD1].chd"): the discs of a
+ * playlist often can't be read here (.chd), yet carry their serial in the file name. */
+static void serial_from_playlist(const char *path, char *serial, size_t size)
+{
+    serial[0] = '\0';
+    if (str_icmp(path_ext(path), "m3u") != 0)
+        return;
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return;
+    char line[300];
+    while (fgets(line, sizeof(line), f))
+    {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (!line[0] || line[0] == '#')
+            continue;
+        extract_serial(line, serial, size);
+        break;
+    }
+    fclose(f);
+}
+
 /* Serial from the disc itself (exact), else serial.txt written by the sync
  * tool (needed for .chd), else whatever the file name carried. Then the id. */
 static void finish_game(Game *g)
@@ -153,6 +175,12 @@ static void finish_game(Game *g)
         }
     }
 
+    if (!g->serial[0])
+    {
+        serial_from_playlist(g->path, serial, sizeof(serial));
+        if (serial[0])
+            str_copy(g->serial, sizeof(g->serial), serial);
+    }
     if (g->serial[0])
     {
         str_copy(g->id, sizeof(g->id), g->serial);

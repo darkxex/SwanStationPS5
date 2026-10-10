@@ -36,6 +36,8 @@ typedef struct
     char saves[15][48];  /* one name per save */
     int save_blocks[15];
     int save_count;
+    uint8_t icon[15][32 + 3 * 128]; /* per save: the 16-colour palette, then up to 3 frames of 16x16 at 4 bits */
+    uint8_t icon_frames[15];
 } Card;
 
 static struct
@@ -82,6 +84,24 @@ static void sjis_to_ascii(const uint8_t *in, size_t len, char *out, size_t size)
             ch = '-';
         else if (code == 0x8144)
             ch = '.';
+        else if (code == 0x8148)
+            ch = '?';
+        else if (code == 0x8149)
+            ch = '!';
+        else if (code == 0x8193)
+            ch = '%';
+        else if (code == 0x8190)
+            ch = '$';
+        else if (code == 0x8194)
+            ch = '#';
+        else if (code == 0x8195)
+            ch = '&';
+        else if (code == 0x8196)
+            ch = '*';
+        else if (code == 0x8197)
+            ch = '@';
+        else if (code == 0x8143)
+            ch = ',';
         else if (code == 0x8169)
             ch = '(';
         else if (code == 0x816a)
@@ -92,6 +112,26 @@ static void sjis_to_ascii(const uint8_t *in, size_t len, char *out, size_t size)
     while (o > 0 && out[o - 1] == ' ')
         --o;
     out[o] = '\0';
+}
+
+/* A save's icon, size px square, the frame that is showing now (they animate) */
+static void draw_save_icon(const Card *c, int save, float x, float y, float px)
+{
+    const int frames = c->icon_frames[save];
+    if (!frames)
+        return;
+    const uint8_t *pal = c->icon[save];
+    const uint8_t *pix = pal + 32 + ((plat_ticks_us() / 250000) % (uint64_t)frames) * 128;
+    const float cell = px / 16.0f;
+    for (int i = 0; i < 256; ++i)
+    {
+        int idx = (pix[i >> 1] >> ((i & 1) * 4)) & 15;
+        unsigned v = pal[idx * 2] | pal[idx * 2 + 1] << 8;
+        if (!v)
+            continue; /* transparent */
+        uint32_t r = (v & 31) * 255 / 31, g = ((v >> 5) & 31) * 255 / 31, b = ((v >> 10) & 31) * 255 / 31;
+        draw_rect(x + (i & 15) * cell, y + (i >> 4) * cell, cell + 0.5f, cell + 0.5f, 0xff000000u | r << 16 | g << 8 | b);
+    }
 }
 
 static void read_card(Card *c)
@@ -122,6 +162,12 @@ static void read_card(Card *c)
         else
             snprintf(name, sizeof(name), "%.20s", (const char *)frame + 0x0a);
         str_copy(c->saves[c->save_count], sizeof(c->saves[0]), name[0] ? name : "?");
+        /* the save's icon: header byte 2 is 0x11, 0x12 or 0x13 (frames), the palette is at 0x60, the frames at 0x80 */
+        const uint8_t *head = data + b * 0x2000;
+        int frames = head[0] == 'S' && head[1] == 'C' && head[2] >= 0x11 && head[2] <= 0x13 ? head[2] - 0x10 : 0;
+        c->icon_frames[c->save_count] = (uint8_t)frames;
+        if (frames)
+            memcpy(c->icon[c->save_count], head + 0x60, 32 + (size_t)frames * 128);
         c->save_blocks[c->save_count++] = blocks > 0 ? blocks : 1;
     }
 }
@@ -350,14 +396,22 @@ void memcards_screen(uint32_t pressed)
         const uint32_t hues[] = {TH_SWITCH_ON, TH_GOLD, TH_GOOD, 0xffff8f8fu, 0xffc07cffu};
         for (int s = 0; s < c->save_count; ++s)
             for (int k = 0; k < c->save_blocks[s] && block < 15; ++k, ++block)
+            {
                 draw_rrect(bx + block * (bs + 8), by, bs, bs, 6, hues[s % 5]);
+                if (k == 0 && c->icon_frames[s]) /* the save's picture sits in its first block */
+                {
+                    draw_rrect(bx + block * (bs + 8) + 3, by + 3, bs - 6, bs - 6, 4, 0xff000000u);
+                    draw_save_icon(c, s, bx + block * (bs + 8) + 5, by + 5, bs - 10);
+                }
+            }
         for (; block < 15; ++block)
             draw_rrect(bx + block * (bs + 8), by, bs, bs, 6, TH_PILL);
         for (int s = 0; s < c->save_count && s < 12; ++s)
         {
             float sy = by + bs + 40 + s * 46;
-            draw_rrect(px + 32, sy + 6, 14, 14, 4, hues[s % 5]);
-            text_draw_fit(px + 60, sy, 22, FONT_REGULAR, TH_TEXT, ALIGN_LEFT, pw - 200, c->saves[s]);
+            draw_save_icon(c, s, px + 32, sy - 4, 32);
+            draw_rrect(px + 78, sy + 6, 14, 14, 4, hues[s % 5]);
+            text_draw_fit(px + 104, sy, 22, FONT_REGULAR, TH_TEXT, ALIGN_LEFT, pw - 244, c->saves[s]);
             char blocks[24];
             snprintf(blocks, sizeof(blocks), tr(c->save_blocks[s] == 1 ? "%d block" : "%d blocks"),
                      c->save_blocks[s]);

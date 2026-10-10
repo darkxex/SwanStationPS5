@@ -63,6 +63,21 @@ static void show_next_toast(const char *text, uint64_t length_us)
     toast_until = plat_ticks_us() + length_us;
 }
 
+/* Every notice ends as a sentence: a full stop is added unless it already ends in punctuation (or a button picture) */
+static const char *toast_sentence(const char *text, char *out, size_t size)
+{
+    size_t n = strlen(text);
+    if (n == 0 || n + 2 > size)
+        return text;
+    char last = text[n - 1];
+    if (strchr(".!?:;]", last) || (n >= 3 && !memcmp(text + n - 3, "\xE2\x80\xA6", 3))) /* … */
+        return text;
+    memcpy(out, text, n);
+    out[n] = '.';
+    out[n + 1] = '\0';
+    return out;
+}
+
 void app_toast(const char *message)
 {
     app_toast_for(message, 2.5f);
@@ -72,7 +87,8 @@ void app_toast_for(const char *message, float seconds)
 {
     uint64_t length_us = (uint64_t)(seconds * 1e6f);
     SwanStationPS5_log("%s", message);
-    const char *text = tr(message);
+    char sentence[sizeof(toast)];
+    const char *text = toast_sentence(tr(message), sentence, sizeof(sentence));
     if (toast[0] && plat_ticks_us() < toast_until)
     {
         if (!strcmp(toast, text))

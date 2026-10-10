@@ -27,7 +27,7 @@ void config_defaults(Settings *s)
     s->vibration = 4;
     s->quick_resume = true;
     s->update_check = true;
-    s->pgxp = true; /* Beetle: no wobbling polygons */
+    s->pgxp = true; /* no wobbling polygons */
     s->ra_popups = true;
     s->hd_textures = true;
     s->ra_tracker = true;
@@ -133,8 +133,6 @@ static bool config_apply(Settings *s, const char *path)
             s->widescreen = as_bool(value);
         else if (strcmp(key, "multitap") == 0)
             s->multitap = as_bool(value);
-        else if (strcmp(key, "emulator") == 0)
-            s->emulator = atoi(value) % EMU_COUNT;
         else if (strcmp(key, "renderer") == 0)
             s->renderer = atoi(value) % 2;
         else if (strcmp(key, "pgxp") == 0)
@@ -318,8 +316,8 @@ bool config_save(const Settings *s, const char *path)
             s->widescreen, s->multitap, s->rewind, s->quick_resume, s->crt, s->border, s->remote,
             s->update_check);
     fprintf(f, "renderer=%d\n", s->renderer);
-    fprintf(f, "emulator=%d\npgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->emulator, s->pgxp,
-            s->ra_popups, s->ra_tracker, s->crop_edges);
+    fprintf(f, "pgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->pgxp, s->ra_popups, s->ra_tracker,
+            s->crop_edges);
     fprintf(f, "ra_popup_style=%d\nlightbar=%d\nshader=%d\nhd_textures=%d\ntheme=%d\n", s->ra_popup_style,
             s->lightbar, s->shader, s->hd_textures, s->theme);
     fprintf(f, "stick_deadzone=%d\nstick_response=%d\ntrigger_effects=%d\nracing_triggers=%d\nrumble_feel=%d\n",

@@ -42,9 +42,9 @@
 #define FLOW_SHIFT 100.0f /* the cover row of the default layout sits lower, centred with its title and tags */
 #define COVER_H 500.0f
 #define SIDE_GAP 400.0f  /* centre to the first neighbour */
-#define STACK_GAP 150.0f /* between further neighbours */
+#define STACK_GAP 120.0f /* between further neighbours */
 #define SIDE_SCALE 0.74f
-#define SIDE_SQUEEZE 0.58f /* turned-away covers look narrower */
+#define SIDE_SQUEEZE 1.0f /* the covers beside the selected one keep their width */
 #define LAUNCH_TIME 0.3f /* the fade to black */
 #define QUIT_HOLD 2.0f   /* seconds O is held on the shelf to close the app */
 #define DISC_TIME 0.95f  /* before it, with the disc animation: the disc slides out and spins up */
@@ -412,6 +412,31 @@ static PlatTexture *shelf_cover(int index)
     return covers_is_placeholder(index) && no_cover_icon() ? NULL : covers_get(index);
 }
 
+/* The floor under the selected cover: its lower part mirrored in thin strips (a plain blit each, nothing
+ * the software renderer finds slow), fading out downwards. Only the selected cover has one. */
+static void draw_cover_reflection(PlatTexture *tex, float x, float y, float w, float h)
+{
+    int tw = 1, th = 1;
+    plat_texture_size(tex, &tw, &th);
+    enum { STRIPS = 120 }; /* about one picture row each, so the mirror reads smooth */
+    const float reach = 0.36f; /* the part of the cover that shows in the floor */
+    const float dst_h = h * reach / STRIPS;
+    const int src_h = (int)(th * reach / STRIPS) > 0 ? (int)(th * reach / STRIPS) : 1;
+    for (int i = 0; i < STRIPS; ++i)
+    {
+        float fade = 1.0f - (float)i / STRIPS;
+        uint32_t a = (uint32_t)(255.0f * 0.36f * fade * fade);
+        if (a == 0)
+            break;
+        int sy = th - (i + 1) * src_h;
+        if (sy < 0)
+            break;
+        /* the edges are the blit's own rounded ones, so strips neither overlap nor leave gaps */
+        plat_draw_texture_region(tex, 0, sy, tw, src_h, x, y + h + 4 + i * dst_h, w, dst_h,
+                                 0x00ffffffu | a << 24);
+    }
+}
+
 static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, float h, float squeeze,
                        uint32_t tint, bool selected)
 {
@@ -432,7 +457,11 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
         }
     }
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
+    {
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
+        if (selected && false)
+            draw_cover_reflection(tex, x, y, w, h);
+    }
     else if (no_cover_icon())
         plat_draw_texture(no_cover_icon(), x, y, w, h, tint, false);
     else
@@ -550,8 +579,11 @@ static void draw_details(const Game *g, float t)
 /* Category chips along the top; the highlight slides between them. */
 static void draw_header(void)
 {
-    text_draw(TH_MARGIN, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, SwanStationPS5_TITLE);
-    float x = TH_MARGIN + text_width(44, FONT_BOLD, SwanStationPS5_TITLE) + 40, y = 46, h = 46;
+    const float title_x = TH_MARGIN - 20; /* the name and version sit 20 px further left, as the chips do */
+    text_draw(title_x, 40, 44, FONT_BOLD, TH_TEXT, ALIGN_LEFT, SwanStationPS5_TITLE);
+    const float title_w = text_width(44, FONT_BOLD, SwanStationPS5_TITLE);
+    text_draw(title_x + title_w + 14, 56, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, "v" SwanStationPS5_VERSION);
+    float x = title_x + title_w + 14 + text_width(22, FONT_REGULAR, "v" SwanStationPS5_VERSION) + 40, y = 46, h = 46;
     for (int c = 0; c < CAT_COUNT; ++c)
     {
         int n = category_size(c);
@@ -576,11 +608,12 @@ static void draw_header(void)
         x += w + 6;
     }
 
-    /* account and clock, top right */
+    /* account and clock, bottom right, just above the divider line over the hints */
+    const float dy = TH_HINT_Y - 126;
     char clock_text[16];
     plat_clock(clock_text, sizeof(clock_text)); /* the console's time zone and 12/24 h */
     float rx = plat_width() - TH_MARGIN;
-    text_draw(rx, 53, 24, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT, clock_text);
+    text_draw(rx, 53 + dy, 24, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT, clock_text);
     rx -= text_width(24, FONT_REGULAR, clock_text) + 32;
     if (update_state() == UPDATE_AVAILABLE || update_state() == UPDATE_INSTALLED)
     {
@@ -588,27 +621,27 @@ static void draw_header(void)
         snprintf(up, sizeof(up), tr(update_state() == UPDATE_INSTALLED ? "Restart for %s" : "Update %s"),
                  update_version());
         float uw = text_width(20, FONT_BOLD, up) + 64;
-        draw_rrect(rx - uw, 44, uw, 46, 23, 0xff2a2410u);
-        icon_draw(ICON_DOWNLOAD, rx - uw + 14, 52, 30, TH_GOLD);
-        text_draw(rx - uw + 50, 56, 20, FONT_BOLD, TH_GOLD, ALIGN_LEFT, up);
+        draw_rrect(rx - uw, 44 + dy, uw, 46, 23, 0xff2a2410u);
+        icon_draw(ICON_DOWNLOAD, rx - uw + 14, 52 + dy, 30, TH_GOLD);
+        text_draw(rx - uw + 50, 56 + dy, 20, FONT_BOLD, TH_GOLD, ALIGN_LEFT, up);
         rx -= uw + 24;
     }
     if (profiles_count() > 1)
     {
         const char *name = profiles_name(profiles_current());
         float pw = text_width(22, FONT_BOLD, name) + 66;
-        draw_rrect(rx - pw, 44, pw, 46, 23, TH_PILL);
-        icon_draw(ICON_USER, rx - pw + 14, 52, 28, TH_FOCUS);
-        text_draw(rx - pw + 50, 56, 22, FONT_BOLD, TH_TEXT, ALIGN_LEFT, name);
+        draw_rrect(rx - pw, 44 + dy, pw, 46, 23, TH_PILL);
+        icon_draw(ICON_USER, rx - pw + 14, 52 + dy, 28, TH_FOCUS);
+        text_draw(rx - pw + 50, 56 + dy, 22, FONT_BOLD, TH_TEXT, ALIGN_LEFT, name);
         rx -= pw + 24;
     }
     if (ra_user()[0])
     {
         char who[96];
         snprintf(who, sizeof(who), "%s  \xc2\xb7  %u", ra_user(), ra_user_score());
-        text_draw(rx, 53, 24, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT, who);
+        text_draw(rx, 53 + dy, 24, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT, who);
         rx -= text_width(24, FONT_REGULAR, who) + 38;
-        icon_draw(ICON_TROPHY, rx, 52, 30, TH_GOLD);
+        icon_draw(ICON_TROPHY, rx, 52 + dy, 30, TH_GOLD);
     }
 }
 
@@ -1523,31 +1556,74 @@ void shelf_screen(uint32_t pressed)
     else if (S.view_count > 0)
     {
         int first = (int)floorf(S.pos) - 6, last = (int)ceilf(S.pos) + 6;
-        /* far to near, so the selected cover is drawn last */
+        const int base = (int)floorf(S.pos + 0.5f);
+        /* where the cover at (ring, side) stands: its centre, scale, width and the shade it is drawn with */
+        struct Place
+        {
+            int k;
+            float ox, scale, squeeze, width, ad;
+            uint32_t tint;
+        };
+        #define PLACE(out, ring_, side_)                                                                           \
+            do                                                                                                    \
+            {                                                                                                     \
+                struct Place *pl = &(out);                                                                        \
+                pl->k = base + (ring_) * (side_);                                                                 \
+                float d_ = pl->k - S.pos, ad_ = fabsf(d_), near_ = ad_ < 1.0f ? ad_ : 1.0f;                       \
+                /* a light perspective: the selected cover comes forward, the others step back, each a little */  \
+                /* further than the one before (as in the PS5X360 shelf) */                                       \
+                float depth_ = 1.0f / (1.0f + 0.06f * (ad_ > 1.0f ? ad_ - 1.0f : 0.0f));                         \
+                pl->ox = ad_ < 1.0f ? d_ * SIDE_GAP                                                               \
+                                    : (d_ > 0 ? 1.0f : -1.0f) * (SIDE_GAP + (ad_ - 1.0f) * STACK_GAP * depth_);   \
+                pl->scale = (1.0f - near_ * (1.0f - SIDE_SCALE)) * depth_ * (1.0f + 0.06f * (1.0f - near_));      \
+                pl->squeeze = 1.0f - near_ * (1.0f - SIDE_SQUEEZE);                                               \
+                if (pl->k == S.cursor)                                                                            \
+                    pl->scale *= 1.0f + launch * 0.12f;                                                           \
+                pl->ad = ad_;                                                                                     \
+                float fade_ = ad_ > 4.0f ? fmaxf(0.0f, 1.0f - (ad_ - 4.0f) / 2.0f) : 1.0f;                       \
+                float shade_ = (1.0f - near_ * 0.4f) * fade_ * (pl->k == S.cursor ? 1.0f : 1.0f - launch);       \
+                uint8_t s8_ = (uint8_t)(255 * shade_);                                                            \
+                pl->tint = 0xff000000u | (uint32_t)s8_ << 16 | (uint32_t)s8_ << 8 | s8_;                          \
+                PlatTexture *tx_ = pl->k >= 0 && pl->k < S.view_count ? shelf_cover(S.view[pl->k]) : NULL;      \
+                int tw_ = 1, th_ = 1;                                                                             \
+                plat_texture_size(tx_, &tw_, &th_);                                                               \
+                float aspect_ = tx_ ? (float)tw_ / th_ : no_cover_icon() ? 1.0f : 0.88f;                          \
+                pl->width = COVER_H * pl->scale * aspect_ * pl->squeeze;                                          \
+            } while (0)
+        /* far to near, so the selected cover is drawn last. A cover beside the middle is mostly hidden by the
+         * nearer one: only the part that shows is drawn (a clip, so the software renderer skips the rest) */
         for (int ring = 6; ring >= 0; --ring)
             for (int side = -1; side <= 1; side += 2)
             {
-                int k = (int)floorf(S.pos + 0.5f) + ring * side;
                 if (ring == 0 && side == 1)
                     continue;
+                struct Place me;
+                PLACE(me, ring, side);
+                int k = me.k;
                 if (k < first || k > last || k < 0 || k >= S.view_count)
                     continue;
-                float d = k - S.pos, ad = fabsf(d), near = ad < 1.0f ? ad : 1.0f;
-                float ox = ad < 1.0f ? d * SIDE_GAP
-                                     : (d > 0 ? 1.0f : -1.0f) * (SIDE_GAP + (ad - 1.0f) * STACK_GAP);
-                float scale = 1.0f - near * (1.0f - SIDE_SCALE);
-                float squeeze = 1.0f - near * (1.0f - SIDE_SQUEEZE);
                 bool selected = k == S.cursor;
-                if (selected)
-                    scale *= 1.0f + launch * 0.12f;
-                float fade = ad > 4.0f ? fmaxf(0.0f, 1.0f - (ad - 4.0f) / 2.0f) : 1.0f;
-                float shade = (1.0f - near * 0.4f) * fade * (selected ? 1.0f : 1.0f - launch);
-                uint8_t s8 = (uint8_t)(255 * shade);
-                uint32_t tint = 0xff000000u | (uint32_t)s8 << 16 | (uint32_t)s8 << 8 | s8;
+                bool clipped = false;
+                if (ring > 0)
+                {
+                    struct Place nearer;
+                    PLACE(nearer, ring - 1, side);
+                    float edge = CENTER_X + nearer.ox + side * nearer.width * 0.5f;
+                    if (side > 0 ? edge >= plat_width() : edge <= 0)
+                        continue; /* wholly behind the nearer one */
+                    if (side > 0)
+                        plat_set_clip((int)edge, 0, plat_width() - (int)edge, plat_height());
+                    else
+                        plat_set_clip(0, 0, (int)edge, plat_height());
+                    clipped = true;
+                }
                 int index = S.view[k];
-                draw_cover(shelf_cover(index), &app.library.games[index], CENTER_X + ox, flow_y(),
-                           COVER_H * scale, squeeze, tint, selected && ad < 0.25f && launch < 0.5f);
+                draw_cover(shelf_cover(index), &app.library.games[index], CENTER_X + me.ox, flow_y(),
+                           COVER_H * me.scale, me.squeeze, me.tint, selected && me.ad < 0.25f && launch < 0.5f);
+                if (clipped)
+                    plat_set_clip(0, 0, 0, 0);
             }
+        #undef PLACE
         plat_profile("covers");
         float text_a = (1.0f - launch) * (1.0f - S.title_fade / 0.35f * 0.8f);
         draw_info(&app.library.games[game], text_a);

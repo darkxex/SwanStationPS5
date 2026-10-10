@@ -56,7 +56,7 @@ enum
 void plat_pad_triggers(int port, PlatTrigger l2, PlatTrigger r2);
 int plat_pad_battery(int port); /* 0..100, -1 when unknown */
 /* The game picture's colours: Settings brightness (0..3, 1 normal), colour (0..5),
- * and sharpening (0..2, Beetle on the GPU). */
+ * and sharpening (0..2). */
 void plat_set_colour(int brightness, int colour, int sharpen);
 void plat_set_fsr(bool on); /* FSR 1 before the shader (Vulkan) */
 double plat_framegen_hz(void); /* the display's rate while frames are being generated, else 0 */

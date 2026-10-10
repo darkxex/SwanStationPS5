@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SwanStationPS5 - builds SwanStation (libretro's DuckStation fork, GPL-3.0) for the PS5
-# as a static archive that lives in the same app as the frontend (and Beetle, if built).
+# as a static archive that lives in the same app as the frontend.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 #   tools/build-swanstation.sh   -> build/swanstation-ps5/libswanstation.a

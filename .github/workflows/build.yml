@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      # SwanStation is the PS5 emulator; Beetle PSX HW is no longer built.
+      # SwanStation is the PS5 emulator.
       - name: Fetch submodules
         run: |
           git submodule update --init --recursive --depth=1 third_party/rcheevos

@@ -677,7 +677,7 @@ def ra_login(host: str, port: int, user: str | None, hardcore: bool, profile: st
     print(f"Signed in as {reply.get('User') or user}{who}. Restart SwanStationPS5 (or switch profiles) to use it.")
 
 
-# Beetle PSX HW looks for one file name per region (scph5500/5501/5502.bin);
+# Some cores look for one file name per region (scph5500/5501/5502.bin);
 # SwanStation takes any of them. The region is the letter that ends the
 # version text inside the dump: "System ROM Version 4.1 12/16/97 E".
 BIOS_REGION_NAMES = {"J": "scph5500.bin", "A": "scph5501.bin", "E": "scph5502.bin"}

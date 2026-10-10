@@ -362,7 +362,6 @@ mkdir -p "$app/licenses"
 cp "$root/docs/THIRD-PARTY.txt" "$app/licenses/THIRD-PARTY.txt"
 cp "$root/LICENSE" "$app/licenses/LICENSE-SwanStationPS5.txt"
 for pair in "third_party/swanstation/LICENSE:LICENSE-swanstation.txt" \
-    "third_party/beetle-psx/COPYING:COPYING-beetle-psx.txt" \
     "third_party/rcheevos/LICENSE:LICENSE-rcheevos.txt"; do
     if [[ -f $root/${pair%%:*} ]]; then cp "$root/${pair%%:*}" "$app/licenses/${pair##*:}"; fi
 done

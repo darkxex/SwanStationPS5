@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * SwanStation is linked into SwanStationPS5 as a static archive (libswanstation.a, its
- * retro_* renamed swanstation_retro_* by tools/build-swanstation.sh); Beetle PSX HW
- * can be linked too (APP_BEETLE=1). A table of functions drives the core. Only the
+ * retro_* renamed swanstation_retro_* by tools/build-swanstation.sh). A table of
+ * functions drives the core. Only the
  * environment callbacks the cores rely on are implemented; everything else
  * answers "unsupported" as libretro allows.
  */
@@ -77,33 +77,6 @@ typedef struct
 #endif
 
 #if defined(SwanStationPS5_VULKAN)
-#if defined(SwanStationPS5_BEETLE)
-void beetle_retro_set_environment(retro_environment_t);
-void beetle_retro_set_video_refresh(retro_video_refresh_t);
-void beetle_retro_set_audio_sample(retro_audio_sample_t);
-void beetle_retro_set_audio_sample_batch(retro_audio_sample_batch_t);
-void beetle_retro_set_input_poll(retro_input_poll_t);
-void beetle_retro_set_input_state(retro_input_state_t);
-void beetle_retro_init(void);
-void beetle_retro_deinit(void);
-bool beetle_retro_load_game(const struct retro_game_info *);
-void beetle_retro_unload_game(void);
-void beetle_retro_get_system_av_info(struct retro_system_av_info *);
-void beetle_retro_set_controller_port_device(unsigned, unsigned);
-void beetle_retro_run(void);
-void beetle_retro_reset(void);
-size_t beetle_retro_serialize_size(void);
-bool beetle_retro_serialize(void *, size_t);
-bool beetle_retro_unserialize(const void *, size_t);
-void *beetle_retro_get_memory_data(unsigned);
-size_t beetle_retro_get_memory_size(unsigned);
-void beetle_retro_cheat_reset(void);
-void beetle_retro_cheat_set(unsigned, bool, const char *);
-static const CoreApi BEETLE = CORE_API("Beetle PSX HW", beetle_);
-#else
-/* Beetle isn't built (Makefile: APP_BEETLE=1 brings it back): an empty entry the code never selects. */
-static const CoreApi BEETLE;
-#endif
 void swanstation_retro_set_environment(retro_environment_t);
 void swanstation_retro_set_video_refresh(retro_video_refresh_t);
 void swanstation_retro_set_audio_sample(retro_audio_sample_t);
@@ -219,107 +192,6 @@ static void register_variables(const struct retro_variable *vars)
 }
 
 #if defined(SwanStationPS5_VULKAN)
-/* Beetle reads a pack from <game folder>/<game file name>-texture-replacements/
- * (by texture hash, no folder listing). Texture tracking costs time and is the
- * risky part, so it's on only when that folder is there. */
-static bool texture_pack_present(void)
-{
-    char dir[SwanStationPS5_PATH_MAX], name[256];
-    str_copy(dir, sizeof(dir), loading_path);
-    char *slash = strrchr(dir, '/');
-    if (!slash)
-        return false;
-    str_copy(name, sizeof(name), slash + 1);
-    *slash = '\0';
-    char *dot = strrchr(name, '.');
-    if (dot)
-        *dot = '\0';
-    char pack[SwanStationPS5_PATH_MAX];
-    snprintf(pack, sizeof(pack), "%s/%s-texture-replacements", dir, name);
-    bool here = path_is_dir(pack);
-    if (here)
-        SwanStationPS5_log("host: HD texture pack %s", pack);
-    return here;
-}
-
-static void apply_beetle_options(const Settings *s)
-{
-    static const char *const regions[] = {"auto", "ntsc-u", "pal"};
-    static const char *const scales[] = {"1x(native)", "2x", "4x", "8x", "16x"};
-    int level = s->internal_res >= 1 && s->internal_res <= 5 ? s->internal_res : 1;
-    if (game_fixes & GDB_NO_UPSCALING)
-        level = 1; /* the game breaks above native (DuckStation's database) */
-    bool gpu = vkp_describe()[0] != '\0'; /* the screen runs through Vulkan */
-    if (!gpu && level > 2)
-        level = 2; /* the software renderer: 4x and up would not fit in memory */
-    set_option("beetle_psx_hw_renderer", gpu ? "hardware_vk" : "software");
-    set_option("beetle_psx_hw_internal_resolution", scales[level - 1]);
-    set_option("beetle_psx_hw_region", regions[s->region % REGION_COUNT]);
-    /* true colour: 32-bit, so no dithering */
-    set_option("beetle_psx_hw_depth", s->true_colour ? "32bpp" : "16bpp(native)");
-    set_option("beetle_psx_hw_dither_mode", s->dithering && !s->true_colour ? "1x(native)" : "disabled");
-    set_option("beetle_psx_hw_mdec_yuv", s->fmv_smooth ? "enabled" : "disabled");
-    /* the software renderer's copy, kept for screen read-backs (FF7's battle swirl):
-     * exact, but a stall when they happen; off, the GPU does those effects */
-    set_option("beetle_psx_hw_renderer_software_fb", s->fast_effects ? "disabled" : "enabled");
-    set_option("beetle_psx_hw_negcon_response", "linear");
-    set_option("beetle_psx_hw_negcon_deadzone", "0%");
-    /* read as it plays: "precache" loads every disc of a game into memory,
-     * and two discs already pass SwanStationPS5's 1 GB */
-    set_option("beetle_psx_hw_cd_access_method", "async");
-    set_option("beetle_psx_hw_cd_fastload", s->cd_fast && !(game_fixes & GDB_NO_CD_SPEEDUP) ? "4x" : "2x(native)");
-    set_option("beetle_psx_hw_skip_bios", s->boot_intro ? "disabled" : "enabled");
-    bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
-    set_option("beetle_psx_hw_pgxp_mode", !pgxp ? "disabled" : (game_fixes & GDB_PGXP_CPU) ? "memory + CPU" : "memory only");
-    set_option("beetle_psx_hw_pgxp_texture", pgxp ? "enabled" : "disabled");
-    set_option("beetle_psx_hw_widescreen_hack", s->widescreen ? "enabled" : "disabled");
-    set_option("beetle_psx_hw_widescreen_hack_aspect_ratio", "16:9");
-    /* analog mode from the start for games known to use the sticks; the
-     * L1+L2+R1+R2+START+SELECT combination still switches it, as the ANALOG button did */
-    set_option("beetle_psx_hw_analog_toggle", (game_fixes & GDB_ANALOG) ? "enabled-analog" : "enabled");
-    /* card 0 through SAVE_RAM: SwanStationPS5 keeps it in <saves>/<serial>_1.mcd */
-    set_option("beetle_psx_hw_use_mednafen_memcard0_method", "libretro");
-    /* Vulkan: never. Beetle repeats a frame there whenever the game didn't
-     * switch display buffers, so screens drawn straight into the shown buffer
-     * (the white Sony screen, FF7's battle swirl) never reached the screen, and
-     * the "repeated" image was one of Beetle's recycled ones (old pictures) */
-    set_option("beetle_psx_hw_frame_duping", gpu ? "disabled" : "enabled");
-    bool pack = gpu && s->hd_textures && texture_pack_present();
-    set_option("beetle_psx_hw_track_textures", pack ? "enabled" : "disabled");
-    set_option("beetle_psx_hw_replace_textures", pack ? "enabled" : "disabled");
-    set_option("beetle_psx_hw_dump_textures", "disabled");
-    set_option("beetle_psx_hw_texture_directory", "content");
-    set_option("beetle_psx_hw_hd_caching_method", "lazy");
-    set_option("beetle_psx_hw_hd_cache_vram_budget", "2048");
-    set_option("beetle_psx_hw_hd_cache_ram_budget", "256"); /* the heap is 1 GB */
-    /* fewer slowdowns: a faster CPU, and the GTE (the 3D maths) at one cycle */
-    static const char *const cpu[] = {"100%", "150%", "200%"};
-    int oc = s->overclock >= 0 && s->overclock <= 2 ? s->overclock : 0;
-    set_option("beetle_psx_hw_cpu_freq_scale", cpu[oc]);
-    set_option("beetle_psx_hw_gte_overclock", oc ? "enabled" : "disabled");
-    set_option("beetle_psx_hw_gpu_overclock", oc == 2 ? "2x" : "1x(native)");
-    set_option("beetle_psx_hw_gun_cursor", "off"); /* SwanStationPS5 draws its own */
-    /* the picture: anti-aliasing, texture filtering, supersampling, deinterlacing, PAL at 60 Hz */
-    static const char *const msaa[] = {"1x", "2x", "4x", "8x", "16x"};
-    static const char *const filters[] = {"nearest", "bilinear", "xBR", "SABR", "JINC2", "3-point"};
-    int m = s->msaa >= 0 && s->msaa <= 4 && !(game_fixes & GDB_NO_UPSCALING) ? s->msaa : 0;
-    set_option("beetle_psx_hw_msaa", msaa[m]);
-    int tf = s->texture_filter >= 0 && s->texture_filter <= 5 && !(game_fixes & GDB_NO_TEXTURE_FILTER) ? s->texture_filter : 0;
-    set_option("beetle_psx_hw_filter", filters[tf]);
-    bool sprites = s->filter_2d && !(game_fixes & GDB_NO_SPRITE_FILTER);
-    set_option("beetle_psx_hw_filter_exclude_sprite", sprites ? "disabled" : "all");
-    set_option("beetle_psx_hw_filter_exclude_2d_polygon", s->filter_2d ? "disabled" : "all");
-    set_option("beetle_psx_hw_super_sampling", "disabled"); /* it made moving scenes flicker */
-    static const char *const deint[] = {"weave", "bob", "fastmad"};
-    int d = s->deinterlace >= 0 && s->deinterlace <= 2 ? s->deinterlace : 0;
-    if (!d && (game_fixes & GDB_DEINTERLACE))
-        d = 1; /* the game needs it */
-    set_option("beetle_psx_hw_deinterlacer", deint[d]);
-    set_option("beetle_psx_hw_pal_video_timing_override", s->pal60 ? "enabled" : "disabled");
-}
-#endif
-
-#if defined(SwanStationPS5_VULKAN)
 /* SwanStation (DuckStation): the Vulkan renderer, the recompiler with LUT
  * fastmem (MMap does not survive a title's sandbox). */
 static void apply_swanstation_options(const Settings *s)
@@ -365,18 +237,13 @@ static void apply_settings_to_options(const Settings *s)
         apply_swanstation_options(s);
         return;
     }
-    if (core == &BEETLE)
-    {
-        apply_beetle_options(s);
-        return;
-    }
 #endif
 }
 
 /* ---------------------------------------------------------------- Vulkan rendering */
 
 #if defined(SwanStationPS5_VULKAN)
-/* Beetle PSX HW renders through Vulkan: it asks for a Vulkan context
+/* SwanStation renders through Vulkan: it asks for a Vulkan context
  * (SET_HW_RENDER), creates the device itself through the negotiation
  * interface, and hands over a finished image each frame (set_image). The
  * screen (vk_present.c) moves onto that device and draws the image. */
@@ -409,7 +276,7 @@ static void hw_wait_sync_index(void *handle)
 }
 static void hw_set_command_buffers(void *handle, uint32_t num, const VkCommandBuffer *cmd)
 {
-    (void)handle, (void)num, (void)cmd; /* Beetle submits its own */
+    (void)handle, (void)num, (void)cmd; /* the core submits its own */
 }
 static void hw_queue_noop(void *handle)
 {
@@ -435,13 +302,13 @@ static bool hw_start(char *error, size_t size)
     if (!negotiation || !negotiation->create_device ||
         !negotiation->create_device(&context, instance, gpu, surface, gipa, extensions, 1, NULL, 0, NULL))
     {
-        snprintf(error, size, "Beetle could not create its Vulkan device.");
+        snprintf(error, size, "The core could not create its Vulkan device.");
         return false;
     }
     char why[160];
     if (!vkp_adopt_device(context.device, context.queue, context.queue_family_index, why, sizeof(why)))
     {
-        snprintf(error, size, "The screen could not move to Beetle's device: %s", why);
+        snprintf(error, size, "The screen could not move to the core's device: %s", why);
         return false;
     }
     VkDevice device;
@@ -470,7 +337,7 @@ static bool hw_start(char *error, size_t size)
     hw_running = true;
     if (hw.context_reset)
         hw.context_reset();
-    SwanStationPS5_log("host: Beetle renders through Vulkan");
+    SwanStationPS5_log("host: the core renders through Vulkan");
     return true;
 }
 
@@ -484,9 +351,9 @@ static void hw_restart(void)
     vkp_set_game_image(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED);
     char error[200];
     if (!hw_start(error, sizeof(error)))
-        SwanStationPS5_log("host: could not rebuild Beetle's renderer: %s", error);
+        SwanStationPS5_log("host: could not rebuild the core's renderer: %s", error);
     else
-        SwanStationPS5_log("host: Beetle's renderer rebuilt for %ux%u", av_info.geometry.max_width,
+        SwanStationPS5_log("host: the core's renderer rebuilt for %ux%u", av_info.geometry.max_width,
                   av_info.geometry.max_height);
 }
 
@@ -760,7 +627,7 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     {
         const struct retro_system_av_info *next = data;
 #if defined(SwanStationPS5_VULKAN)
-        /* Beetle's Vulkan renderer reads its internal resolution only when
+        /* The core's Vulkan renderer reads its internal resolution only when
          * it is rebuilt: like RetroArch, rebuild the context right away. Not
          * for a timing change alone (each switch between interlaced and
          * progressive video, as from the white Sony screen to the PlayStation
@@ -795,7 +662,7 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
         return true;
     case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
-        /* Beetle then gives its real state size (about 5 MB) rather than a
+        /* The core then gives its real state size (about 5 MB) rather than a
          * flat 16 MB: rewind's 40 states took 640 MB of the 1 GB heap, and
          * save states failed for want of memory */
         if (data)
@@ -829,7 +696,7 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_SET_HW_RENDER:
     {
         struct retro_hw_render_callback *cb = data;
-        if ((core != &BEETLE && core != &SWANSTATION) || cb->context_type != RETRO_HW_CONTEXT_VULKAN || !vkp_describe()[0])
+        if (core != &SWANSTATION || cb->context_type != RETRO_HW_CONTEXT_VULKAN || !vkp_describe()[0])
             return false;
         hw = *cb;
         hw_requested = true;
@@ -992,7 +859,7 @@ static int16_t RETRO_CALLCONV input_state_cb(unsigned port, unsigned device, uns
 /* ---------------------------------------------------------------- memory card */
 
 /* One card per game, whichever emulator runs it: <saves>/<serial>_1.mcd,
- * the file the memory card manager shows. Beetle's card is the frontend's (SAVE_RAM): loaded from that
+ * the file the memory card manager shows. The core's card is the frontend's (SAVE_RAM): loaded from that
  * file after retro_load_game, written back when it changes. */
 static char card_path[SwanStationPS5_PATH_MAX];
 static uint8_t card_saved[128 * 1024];
@@ -1029,21 +896,93 @@ static void card_prepare(const char *serial, const char *game_path)
     {
         fclose(f);
         str_copy(card_path, sizeof(card_path), path);
+        return;
+    }
+    /* a card made before the serial was known is named after the game file: it becomes the serial's */
+    if (serial[0])
+    {
+        const char *base = strrchr(game_path, '/');
+        char old[200], old_path[SwanStationPS5_PATH_MAX];
+        snprintf(old, sizeof(old), "%.150s", base ? base + 1 : game_path);
+        char *dot = strrchr(old, '.');
+        if (dot)
+            *dot = '\0';
+        strncat(old, "_1.mcd", sizeof(old) - strlen(old) - 1);
+        path_join(old_path, sizeof(old_path), host_paths->saves, old);
+        if ((f = fopen(old_path, "rb")) != NULL)
+        {
+            fclose(f);
+            if (rename(old_path, card_path) == 0)
+                SwanStationPS5_log("host: memory card %s is now %s", old_path, card_path);
+            else
+                str_copy(card_path, sizeof(card_path), old_path);
+        }
     }
 }
 
-static uint8_t *beetle_card(void)
+/* The disc a multi-disc game was left on: <states>/<serial>.disc, the index in the playlist. The next boot starts
+ * on it (the core reads the initial image before it loads the game). */
+static char disc_path[SwanStationPS5_PATH_MAX];
+
+static void disc_prepare(const char *serial, const char *game_path)
 {
-#if defined(SwanStationPS5_VULKAN)
-    if (core == &BEETLE && card_path[0] && core->get_memory_size(RETRO_MEMORY_SAVE_RAM) == sizeof(card_saved))
+    char name[200];
+    if (serial[0])
+        snprintf(name, sizeof(name), "%.150s", serial);
+    else
+    {
+        const char *base = strrchr(game_path, '/');
+        snprintf(name, sizeof(name), "%.150s", base ? base + 1 : game_path);
+        char *dot = strrchr(name, '.');
+        if (dot)
+            *dot = '\0';
+    }
+    strncat(name, ".disc", sizeof(name) - strlen(name) - 1);
+    path_join(disc_path, sizeof(disc_path), host_paths->states, name);
+}
+
+static void disc_remember(void)
+{
+    if (!loaded || !disc_path[0] || !disk_available || !disk.get_num_images || !disk.get_image_index ||
+        disk.get_num_images() < 2)
+        return;
+    make_dirs(host_paths->states);
+    FILE *f = fopen(disc_path, "w");
+    if (!f)
+        return;
+    fprintf(f, "%u\n", disk.get_image_index());
+    fclose(f);
+}
+
+static void disc_restore(const char *game_path)
+{
+    if (!disc_path[0] || !disk_available || !disk.set_initial_image)
+        return;
+    FILE *f = fopen(disc_path, "r");
+    if (!f)
+        return;
+    unsigned index = 0;
+    bool ok = fscanf(f, "%u", &index) == 1;
+    fclose(f);
+    if (ok && index > 0 && index < 16)
+    {
+        disk.set_initial_image(index, game_path);
+        SwanStationPS5_log("host: starting on disc %u", index + 1);
+    }
+}
+
+static uint8_t *core_card(void)
+{
+    if (card_path[0] && core->get_memory_size(RETRO_MEMORY_SAVE_RAM) == sizeof(card_saved))
         return core->get_memory_data(RETRO_MEMORY_SAVE_RAM);
-#endif
     return NULL;
 }
 
 static void card_load(void)
 {
-    uint8_t *card = beetle_card();
+    uint8_t *card = core_card();
+    SwanStationPS5_log("host: memory card %s, core size %zu, %s", card_path,
+                       core->get_memory_size(RETRO_MEMORY_SAVE_RAM), card ? "in use" : "not available");
     if (!card)
         return;
     FILE *f = fopen(card_path, "rb");
@@ -1058,7 +997,7 @@ static void card_load(void)
 
 static void card_flush(void)
 {
-    uint8_t *card = beetle_card();
+    uint8_t *card = core_card();
     if (!card || memcmp(card, card_saved, sizeof(card_saved)) == 0)
         return;
     char temp[SwanStationPS5_PATH_MAX];
@@ -1075,50 +1014,9 @@ static void card_flush(void)
 
 /* ---------------------------------------------------------------- API */
 
-#if defined(SwanStationPS5_VULKAN)
-/* Beetle needs a real BIOS of the disc's region, by one of the names it
- * looks for (libretro.c firmware_is_present). Region from the serial. */
-static bool __attribute__((unused)) beetle_bios_present(const char *serial)
-{
-    static const char *const jp[] = {"scph5500.bin", "SCPH5500.bin", "SCPH5500.BIN", "SCPH-5500.bin",
-                                     "SCPH-5500.BIN", NULL};
-    static const char *const us[] = {"scph5501.bin", "SCPH5501.bin", "SCPH5501.BIN", "SCPH-5501.bin",
-                                     "SCPH-5501.BIN", "scph5503.bin", "scph7003.bin", NULL};
-    static const char *const eu[] = {"scph5502.bin", "SCPH5502.bin", "SCPH5502.BIN", "SCPH-5502.bin",
-                                     "SCPH-5502.BIN", "scph5552.bin", NULL};
-    const char *const *lists[3] = {us, eu, jp};
-    int only = -1; /* unknown region: any BIOS will do */
-    if (!strncmp(serial, "SLUS", 4) || !strncmp(serial, "SCUS", 4) || !strncmp(serial, "PAPX", 4))
-        only = 0;
-    else if (!strncmp(serial, "SLES", 4) || !strncmp(serial, "SCES", 4) || !strncmp(serial, "SCED", 4))
-        only = 1;
-    else if (serial[0] == 'S' || serial[0] == 'P') /* SLPS, SCPS, SLPM, SIPS, PCPX... */
-        only = 2;
-    for (int l = 0; l < 3; ++l)
-    {
-        if (only >= 0 && l != only)
-            continue;
-        for (const char *const *name = lists[l]; *name; ++name)
-        {
-            char path[SwanStationPS5_PATH_MAX];
-            path_join(path, sizeof(path), host_paths->bios, *name);
-            FILE *f = fopen(path, "rb");
-            if (f)
-            {
-                fclose(f);
-                return true;
-            }
-        }
-    }
-    return false;
-}
-#endif
-
-const char *host_emulator_for(const Settings *settings, const char *serial, const char **why_not_beetle)
+const char *host_emulator_for(const Settings *settings, const char *serial)
 {
     (void)settings, (void)serial;
-    if (why_not_beetle)
-        *why_not_beetle = NULL;
     return SWANSTATION.name;
 }
 
@@ -1135,14 +1033,8 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     str_copy(loading_path, sizeof(loading_path), game_path);
     core = &SWANSTATION;
     SwanStationPS5_log("host: emulator %s", core->name);
-    {
-        /* Beetle keeps its Vulkan pipeline cache in <saves>/Beetle PSX HW; without
-         * the folder it can't, and every new effect compiles again (a stutter) */
-        char cache_dir[SwanStationPS5_PATH_MAX];
-        path_join(cache_dir, sizeof(cache_dir), paths->saves, "Beetle PSX HW");
-        make_dirs(cache_dir);
-    }
     card_prepare(serial ? serial : "", game_path);
+    disc_prepare(serial ? serial : "", game_path);
     option_count = 0;
     disk_available = false;
     lid_open_frames = 0;
@@ -1167,6 +1059,7 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
     core->init();
 
     STEP("retro_load_game");
+    disc_restore(game_path);
     struct retro_game_info info = {game_path, NULL, 0, NULL};
     sbi_missing = false;
     if (!core->load_game(&info))
@@ -1225,6 +1118,7 @@ void host_unload(void)
     if (!loaded)
         return;
     card_flush();
+    disc_remember();
     core->unload_game();
 #if defined(SwanStationPS5_VULKAN)
     hw_stop();
@@ -1361,7 +1255,7 @@ size_t host_state_size(void)
         return 0;
     if (state_size == 0)
     {
-        /* Beetle measures by saving a whole state: once per game, with room
+        /* The core measures by saving a whole state: once per game, with room
          * to spare in case a later state is a little larger */
         size_t size = core->serialize_size();
         state_size = size ? size + 512 * 1024 : size;
@@ -1439,18 +1333,6 @@ bool host_load_state(const char *path)
     return ok;
 }
 
-void host_beetle_widescreen(bool on)
-{
-#if defined(SwanStationPS5_VULKAN)
-    if (game_fixes & GDB_NO_WIDESCREEN)
-        on = false; /* the renderer's widescreen breaks this game */
-    if (loaded && core == &BEETLE)
-        set_option("beetle_psx_hw_widescreen_hack", on ? "enabled" : "disabled");
-#else
-    (void)on;
-#endif
-}
-
 void host_cheat_reset(void)
 {
     if (loaded)
@@ -1483,5 +1365,7 @@ bool host_disc_select(int index)
         return false;
     bool ok = disk.set_image_index((unsigned)index);
     lid_open_frames = 60;
+    if (ok)
+        disc_remember();
     return ok;
 }
