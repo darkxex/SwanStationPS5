@@ -411,7 +411,7 @@ void covers_update_view(const int *view, int count, int center_pos)
         Slot *s = &slots[i];
         if (s->state != SLOT_READY)
             continue;
-        PlatTexture *t = plat_texture_create(s->pixels, s->w, s->h, true);
+        PlatTexture *t = plat_texture_create_mips(s->pixels, s->w, s->h);
         free(s->pixels);
         s->pixels = NULL;
         plat_texture_free(s->texture);

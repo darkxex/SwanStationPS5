@@ -16,7 +16,7 @@
 #define SwanStationPS5_NAME "SwanStationPS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define SwanStationPS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define SwanStationPS5_TITLE_ID "PPSA98510"
-#define SwanStationPS5_VERSION "1.1.3"
+#define SwanStationPS5_VERSION "1.1.4"
 #define SwanStationPS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core
@@ -162,6 +162,9 @@ typedef struct
     int run_ahead;        /* 0 off, 1 or 2 frames less input lag */
     bool fast_effects;    /* screen effects on the GPU, without the software copy */
     bool fsr;             /* FSR 1 scales the picture before the shader */
+    int output_res;       /* the screen output: 0 1080p, 1 1440p, 2 4K (needs gpu_ui; from the next start) */
+    char usb_folder[48];  /* a folder name looked for on USB drives: /mnt/usb0/<name> and /mnt/usb1/<name> (empty: none) */
+    bool gpu_ui;          /* the shelf and the menus drawn by the GPU (Vulkan); off: by the CPU, as before (from the next start) */
     bool framegen;        /* frame interpolation: a frame between two of the game's (120 Hz screen, from the next start) */
     int ss_opt[SS_OPT_COUNT]; /* SwanStation's own core options: the chosen value's index in SS_OPTS[i].values */
 } Settings;

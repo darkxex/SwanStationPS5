@@ -26,6 +26,7 @@
 #include "shaders_royale.h"
 #include "shaders_ntsc.h"
 #include "shaders_spv.h"
+#include "shaders_ui_spv.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -70,7 +71,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instan
     X(vkCmdBeginRenderPass) X(vkCmdEndRenderPass) X(vkCmdBindPipeline)                           \
     X(vkCmdBindDescriptorSets) X(vkCmdPushConstants) X(vkCmdDraw) X(vkCmdSetViewport)            \
     X(vkCmdSetScissor) X(vkCmdBlitImage) X(vkCmdCopyImageToBuffer) X(vkQueueWaitIdle) X(vkCreateFence) X(vkDestroyFence) X(vkWaitForFences) X(vkResetFences)    \
-    X(vkCreateSemaphore) X(vkDestroySemaphore)
+    X(vkCreateSemaphore) X(vkDestroySemaphore) X(vkCmdBindVertexBuffers) X(vkFreeDescriptorSets)
 
 #define DECLARE(name) static PFN_##name name;
 VK_INSTANCE_FUNCS(DECLARE)
@@ -161,6 +162,7 @@ static struct
 
 /* asked before the screen opens (vkp_open clears V): frame generation's 120 Hz mode */
 static bool want_high_refresh;
+static int want_width, want_height; /* the output's size; 0: the canvas's */
 
 const char *vkp_describe(void)
 {
@@ -272,18 +274,29 @@ static bool create_surface(char *error, size_t size)
     uint32_t mode_count = 16;
     vkGetDisplayModePropertiesKHR(V.gpu, display.display, &mode_count, modes);
     int best = -1, at60 = -1, at120 = -1;
-    for (uint32_t i = 0; i < mode_count; ++i)
+    /* the size asked for, else the canvas's (the mode is searched again at the canvas's size when the TV has none like it) */
+    uint32_t mode_w = want_width > 0 ? (uint32_t)want_width : (uint32_t)V.cw;
+    uint32_t mode_h = want_height > 0 ? (uint32_t)want_height : (uint32_t)V.ch;
+    for (int pass = 0; pass < 2; ++pass)
     {
-        const VkDisplayModeParametersKHR *p = &modes[i].parameters;
-        SwanStationPS5_log("vulkan: display mode %ux%u @ %.2f Hz", p->visibleRegion.width,
-                  p->visibleRegion.height, p->refreshRate / 1000.0);
-        bool size_ok = p->visibleRegion.width == (uint32_t)V.cw && p->visibleRegion.height == (uint32_t)V.ch;
-        if (size_ok && p->refreshRate >= 59000 && p->refreshRate <= 61000)
-            at60 = (int)i;
-        if (size_ok && p->refreshRate >= 119000 && p->refreshRate <= 121000)
-            at120 = (int)i;
-        if (size_ok && best < 0)
-            best = (int)i;
+        for (uint32_t i = 0; i < mode_count; ++i)
+        {
+            const VkDisplayModeParametersKHR *p = &modes[i].parameters;
+            if (pass == 0)
+                SwanStationPS5_log("vulkan: display mode %ux%u @ %.2f Hz", p->visibleRegion.width,
+                                   p->visibleRegion.height, p->refreshRate / 1000.0);
+            bool size_ok = p->visibleRegion.width == mode_w && p->visibleRegion.height == mode_h;
+            if (size_ok && p->refreshRate >= 59000 && p->refreshRate <= 61000)
+                at60 = (int)i;
+            if (size_ok && p->refreshRate >= 119000 && p->refreshRate <= 121000)
+                at120 = (int)i;
+            if (size_ok && best < 0)
+                best = (int)i;
+        }
+        if (best >= 0 || mode_w == (uint32_t)V.cw)
+            break;
+        mode_w = (uint32_t)V.cw;
+        mode_h = (uint32_t)V.ch;
     }
     /* 60 Hz; 120 for frame generation when it was on at start and the TV has it */
     if (at60 >= 0)
@@ -716,6 +729,8 @@ static bool create_canvas(char *error, size_t size)
     return true;
 }
 
+#include "vk_ui.inc"
+
 /* ---------------------------------------------------------------- API */
 
 bool vkp_open(int canvas_w, int canvas_h, char *error, size_t size)
@@ -829,6 +844,12 @@ void vkp_frame_repeated(void)
 void vkp_want_high_refresh(bool on)
 {
     want_high_refresh = on;
+}
+
+void vkp_want_size(int width, int height)
+{
+    want_width = width;
+    want_height = height;
 }
 
 static void fg_free(void)
@@ -1688,23 +1709,29 @@ static void royale_final(VkCommandBuffer cb, int f, int x, int y, int w, int h)
     vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
-void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
+/* ui: the interface was drawn by the GPU layer (vk_ui.inc); else the CPU's canvas is shown */
+static void present_frame(bool ui, const uint32_t *pixels, size_t pitch_bytes)
 {
     if (!V.swapchain)
         return;
     int f = V.frame;
     V.frame = (V.frame + 1) % FRAMES;
     vkWaitForFences(V.device, 1, &V.done[f], VK_TRUE, UINT64_MAX);
+    ++U.stamp;
+    ui_collect(false);
 
-    /* the CPU's canvas into this frame's staging buffer */
-    const size_t row = (size_t)V.cw * 4;
-    uint8_t *dst = V.staging_map[f];
-    const uint8_t *src = (const uint8_t *)pixels;
-    if (pitch_bytes == row)
-        memcpy(dst, src, row * V.ch);
-    else
-        for (int y = 0; y < V.ch; ++y)
-            memcpy(dst + row * y, src + pitch_bytes * y, row);
+    if (!ui)
+    {
+        /* the CPU's canvas into this frame's staging buffer */
+        const size_t row = (size_t)V.cw * 4;
+        uint8_t *dst = V.staging_map[f];
+        const uint8_t *src = (const uint8_t *)pixels;
+        if (pitch_bytes == row)
+            memcpy(dst, src, row * V.ch);
+        else
+            for (int y = 0; y < V.ch; ++y)
+                memcpy(dst + row * y, src + pitch_bytes * y, row);
+    }
 
     uint32_t index;
     VkResult r = vkAcquireNextImageKHR(V.device, V.swapchain, UINT64_MAX, V.acquired[f], VK_NULL_HANDLE,
@@ -1723,18 +1750,21 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     VkCommandBufferBeginInfo begin = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer(cb, &begin);
-    barrier(cb, V.canvas, V.canvas_ready ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-    VkBufferImageCopy copy = {0};
-    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copy.imageSubresource.layerCount = 1;
-    copy.imageExtent = (VkExtent3D){(uint32_t)V.cw, (uint32_t)V.ch, 1};
-    vkCmdCopyBufferToImage(cb, V.staging[f], V.canvas, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-    barrier(cb, V.canvas, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-    V.canvas_ready = true;
+    if (!ui)
+    {
+        barrier(cb, V.canvas, V.canvas_ready ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+        VkBufferImageCopy copy = {0};
+        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copy.imageSubresource.layerCount = 1;
+        copy.imageExtent = (VkExtent3D){(uint32_t)V.cw, (uint32_t)V.ch, 1};
+        vkCmdCopyBufferToImage(cb, V.staging[f], V.canvas, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+        barrier(cb, V.canvas, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+        V.canvas_ready = true;
+    }
 
     bool game = V.game_shown && V.game_view;
     V.game_shown = false;
@@ -1892,6 +1922,8 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     }
 
     VkClearValue clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    if (ui)
+        memcpy(clear.color.float32, U.clear, sizeof(U.clear));
     VkRenderPassBeginInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     rp.renderPass = V.pass;
     rp.framebuffer = V.framebuffers[index];
@@ -1903,6 +1935,13 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     VkRect2D scissor = {{0, 0}, V.extent};
     vkCmdSetViewport(cb, 0, 1, &viewport);
     vkCmdSetScissor(cb, 0, 1, &scissor);
+    /* the GPU interface: what was drawn before the game's picture (its border) goes under it */
+    const int ui_split = ui && game && U.game_at >= 0 ? U.game_at : U.nbatches;
+    if (ui)
+    {
+        ui_prepare(f);
+        ui_record(cb, f, 0, ui_split);
+    }
     if (game && shaded_source && !royale)
     {
         /* the interpolator's frame and/or FSR 1's picture (the picture as the core drew it, scaled), with the picture's
@@ -1938,8 +1977,13 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     }
     else
         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, V.opaque);
-    static const float none[4] = {0, 0, 0, 0}, plain[4] = {1, 1, 0, 0};
-    draw_quad(cb, V.canvas_set, 0, 0, (float)V.extent.width, (float)V.extent.height, 0.0f, 1.0f, none, plain);
+    if (ui)
+        ui_record(cb, f, ui_split, U.nbatches);
+    else
+    {
+        static const float none[4] = {0, 0, 0, 0}, plain[4] = {1, 1, 0, 0};
+        draw_quad(cb, V.canvas_set, 0, 0, (float)V.extent.width, (float)V.extent.height, 0.0f, 1.0f, none, plain);
+    }
     vkCmdEndRenderPass(cb);
     vkEndCommandBuffer(cb);
 
@@ -1963,12 +2007,23 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     vkQueuePresentKHR(V.queue, &present);
 }
 
+void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
+{
+    present_frame(false, pixels, pitch_bytes);
+}
+
+void vkp_present_ui(void)
+{
+    present_frame(true, NULL, 0);
+}
+
 /* Everything made on the device, but not the device itself. */
 static void destroy_device_objects(void)
 {
     if (!V.device)
         return;
     vkDeviceWaitIdle(V.device);
+    ui_destroy();
     fg_free();
     if (V.fg_pacing)
         ssfg_pacing_destroy(V.fg_pacing);
@@ -2110,8 +2165,43 @@ bool vkp_adopt_device(VkDevice device, VkQueue queue, uint32_t family, char *err
     V.family = family;
     bool ok = load_device(error, size) && create_swapchain(error, size) &&
               create_pipeline(error, size) && create_canvas(error, size);
+    if (ok && U.enabled)
+    {
+        ok = ui_create(error, size);
+        if (!ok)
+            SwanStationPS5_log("vulkan: the interface layer could not move to the core's device: %s", error);
+    }
     SwanStationPS5_log("vulkan: the screen moved to the core's device%s%s", ok ? "" : ": ", ok ? "" : error);
     return ok;
+}
+
+/* Another mode of the TV while running (Settings > System > SwanStationPS5 > Output resolution). The swapchain and what
+ * hangs from it are made again on the new mode's surface, as when the screen moves to a core's device; the interface's
+ * textures go to the GPU again on their own. A mode the TV lacks gives the canvas's size; if even that fails, false. */
+bool vkp_set_mode(int width, int height, char *error, size_t size)
+{
+    if (!V.swapchain || !U.enabled)
+    {
+        snprintf(error, size, "the GPU interface is off");
+        return false;
+    }
+    if ((int)V.extent.width == width && (int)V.extent.height == height)
+        return true; /* already there */
+    for (int attempt = 0; attempt < 2; ++attempt)
+    {
+        want_width = attempt == 0 ? width : V.cw;
+        want_height = attempt == 0 ? height : V.ch;
+        destroy_device_objects();
+        if (V.surface)
+            vkDestroySurfaceKHR(V.instance, V.surface, NULL);
+        V.surface = VK_NULL_HANDLE;
+        bool ok = create_surface(error, size) && create_swapchain(error, size) && create_pipeline(error, size) &&
+                  create_canvas(error, size) && ui_create(error, size);
+        if (ok)
+            return true;
+        SwanStationPS5_log("vulkan: mode %dx%d failed: %s", (int)want_width, (int)want_height, error);
+    }
+    return false;
 }
 
 void vkp_set_game_image(VkImage image, VkImageView view, VkImageLayout layout)
@@ -2296,6 +2386,56 @@ void vkp_set_game_nearest(bool nearest)
 void vkp_show_game(float x, float y, float w, float h, float crop, int shader, int tex_w, int tex_h, int lines)
 {
     (void)x, (void)y, (void)w, (void)h, (void)crop, (void)shader, (void)tex_w, (void)tex_h, (void)lines;
+}
+bool vkp_ui_open(char *error, size_t size)
+{
+    snprintf(error, size, "built without Vulkan");
+    return false;
+}
+bool vkp_ui_active(void)
+{
+    return false;
+}
+int vkp_ui_texture_create(const uint8_t *rgba, int w, int h, bool smooth, bool mips, bool copy)
+{
+    (void)rgba, (void)w, (void)h, (void)smooth, (void)mips, (void)copy;
+    return -1;
+}
+void vkp_ui_texture_free(int id)
+{
+    (void)id;
+}
+void vkp_ui_texture_update(int id, const uint8_t *rgba)
+{
+    (void)id, (void)rgba;
+}
+void vkp_ui_begin(uint32_t clear_argb)
+{
+    (void)clear_argb;
+}
+void vkp_ui_clip(int x, int y, int w, int h)
+{
+    (void)x, (void)y, (void)w, (void)h;
+}
+void vkp_ui_draw(int id, const VkpUiVertex *v, int count)
+{
+    (void)id, (void)v, (void)count;
+}
+void vkp_present_ui(void) {}
+bool vkp_set_mode(int width, int height, char *error, size_t size)
+{
+    (void)width, (void)height;
+    snprintf(error, size, "built without Vulkan");
+    return false;
+}
+void vkp_want_size(int width, int height)
+{
+    (void)width, (void)height;
+}
+void vkp_ui_game_here(void) {}
+void vkp_ui_blend(bool on)
+{
+    (void)on;
 }
 
 #endif

@@ -53,7 +53,7 @@ It uses PSXS5's frontend (the shelf, menus, controls and tools) to drive the Swa
 - **Rewind and fast forward.** Hold the touchpad and press L2 to go back a few seconds, or R2 to speed through cutscenes.
 - **Save states with pictures.** Ten slots per game, each showing a thumbnail and how long ago it was saved.
 - **Widescreen.** SwanStation's widescreen hack (Settings → Graphics) draws the 3D picture in 16:9.
-- **CRT look.** Light or strong scanlines, and a soft glow or a 90s TV around the picture.
+- **CRT look.** Light or strong scanlines, and the current background or a 90s TV around the picture.
 - **Shaders for the picture** (Settings → Display → Shader): Sharp bilinear (crisp PS1 pixels at any internal resolution), CRT Basic (scanlines, an RGB grille and glow), LCD3x (a handheld's LCD), CRT Royale (a detailed CRT with bloom and a phosphor mask) and four NTSC ones (320px or 256px, S-Video or Composite) that recreate the analog TV signal.
 - **Double frames.** AMD FSR 3's frame interpolation doubles the game's real frames: a 30 fps game is shown at 60, and a 60 fps one at 120 if your TV supports it (otherwise it stays at 60). SwanStation tells the app when a picture is a repeat, so the doubling starts from the game's real rate. The shaders run after it, CRT Royale and NTSC included.
 - **Show FPS that tells the truth.** It shows the emulated frames, the game's own rate when the game repeats pictures (`60.0 FPS (game 25.0)`) and the frames you actually see while doubling (`| FG 50`).
@@ -122,6 +122,8 @@ On each USB drive and extended storage these four also work (`<drive>` is `/mnt/
 - `<drive>/PSXS5/<Game name>/`
 
 Example on a USB drive: `/mnt/usb0/SwanStationPS5/games/Crash Bandicoot/Crash Bandicoot.chd`.
+
+You can also pick one folder name for USB drives in Settings > System > SwanStationPS5 > Games folder on USB drives (`psx` by default): it is looked for on `/mnt/usb0/` and `/mnt/usb1/` at once, since the drive's number changes with the ones plugged in. With `psx`, a game goes in `/mnt/usb0/psx/<Game name>/` or `/mnt/usb1/psx/<Game name>/`. Leave the field empty to turn it off.
 
 ### BIOS: one folder, no subfolders
 

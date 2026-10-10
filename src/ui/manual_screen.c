@@ -128,7 +128,7 @@ static void load_page(void)
     unsigned char *px = stbi_load(N.pages[N.page], &w, &h, &comp, 4);
     if (!px)
         return;
-    N.texture = plat_texture_create(px, w, h, true);
+    N.texture = plat_texture_create_mips(px, w, h);
     stbi_image_free(px);
 }
 

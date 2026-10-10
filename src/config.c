@@ -13,7 +13,7 @@ void config_defaults(Settings *s)
     memset(s, 0, sizeof(*s));
     s->aspect = ASPECT_AUTO;
     s->smooth = false; /* sharp pixels; "Smooth final scaling" is opt-in */
-    s->internal_res = 1;
+    s->internal_res = 3; /* 4x (1 native, 2 2x, 3 4x, 4 8x, 5 16x) */
     s->upscale = 2;
     s->upscale_filter = UPSCALE_XBR;
     s->region = REGION_AUTO;
@@ -27,6 +27,11 @@ void config_defaults(Settings *s)
     s->vibration = 4;
     s->quick_resume = true;
     s->update_check = true;
+    s->gpu_ui = true;
+    snprintf(s->usb_folder, sizeof(s->usb_folder), "psx"); /* /mnt/usb0/psx and /mnt/usb1/psx */
+    s->bezel = true; /* the game's artwork frame, when there is one */
+    s->theme = 1; /* Neon Arcade (THEME_NEON in ui/theme.h) */
+    s->output_res = 2; /* 4K */
     s->pgxp = true; /* no wobbling polygons */
     s->ra_popups = true;
     s->hd_textures = true;
@@ -209,6 +214,12 @@ static bool config_apply(Settings *s, const char *path)
             s->fast_effects = as_bool(value);
         else if (strcmp(key, "framegen") == 0)
             s->framegen = as_bool(value);
+        else if (strcmp(key, "gpu_ui") == 0)
+            s->gpu_ui = as_bool(value);
+        else if (strcmp(key, "usb_folder") == 0)
+            snprintf(s->usb_folder, sizeof(s->usb_folder), "%s", value);
+        else if (strcmp(key, "output_res") == 0)
+            s->output_res = atoi(value) % 3;
         else if (strcmp(key, "fsr") == 0)
             s->fsr = as_bool(value);
         else if (strcmp(key, "rewind") == 0)
@@ -272,6 +283,9 @@ bool config_load_game(Settings *out, const Settings *global, const char *path)
     out->background = global->background;
     out->remote = global->remote;
     out->update_check = global->update_check;
+    out->gpu_ui = global->gpu_ui;
+    snprintf(out->usb_folder, sizeof(out->usb_folder), "%s", global->usb_folder);
+    out->output_res = global->output_res;
     out->quick_resume = global->quick_resume;
     return true;
 }
@@ -280,12 +294,34 @@ bool config_load_game(Settings *out, const Settings *global, const char *path)
  * (frame interpolation's 120 Hz mode is chosen when the screen opens) */
 bool config_peek_bool(const char *path, const char *key)
 {
+    return config_peek_bool_or(path, key, false);
+}
+
+/* A whole number from a settings file, `otherwise` when it isn't there */
+int config_peek_int(const char *path, const char *key, int otherwise)
+{
     FILE *f = fopen(path, "r");
     if (!f)
-        return false;
+        return otherwise;
     char line[256];
     size_t n = strlen(key);
-    bool on = false;
+    int value = otherwise;
+    while (fgets(line, sizeof(line), f))
+        if (!strncmp(line, key, n) && line[n] == '=')
+            value = atoi(line + n + 1);
+    fclose(f);
+    return value;
+}
+
+/* The same, with the value for a file that doesn't have the key (or doesn't exist) */
+bool config_peek_bool_or(const char *path, const char *key, bool otherwise)
+{
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return otherwise;
+    char line[256];
+    size_t n = strlen(key);
+    bool on = otherwise;
     while (fgets(line, sizeof(line), f))
         if (!strncmp(line, key, n) && line[n] == '=')
             on = atoi(line + n + 1) != 0;
@@ -315,7 +351,7 @@ bool config_save(const Settings *s, const char *path)
     fprintf(f, "widescreen=%d\nmultitap=%d\nrewind=%d\nquick_resume=%d\ncrt=%d\nborder=%d\nremote=%d\nupdate_check=%d\n",
             s->widescreen, s->multitap, s->rewind, s->quick_resume, s->crt, s->border, s->remote,
             s->update_check);
-    fprintf(f, "renderer=%d\n", s->renderer);
+    fprintf(f, "renderer=%d\ngpu_ui=%d\noutput_res=%d\nusb_folder=%s\n", s->renderer, s->gpu_ui, s->output_res, s->usb_folder);
     fprintf(f, "pgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->pgxp, s->ra_popups, s->ra_tracker,
             s->crop_edges);
     fprintf(f, "ra_popup_style=%d\nlightbar=%d\nshader=%d\nhd_textures=%d\ntheme=%d\n", s->ra_popup_style,

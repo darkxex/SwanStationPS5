@@ -329,6 +329,7 @@ void shelf_backdrop(void)
     if (made != key)
     {
         make_backdrop(grey, W, H, theme.backdrop, theme.light);
+        plat_backdrop_changed(); /* the same buffer, new picture */
         made = key;
     }
     uint32_t tint = theme.backdrop_tint
@@ -412,29 +413,25 @@ static PlatTexture *shelf_cover(int index)
     return covers_is_placeholder(index) && no_cover_icon() ? NULL : covers_get(index);
 }
 
-/* The floor under the selected cover: its lower part mirrored in thin strips (a plain blit each, nothing
- * the software renderer finds slow), fading out downwards. Only the selected cover has one. */
-static void draw_cover_reflection(PlatTexture *tex, float x, float y, float w, float h)
+/* The floor under a cover: its lower part mirrored, fading out downwards. Only with the GPU interface (Vulkan): it
+ * draws it as one mirrored picture whose opacity fades out by itself; the CPU's renderer does without. */
+/* Follows the switch in Settings, which changes the interface at once */
+static bool reflections_on(void)
 {
-    int tw = 1, th = 1;
-    plat_texture_size(tex, &tw, &th);
-    enum { STRIPS = 120 }; /* about one picture row each, so the mirror reads smooth */
-    const float reach = 0.36f; /* the part of the cover that shows in the floor */
-    const float dst_h = h * reach / STRIPS;
-    const int src_h = (int)(th * reach / STRIPS) > 0 ? (int)(th * reach / STRIPS) : 1;
-    for (int i = 0; i < STRIPS; ++i)
-    {
-        float fade = 1.0f - (float)i / STRIPS;
-        uint32_t a = (uint32_t)(255.0f * 0.36f * fade * fade);
-        if (a == 0)
-            break;
-        int sy = th - (i + 1) * src_h;
-        if (sy < 0)
-            break;
-        /* the edges are the blit's own rounded ones, so strips neither overlap nor leave gaps */
-        plat_draw_texture_region(tex, 0, sy, tw, src_h, x, y + h + 4 + i * dst_h, w, dst_h,
-                                 0x00ffffffu | a << 24);
-    }
+    return plat_gpu_ui_active();
+}
+
+static void draw_cover_reflection(PlatTexture *tex, float x, float y, float w, float h, uint32_t tint)
+{
+    const float reach = 0.40f, top = y + h + 4, bottom = top + h * reach;
+    const uint32_t rgb = tint & 0x00ffffffu, near_a = (uint32_t)(((tint >> 24) & 0xffu) * 0.36f);
+    const PlatVertex v[6] = {{x, top, 0.0f, 1.0f, rgb | near_a << 24},
+                             {x + w, top, 1.0f, 1.0f, rgb | near_a << 24},
+                             {x + w, bottom, 1.0f, 1.0f - reach, rgb},
+                             {x, top, 0.0f, 1.0f, rgb | near_a << 24},
+                             {x + w, bottom, 1.0f, 1.0f - reach, rgb},
+                             {x, bottom, 0.0f, 1.0f - reach, rgb}};
+    plat_draw_mesh(tex, v, 6, NULL, 0);
 }
 
 static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, float h, float squeeze,
@@ -459,11 +456,15 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
     {
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
-        if (selected)
-            draw_cover_reflection(tex, x, y, w, h);
+        if (reflections_on()) /* every cover, with the GPU interface only */
+            draw_cover_reflection(tex, x, y, w, h, tint);
     }
     else if (no_cover_icon())
+    {
         plat_draw_texture(no_cover_icon(), x, y, w, h, tint, false);
+        if (reflections_on())
+            draw_cover_reflection(no_cover_icon(), x, y, w, h, tint);
+    }
     else
     {
         draw_rrect(x, y, w, h, 10, TH_CARD);
@@ -935,7 +936,7 @@ static void picker_draw(void)
         uint8_t *rgba = P.cursor > 0 ? covers_decode(P.files[P.cursor], &iw, &ih) : NULL;
         if (rgba)
         {
-            P.preview = plat_texture_create(rgba, iw, ih, true);
+            P.preview = plat_texture_create_mips(rgba, iw, ih);
             free(rgba);
         }
     }

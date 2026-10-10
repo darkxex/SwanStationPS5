@@ -72,6 +72,8 @@ enum Special
     SP_PROFILE,
     SP_WHO,
     SP_HDTEX, /* drives the two core options for texture packs */
+    SP_OUTPUT, /* the screen's resolution, changed at once */
+    SP_USBFOLDER, /* the games folder on USB drives, typed */
 };
 
 typedef struct
@@ -108,6 +110,7 @@ static const char *const OFF_ON[] = {"Off", "On"};
 static const char *const ASPECTS[] = {"Core", "4:3", "16:9", "16:10", "1:1 pixels",
                                       "Stretch to screen"};
 static const char *const RENDERERS[] = {"GPU (Recommended)", "CPU"};
+static const char *const OUTPUTS[] = {"1080p", "1440p", "4K"};
 static const char *const INTERNAL[] = {"Native", "2x", "4x", "8x", "16x"};
 /* unused while the Emulator row is commented out */
 static const __attribute__((unused)) char *const UPSCALE[] = {"Off", "2x", "3x", "4x"};
@@ -121,7 +124,7 @@ static const char *const VIBRATIONS[] = {"Off", "25%", "50%", "75%", "100%"};
 static const char *const STICK_MODES[] = {"Auto (digital games)", "Always", "Off"};
 static const char *const BACKGROUNDS[] = {"Dark", "Cover colour"};
 static const char *const CRT_LEVELS[] = {"Off", "Light", "Strong"};
-static const char *const BORDERS[] = {"Black", "Soft glow", "TV frame"};
+static const char *const BORDERS[] = {"Black", "Current background", "TV frame"};
 static const char *const CROPS[] = {"Off", "A little", "More"};
 static const char *const SHADERS[] = {"Off", "LCD3x", "CRT Royale", "CRT Basic", "Sharp bilinear",
                                       "NTSC 320px S-Video", "NTSC 320px Composite", "NTSC 256px S-Video",
@@ -176,7 +179,7 @@ static const Row DISPLAY[] = {
      APPLY_NOW, SP_NONE, false, BOOL_FIELD(smooth), OFF_ON, 2, 0},
     {"Look", "CRT scanlines", "Dark lines between the picture's lines, like an old TV.", K_CHOICE, APPLY_NOW,
      SP_NONE, false, INT_FIELD(crt), CRT_LEVELS, 3, 0},
-    {NULL, "Border", "What surrounds a 4:3 picture: black, a soft glow, or a TV.", K_CHOICE, APPLY_NOW,
+    {NULL, "Border", "What surrounds a 4:3 picture: black, the current background, or a TV.", K_CHOICE, APPLY_NOW,
      SP_NONE, false, INT_FIELD(border), BORDERS, 3, 0},
     {NULL, "Game artwork border", "Shows the game's own artwork around a 4:3 picture instead of the border, when there is one (downloaded with the covers).",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(bezel), OFF_ON, 2, 0},
@@ -280,6 +283,12 @@ static const Row LIBRARY[] = {
 };
 
 static const Row SYSTEM[] = {
+    {"SwanStationPS5", "Interface on the GPU (Vulkan)", "Draws the shelf and the menus with the GPU (Vulkan), which is faster. Turn off to draw them with the CPU, as before. It changes at once.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(gpu_ui), OFF_ON, 2, 0},
+    {NULL, "Games folder on USB drives", "A folder name to look for games in on USB drives. It is looked for on /mnt/usb0/ and /mnt/usb1/ at once, as the number changes with the drives plugged in: psx searches /mnt/usb0/psx and /mnt/usb1/psx. Leave it empty to turn it off.",
+     K_ACTION, APPLY_NOW, SP_USBFOLDER, true, NO_FIELD, NULL, 0, 0},
+    {NULL, "Output resolution", "The resolution of the picture sent to the TV: 1080p, 1440p or 4K. Higher is sharper but asks more of the console. It needs the interface on the GPU (Vulkan) and changes at once; the screen goes dark for a moment. If your TV doesn't offer the one you pick, 1080p is used.",
+     K_CHOICE, APPLY_NOW, SP_OUTPUT, true, INT_FIELD(output_res), OUTPUTS, 3, 0},
     {"Emulation", "Region", "Auto follows the disc; force 50 or 60 Hz if a game misbehaves.", K_CHOICE,
      APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(region), REGIONS, 3, 0},
     {NULL, "Fast CD loading", "Shorter loading screens; videos still play at normal speed. Rarely, a game glitches.", K_TOGGLE, APPLY_NOW,
@@ -542,8 +551,16 @@ static void hdtex_set(Settings *t, bool on)
     }
 }
 
+/* Resolutions above 1080p are for the GPU interface: with it off, the output is 1080p and its row is locked */
+static bool row_locked(const Row *r)
+{
+    return r->special == SP_OUTPUT && !app.global.gpu_ui;
+}
+
 static int read_value(const Row *r)
 {
+    if (row_locked(r))
+        return 0;
     switch (r->special)
     {
     case SP_HDTEX: return hdtex_on(target(r)) ? 1 : 0;
@@ -559,6 +576,11 @@ static int read_value(const Row *r)
 
 static void write_value(const Row *r, int v)
 {
+    if (row_locked(r))
+    {
+        app_toast("Turn on the interface on the GPU first");
+        return;
+    }
     switch (r->special)
     {
     case SP_HDTEX:
@@ -611,6 +633,26 @@ static void write_value(const Row *r, int v)
         theme_apply(app.global.theme);
     if (r->special == SP_REMOTE)
         remote_update(app.global.remote);
+    if (r->special == SP_OUTPUT)
+        plat_set_output(app.global.output_res);
+    if (r->offset == (int)offsetof(Settings, gpu_ui))
+    {
+        /* the interface changes at once. Off: the output is 1080p (the CPU's canvas is that size) and its row locked.
+         * On: 4K, as far as the TV offers it (the mode falls back to 1080p by itself). */
+        if (!app.global.gpu_ui)
+        {
+            app.global.output_res = 0;
+            app.settings.output_res = 0;
+            plat_set_gpu_ui(false); /* puts the screen back at 1080p */
+        }
+        else
+        {
+            plat_set_gpu_ui(true);
+            app.global.output_res = 2;
+            app.settings.output_res = 2;
+            plat_set_output(2);
+        }
+    }
     if (r->special == SP_SOUND)
         sfx_configure(app.global.ui_sound, (app.global.ui_volume + 1) * 25);
     if (app.game)
@@ -634,6 +676,7 @@ static const char *value_label(const Row *r, char *buf, size_t size)
     case SP_DATA: return app.paths.root;
     case SP_CREDITS: return "AngelXex";
     case SP_HOTKEYS: return tr("Touchpad + R2 / L2");
+    case SP_USBFOLDER: return app.global.usb_folder[0] ? app.global.usb_folder : tr("Off");
     case SP_UPDATE:
         switch (update_state())
         {
@@ -1397,7 +1440,8 @@ static void draw_rows(void)
             continue;
         bool sel = i == S.cursor;
         bool dimmed = r->global_only && S.game_scope && app.game;
-        text_draw(x + 30, ry + 21, 28, FONT_REGULAR, dimmed && !sel ? TH_TEXT_DIM : TH_TEXT, ALIGN_LEFT,
+        const bool locked = row_locked(r);
+        text_draw(x + 30, ry + 21, 28, FONT_REGULAR, (dimmed && !sel) || locked ? TH_TEXT_DIM : TH_TEXT, ALIGN_LEFT,
                   tr(row_name(r)));
         if (dimmed)
             icon_draw(ICON_WORLD, x + 40 + text_width(28, FONT_REGULAR, tr(row_name(r))), ry + 24, 24,
@@ -1407,8 +1451,8 @@ static void draw_rows(void)
         switch (r->kind)
         {
         case K_CHOICE:
-            draw_choice(right, ry + 15, 46, 24, sel ? (theme.light ? TH_BG : TH_SWITCH_OFF) : TH_PILL, TH_TEXT_SOFT,
-                        value_label(r, buf, sizeof(buf)));
+            draw_choice(right, ry + 15, 46, 24, sel ? (theme.light ? TH_BG : TH_SWITCH_OFF) : TH_PILL,
+                        locked ? TH_TEXT_DIM : TH_TEXT_SOFT, value_label(r, buf, sizeof(buf)));
             break;
         case K_TOGGLE:
         {
@@ -1419,7 +1463,7 @@ static void draw_rows(void)
         }
         case K_ACTION:
             icon_draw(ICON_CHEVRON_RIGHT, right - 36, ry + 21, 34, TH_TEXT_SOFT);
-            if (r->special == SP_UPDATE)
+            if (r->special == SP_UPDATE || r->special == SP_USBFOLDER)
                 text_draw_fit(right - 50, ry + 24, 22, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT, w - 520,
                               value_label(r, buf, sizeof(buf)));
             break;
@@ -1430,6 +1474,26 @@ static void draw_rows(void)
         }
     }
     plat_set_clip(0, 0, 0, 0);
+}
+
+/* The text typed for the USB folder: without slashes at its ends or spaces around, no ".." */
+static void usb_folder_set(const char *text)
+{
+    char name[sizeof(app.global.usb_folder)];
+    str_copy(name, sizeof(name), text);
+    size_t start = 0, end = strlen(name);
+    while (start < end && (name[start] == '/' || name[start] == ' '))
+        ++start;
+    while (end > start && (name[end - 1] == '/' || name[end - 1] == ' '))
+        --end;
+    name[end] = '\0';
+    memmove(name, name + start, end - start + 1);
+    if (strstr(name, ".."))
+        name[0] = '\0';
+    str_copy(app.global.usb_folder, sizeof(app.global.usb_folder), name);
+    str_copy(app.settings.usb_folder, sizeof(app.settings.usb_folder), name);
+    app_save_settings();
+    app_rescan();
 }
 
 static void activate(const Row *r)
@@ -1466,6 +1530,12 @@ static void activate(const Row *r)
     case SP_STATS:
         sfx_play(SFX_SELECT);
         library_stats_open(SCREEN_SETTINGS);
+        return;
+    case SP_USBFOLDER:
+        sfx_play(SFX_SELECT);
+        textinput_open(SCREEN_SETTINGS, "Games folder on USB drives",
+                       "Type the folder name: games are looked for on /mnt/usb0/ and /mnt/usb1/",
+                       app.global.usb_folder, usb_folder_set);
         return;
     case SP_UPDATE:
         sfx_play(SFX_SELECT);

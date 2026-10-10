@@ -74,9 +74,50 @@ static bool init_failed(const char *stage)
 }
 
 #if defined(__PROSPERO__)
+static bool gpu_ui;        /* the interface is drawn by the GPU (vk_ui.inc) now: the setting, changed at once */
+static bool gpu_ui_available; /* the GPU layer exists */
+static bool gpu_ui_wanted = true;
+static int output_wanted; /* 0 1080p, 1 1440p, 2 4K */
+
+/* A textured rectangle of the GPU interface; tex < 0: the tint alone. Corners in canvas pixels. */
+static void gpu_quad(int tex, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1,
+                     uint32_t argb)
+{
+    const VkpUiVertex v[6] = {{x0, y0, u0, v0, argb}, {x1, y0, u1, v0, argb}, {x1, y1, u1, v1, argb},
+                              {x0, y0, u0, v0, argb}, {x1, y1, u1, v1, argb}, {x0, y1, u0, v1, argb}};
+    vkp_ui_draw(tex, v, 6);
+}
+
+#else
+#define gpu_ui false /* the GPU interface exists on the console only */
+static bool gpu_ui_wanted;
+static int output_wanted;
+typedef struct
+{
+    float x, y, u, v;
+    uint32_t argb;
+} VkpUiVertex;
+static void gpu_quad(int tex, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1,
+                     uint32_t argb)
+{
+    (void)tex, (void)x0, (void)y0, (void)x1, (void)y1, (void)u0, (void)v0, (void)u1, (void)v1, (void)argb;
+}
+static void vkp_ui_draw(int id, const VkpUiVertex *v, int count) { (void)id, (void)v, (void)count; }
+static void vkp_ui_begin(uint32_t clear_argb) { (void)clear_argb; }
+static void vkp_ui_game_here(void) {}
+static void vkp_ui_blend(bool on) { (void)on; }
+static void vkp_ui_clip(int x, int y, int w, int h) { (void)x, (void)y, (void)w, (void)h; }
+static int vkp_ui_texture_create(const uint8_t *rgba, int w, int h, bool smooth, bool mips, bool copy)
+{
+    (void)rgba, (void)w, (void)h, (void)smooth, (void)mips, (void)copy;
+    return -1;
+}
+static void vkp_ui_texture_free(int id) { (void)id; }
+#endif
+
+#if defined(__PROSPERO__)
 static SDL_Surface *canvas; /* 1920x1080 RGBA in ordinary memory; shown by ps5_video */
 static bool use_vulkan;    /* v2: shown by vk_present instead */
-
 /* SDL's PS5 video driver can't provide a window surface or a renderer, so on
  * PS5 SDL is started without it: SDL draws (software renderer into `canvas`),
  * plays sound and reads controllers; ps5_video.c puts frames on screen. */
@@ -91,9 +132,21 @@ static bool init_ps5_screen(void)
     bool forced_off = off != NULL;
     if (off)
         fclose(off);
+    /* a bigger output is for the GPU interface, which draws at any size (the CPU canvas would only be stretched) */
+    static const int OUTPUT_W[] = {1920, 2560, 3840}, OUTPUT_H[] = {1080, 1440, 2160};
+    const int output = gpu_ui_wanted && output_wanted > 0 && output_wanted < 3 ? output_wanted : 0;
+    vkp_want_size(OUTPUT_W[output], OUTPUT_H[output]);
     use_vulkan = !forced_off && vkp_open(PS5_SCREEN_W, PS5_SCREEN_H, error, sizeof(error));
     if (use_vulkan)
+    {
         snprintf(screen_info, sizeof(screen_info), "Vulkan, %s", vkp_describe());
+        /* the shelf and the menus through the GPU too (Settings > System > SwanStationPS5); the CPU's canvas if it can't */
+        {
+            char ui_error[160];
+            gpu_ui_available = vkp_ui_open(ui_error, sizeof(ui_error));
+            gpu_ui = gpu_ui_available && gpu_ui_wanted;
+        }
+    }
     else
         snprintf(screen_info, sizeof(screen_info), "VideoOut (Vulkan %s)",
                  forced_off ? "turned off by /data/SwanStationPS5/no_vulkan" : error);
@@ -922,6 +975,11 @@ int plat_height(void)
 
 void plat_begin_frame(uint32_t clear_argb)
 {
+    if (gpu_ui)
+    {
+        vkp_ui_begin(clear_argb); /* the clear is the render pass's: the game's picture is drawn over it */
+        return;
+    }
     SDL_RenderSetClipRect(renderer, NULL);
     if ((clear_argb >> 24) == 0)
         return; /* the screen draws an opaque backdrop: skip the clear */
@@ -1075,6 +1133,66 @@ void plat_set_framegen(bool on, double core_hz, double speed, bool nominal)
     vkp_set_framegen(on, core_hz, speed, nominal);
 #else
     (void)on, (void)core_hz, (void)speed, (void)nominal;
+#endif
+}
+
+void plat_want_gpu_ui(bool on)
+{
+    gpu_ui_wanted = on;
+}
+
+void plat_want_output(int resolution)
+{
+    output_wanted = resolution;
+}
+
+bool plat_gpu_ui_active(void)
+{
+    return gpu_ui;
+}
+
+/* The shelf and the menus through the GPU or the CPU, at once (Settings > System > SwanStationPS5). Turning it off puts
+ * the screen back at 1080p first, since the CPU's canvas is that size. The textures follow by themselves: each mode
+ * makes its own from the pixels the texture keeps. False when there is no GPU layer, or the switch can't be done. */
+bool plat_set_gpu_ui(bool on)
+{
+#if defined(__PROSPERO__)
+    if (!gpu_ui_available)
+        return false;
+    if (on == gpu_ui)
+        return true;
+    if (!on)
+    {
+        char error[160];
+        vkp_set_mode(1920, 1080, error, sizeof(error));
+        gpu_ui = false;
+    }
+    else
+    {
+        gpu_ui = true;
+        vkp_ui_begin(0); /* the frame being drawn starts its list over */
+    }
+    return true;
+#else
+    (void)on;
+    return false;
+#endif
+}
+
+bool plat_set_output(int resolution)
+{
+#if defined(__PROSPERO__)
+    static const int OUTPUT_W[] = {1920, 2560, 3840}, OUTPUT_H[] = {1080, 1440, 2160};
+    if (!gpu_ui || resolution < 0 || resolution > 2)
+        return false;
+    char error[160];
+    if (vkp_set_mode(OUTPUT_W[resolution], OUTPUT_H[resolution], error, sizeof(error)))
+        return true;
+    SwanStationPS5_log("screen: %dx%d failed: %s", OUTPUT_W[resolution], OUTPUT_H[resolution], error);
+    return false;
+#else
+    (void)resolution;
+    return false;
 #endif
 }
 
@@ -1371,9 +1489,26 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
 #if defined(__PROSPERO__)
     if (game_gpu && vkp_game_image_ready())
     {
-        /* a hole in the canvas where the GPU draws the picture; its alpha
-         * darkens the picture for the menus (premultiplied black) */
+        /* the CPU canvas: a hole where the GPU draws the picture; its alpha darkens the picture for the menus
+         * (premultiplied black). The GPU interface just draws that black over it. */
         SDL_Rect hole = {(out_w - dw) / 2, (out_h - dh) / 2, dw, dh};
+        if (gpu_ui)
+        {
+            vkp_ui_game_here(); /* the picture goes in the list here: the border before it is under it, the dimming over it */
+            if (scan && lines > 0)
+                for (int y = 0; y < dh; ++y)
+                {
+                    int64_t pos = ((int64_t)y * 2 + 1) * lines * 128 / dh;
+                    int phase = (int)(pos & 255) - 128;
+                    uint32_t edge = (uint32_t)(phase * phase) >> 6;
+                    uint32_t keep = (uint32_t)dim * (256 - ((edge * scan) >> 8)) >> 8;
+                    plat_fill_rect(hole.x, hole.y + y, hole.w, 1, (255 - (keep > 255 ? 255 : keep)) << 24);
+                }
+            else if (dim < 255)
+                plat_fill_rect(hole.x, hole.y, hole.w, hole.h, (uint32_t)(255 - dim) << 24);
+        }
+        else
+        {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         if (scan && lines > 0)
         {
@@ -1395,6 +1530,7 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
             SDL_RenderFillRect(renderer, &hole);
         }
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        }
         /* supersampling: a picture bigger than its place on screen, averaged down */
         int shader = settings->shader;
         if (!shader && settings->supersampling && (game_src_w > dw || game_src_h > dh))
@@ -1403,6 +1539,51 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
         vkp_set_game_nearest(!settings->smooth && !shader);
         vkp_show_game((float)hole.x, (float)hole.y, (float)hole.w, (float)hole.h, crop, shader, game_src_w,
                                       game_src_h, lines);
+        return;
+    }
+    if (game_image && gpu_ui)
+    {
+        /* the picture of the software renderer as a texture of the GPU interface, updated every frame */
+        static int soft_tex = -1, soft_w, soft_h;
+        static bool soft_smooth;
+        static uint8_t *rgba;
+        const int cut = (int)(game_image_h * crop), vis_h = game_image_h - 2 * cut;
+        if (soft_tex < 0 || soft_w != game_image_w || soft_h != game_image_h || soft_smooth != settings->smooth)
+        {
+            if (soft_tex >= 0)
+                vkp_ui_texture_free(soft_tex);
+            free(rgba);
+            rgba = malloc((size_t)game_image_w * game_image_h * 4);
+            soft_tex = -1;
+            if (rgba)
+            {
+                memset(rgba, 255, (size_t)game_image_w * game_image_h * 4);
+                soft_tex = vkp_ui_texture_create(rgba, game_image_w, game_image_h, settings->smooth, false, true);
+            }
+            soft_w = game_image_w;
+            soft_h = game_image_h;
+            soft_smooth = settings->smooth;
+        }
+        if (soft_tex >= 0 && rgba)
+        {
+            for (int y = 0; y < game_image_h; ++y)
+            {
+                const uint32_t *src = game_image + (size_t)y * game_image_pitch;
+                uint8_t *dst = rgba + (size_t)y * game_image_w * 4;
+                for (int x = 0; x < game_image_w; ++x)
+                {
+                    uint32_t c = src[x];
+                    dst[x * 4] = (uint8_t)(c >> 16);
+                    dst[x * 4 + 1] = (uint8_t)(c >> 8);
+                    dst[x * 4 + 2] = (uint8_t)c;
+                    dst[x * 4 + 3] = 255;
+                }
+            }
+            vkp_ui_texture_update(soft_tex, rgba);
+            gpu_quad(soft_tex, (float)((out_w - dw) / 2), (float)((out_h - dh) / 2), (float)((out_w - dw) / 2 + dw),
+                     (float)((out_h - dh) / 2 + dh), 0.0f, (float)cut / game_image_h, 1.0f,
+                     (float)(cut + vis_h) / game_image_h, 0xff000000u | (uint32_t)dim << 16 | (uint32_t)dim << 8 | dim);
+        }
         return;
     }
     if (game_image)
@@ -1445,6 +1626,12 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
 
 void plat_fill_rect(int x, int y, int w, int h, uint32_t argb)
 {
+    if (gpu_ui)
+    {
+        if ((argb >> 24) != 0 && w > 0 && h > 0)
+            gpu_quad(-1, (float)x, (float)y, (float)(x + w), (float)(y + h), 0, 0, 0, 0, argb);
+        return;
+    }
     SDL_Rect r = {x, y, w, h};
     set_draw_color(argb);
     SDL_RenderFillRect(renderer, &r);
@@ -1480,8 +1667,42 @@ static void backdrop_rows(void *ctx, int begin, int end)
 }
 #endif
 
+static bool backdrop_dirty;
+
+void plat_backdrop_changed(void)
+{
+    backdrop_dirty = true;
+}
+
 void plat_draw_backdrop(const uint8_t *grey, int w, int h, uint32_t tint)
 {
+    if (gpu_ui)
+    {
+        /* the grey picture as a texture, made once and again when the picture is rewritten: the GPU tints and scales it */
+        static const uint8_t *shown;
+        static int tex = -1, shown_w, shown_h;
+        if (tex < 0 || backdrop_dirty || shown != grey || shown_w != w || shown_h != h)
+        {
+            if (tex >= 0)
+                vkp_ui_texture_free(tex);
+            uint8_t *px = malloc((size_t)w * h * 4);
+            tex = -1;
+            if (px)
+            {
+                for (size_t i = 0; i < (size_t)w * h; ++i)
+                    px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = grey[i], px[i * 4 + 3] = 255;
+                tex = vkp_ui_texture_create(px, w, h, true, false, true);
+                free(px);
+            }
+            shown = grey;
+            shown_w = w;
+            shown_h = h;
+            backdrop_dirty = false;
+        }
+        if (tex >= 0)
+            gpu_quad(tex, 0, 0, (float)out_w, (float)out_h, 0, 0, 1, 1, 0xff000000u | (tint & 0x00ffffffu));
+        return;
+    }
 #if defined(__PROSPERO__)
     static BackdropJob job;
     job.grey = grey;
@@ -1495,6 +1716,12 @@ void plat_draw_backdrop(const uint8_t *grey, int w, int h, uint32_t tint)
 #else
     /* desktop: a texture, made once from the grey picture */
     static PlatTexture *texture;
+    if (texture && backdrop_dirty)
+    {
+        plat_texture_free(texture); /* another theme rewrote the picture */
+        texture = NULL;
+    }
+    backdrop_dirty = false;
     if (!texture)
     {
         uint8_t *px = malloc((size_t)w * h * 4);
@@ -1555,7 +1782,8 @@ static void profile_frame_end(void)
 void plat_end_frame(void)
 {
     profile_frame_end();
-    SDL_RenderPresent(renderer);
+    if (!gpu_ui)
+        SDL_RenderPresent(renderer);
 #if defined(SwanStationPS5_PREVIEW)
     preview_clock += 16667;
 #endif
@@ -1563,7 +1791,9 @@ void plat_end_frame(void)
     static uint64_t frame_start, draw_us, present_us;
     static int frames;
     uint64_t drawn = plat_ticks_us();
-    if (use_vulkan)
+    if (use_vulkan && gpu_ui)
+        vkp_present_ui(); /* the interface's list over the game; waits for vblank */
+    else if (use_vulkan)
         vkp_present(canvas->pixels, (size_t)canvas->pitch); /* waits for vblank */
     else
         ps5_video_present(canvas->pixels, (size_t)canvas->pitch);
@@ -1588,40 +1818,80 @@ void plat_end_frame(void)
 
 struct PlatTexture
 {
-    SDL_Texture *sdl;
+    SDL_Texture *sdl; /* made by the CPU mode when it first draws the texture */
+    int gpu;          /* the GPU interface's texture id, -1 until the GPU mode draws it */
     int width, height;
+    uint8_t *rgba;    /* the pixels, kept so either mode can make its texture: the interface can change at once */
+    bool smooth, mips;
 };
 
-PlatTexture *plat_texture_create(const uint8_t *rgba, int width, int height, bool smooth)
+/* The CPU mode's texture, made on first use */
+static SDL_Texture *texture_sdl(PlatTexture *t)
+{
+    if (t->sdl)
+        return t->sdl;
+    t->sdl = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, t->width,
+                               t->height); /* ABGR8888 = R,G,B,A bytes in memory */
+    if (!t->sdl)
+    {
+        SwanStationPS5_log("texture %dx%d failed: %s", t->width, t->height, SDL_GetError());
+        return NULL;
+    }
+    SDL_UpdateTexture(t->sdl, NULL, t->rgba, t->width * 4);
+    SDL_SetTextureBlendMode(t->sdl, SDL_BLENDMODE_BLEND);
+#if SDL_VERSION_ATLEAST(2, 0, 12)
+    SDL_SetTextureScaleMode(t->sdl, t->smooth ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+#endif
+    return t->sdl;
+}
+
+/* The GPU mode's texture, made on first use (it borrows the pixels) */
+static int texture_gpu(PlatTexture *t)
+{
+    if (t->gpu < 0)
+        t->gpu = vkp_ui_texture_create(t->rgba, t->width, t->height, t->smooth, t->mips, false);
+    return t->gpu;
+}
+
+static PlatTexture *texture_create(const uint8_t *rgba, int width, int height, bool smooth, bool mips)
 {
     PlatTexture *t = SDL_calloc(1, sizeof(*t));
     if (!t)
         return NULL;
-    t->sdl = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC,
-                               width, height); /* ABGR8888 = R,G,B,A bytes in memory */
-    if (!t->sdl)
+    t->gpu = -1;
+    t->rgba = SDL_malloc((size_t)width * height * 4);
+    if (!t->rgba)
     {
-        SwanStationPS5_log("texture %dx%d failed: %s", width, height, SDL_GetError());
         SDL_free(t);
         return NULL;
     }
-    SDL_UpdateTexture(t->sdl, NULL, rgba, width * 4);
-    SDL_SetTextureBlendMode(t->sdl, SDL_BLENDMODE_BLEND);
-#if SDL_VERSION_ATLEAST(2, 0, 12)
-    SDL_SetTextureScaleMode(t->sdl, smooth ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
-#else
-    (void)smooth;
-#endif
+    memcpy(t->rgba, rgba, (size_t)width * height * 4);
     t->width = width;
     t->height = height;
+    t->smooth = smooth;
+    t->mips = mips;
     return t;
+}
+
+PlatTexture *plat_texture_create(const uint8_t *rgba, int width, int height, bool smooth)
+{
+    return texture_create(rgba, width, height, smooth, false);
+}
+
+PlatTexture *plat_texture_create_mips(const uint8_t *rgba, int width, int height)
+{
+    return texture_create(rgba, width, height, true, true);
 }
 
 void plat_texture_free(PlatTexture *t)
 {
     if (!t)
         return;
-    SDL_DestroyTexture(t->sdl);
+    if (t->gpu >= 0)
+        vkp_ui_texture_free(t->gpu);
+    if (t->sdl)
+        SDL_DestroyTexture(t->sdl);
+    SDL_free(t->rgba);
     SDL_free(t);
 }
 
@@ -1634,6 +1904,31 @@ void plat_texture_size(const PlatTexture *t, int *width, int *height)
 void plat_draw_mesh(PlatTexture *texture, const PlatVertex *v, int count, const int *indices,
                     int index_count)
 {
+    if (gpu_ui)
+    {
+        /* PlatVertex and VkpUiVertex are the same four floats and a colour */
+        const int tex = texture ? texture_gpu(texture) : -1;
+        if (texture && tex < 0)
+            return;
+        if (!indices)
+        {
+            vkp_ui_draw(tex, (const VkpUiVertex *)v, count - count % 3);
+            return;
+        }
+        VkpUiVertex out[1536];
+        for (int i = 0; i + 2 < index_count;)
+        {
+            int n = 0;
+            for (; i + 2 < index_count && n + 3 <= 1536; i += 3, n += 3)
+            {
+                out[n] = *(const VkpUiVertex *)&v[indices[i]];
+                out[n + 1] = *(const VkpUiVertex *)&v[indices[i + 1]];
+                out[n + 2] = *(const VkpUiVertex *)&v[indices[i + 2]];
+            }
+            vkp_ui_draw(tex, out, n);
+        }
+        return;
+    }
 #if SDL_VERSION_ATLEAST(2, 0, 18)
     enum { BATCH = 1536 }; /* multiple of 3 */
     static SDL_Vertex out[BATCH];
@@ -1654,7 +1949,7 @@ void plat_draw_mesh(PlatTexture *texture, const PlatVertex *v, int count, const 
             out[i].color.b = p->argb & 0xff;
             out[i].color.a = p->argb >> 24;
         }
-        SDL_RenderGeometry(renderer, texture ? texture->sdl : NULL, out, n, indices,
+        SDL_RenderGeometry(renderer, texture ? texture_sdl(texture) : NULL, out, n, indices,
                            indices ? index_count : 0);
         done += n;
     }
@@ -1668,12 +1963,28 @@ void plat_draw_texture(PlatTexture *texture, float x, float y, float w, float h,
 {
     if (!texture)
         return;
-    SDL_SetTextureBlendMode(texture->sdl, blend ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE);
-    SDL_SetTextureColorMod(texture->sdl, (tint >> 16) & 0xff, (tint >> 8) & 0xff, tint & 0xff);
-    SDL_SetTextureAlphaMod(texture->sdl, tint >> 24);
+    if (gpu_ui)
+    {
+        const int id = texture_gpu(texture);
+        if (id >= 0 && (tint >> 24) != 0)
+        {
+            int x0 = (int)(x + 0.5f), y0 = (int)(y + 0.5f);
+            vkp_ui_blend(blend); /* a picture drawn without blending ignores its alpha */
+            gpu_quad(id, (float)x0, (float)y0, (float)(x0 + (int)(w + 0.5f)), (float)(y0 + (int)(h + 0.5f)), 0, 0, 1, 1,
+                     tint);
+            vkp_ui_blend(true);
+        }
+        return;
+    }
+    SDL_Texture *sdl = texture_sdl(texture);
+    if (!sdl)
+        return;
+    SDL_SetTextureBlendMode(sdl, blend ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE);
+    SDL_SetTextureColorMod(sdl, (tint >> 16) & 0xff, (tint >> 8) & 0xff, tint & 0xff);
+    SDL_SetTextureAlphaMod(sdl, tint >> 24);
     SDL_Rect dst = {(int)(x + 0.5f), (int)(y + 0.5f), (int)(w + 0.5f), (int)(h + 0.5f)};
-    SDL_RenderCopy(renderer, texture->sdl, NULL, &dst);
-    SDL_SetTextureBlendMode(texture->sdl, SDL_BLENDMODE_BLEND);
+    SDL_RenderCopy(renderer, sdl, NULL, &dst);
+    SDL_SetTextureBlendMode(sdl, SDL_BLENDMODE_BLEND);
 }
 
 void plat_draw_texture_region(PlatTexture *texture, int sx, int sy, int sw, int sh, float x,
@@ -1681,13 +1992,27 @@ void plat_draw_texture_region(PlatTexture *texture, int sx, int sy, int sw, int 
 {
     if (!texture || (tint >> 24) == 0)
         return;
-    SDL_SetTextureColorMod(texture->sdl, (tint >> 16) & 0xff, (tint >> 8) & 0xff, tint & 0xff);
-    SDL_SetTextureAlphaMod(texture->sdl, tint >> 24);
+    if (gpu_ui)
+    {
+        const int id = texture_gpu(texture);
+        int gx0 = (int)(x + 0.5f), gy0 = (int)(y + 0.5f);
+        int gw = (int)(x + w + 0.5f) - gx0, gh = (int)(y + h + 0.5f) - gy0;
+        if (id >= 0 && gw > 0 && gh > 0)
+            gpu_quad(id, (float)gx0, (float)gy0, (float)(gx0 + gw), (float)(gy0 + gh), (float)sx / texture->width,
+                     (float)sy / texture->height, (float)(sx + sw) / texture->width, (float)(sy + sh) / texture->height,
+                     tint);
+        return;
+    }
+    SDL_Texture *sdl = texture_sdl(texture);
+    if (!sdl)
+        return;
+    SDL_SetTextureColorMod(sdl, (tint >> 16) & 0xff, (tint >> 8) & 0xff, tint & 0xff);
+    SDL_SetTextureAlphaMod(sdl, tint >> 24);
     SDL_Rect src = {sx, sy, sw, sh};
     int x0 = (int)(x + 0.5f), y0 = (int)(y + 0.5f);
     SDL_Rect dst = {x0, y0, (int)(x + w + 0.5f) - x0, (int)(y + h + 0.5f) - y0};
     if (dst.w > 0 && dst.h > 0)
-        SDL_RenderCopy(renderer, texture->sdl, &src, &dst);
+        SDL_RenderCopy(renderer, sdl, &src, &dst);
 }
 
 void plat_fill_rectf(float x, float y, float w, float h, uint32_t argb)
@@ -1698,6 +2023,11 @@ void plat_fill_rectf(float x, float y, float w, float h, uint32_t argb)
     SDL_Rect r = {x0, y0, (int)(x + w + 0.5f) - x0, (int)(y + h + 0.5f) - y0};
     if (r.w <= 0 || r.h <= 0)
         return;
+    if (gpu_ui)
+    {
+        gpu_quad(-1, (float)r.x, (float)r.y, (float)(r.x + r.w), (float)(r.y + r.h), 0, 0, 0, 0, argb);
+        return;
+    }
     SDL_SetRenderDrawBlendMode(renderer, (argb >> 24) == 0xff ? SDL_BLENDMODE_NONE : SDL_BLENDMODE_BLEND);
     set_draw_color(argb);
     SDL_RenderFillRect(renderer, &r);
@@ -1705,6 +2035,11 @@ void plat_fill_rectf(float x, float y, float w, float h, uint32_t argb)
 
 void plat_set_clip(int x, int y, int w, int h)
 {
+    if (gpu_ui)
+    {
+        vkp_ui_clip(x, y, w, h);
+        return;
+    }
     SDL_Rect r = {x, y, w, h};
     SDL_RenderSetClipRect(renderer, w > 0 && h > 0 ? &r : NULL);
 }

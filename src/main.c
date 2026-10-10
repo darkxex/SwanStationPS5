@@ -355,7 +355,8 @@ void app_rescan(void)
     static const char *const drives[] = {"/mnt/usb0", "/mnt/usb1", "/mnt/ext0", "/mnt/ext1"};
     static const char *const names[] = {"SwanStationPS5", "PSXS5"};
     static char drive_roots[2 * 2 * 4][SwanStationPS5_PATH_MAX];
-    const char *roots[2 + 2 * 2 * 4];
+    static char usb_roots[2][SwanStationPS5_PATH_MAX];
+    const char *roots[2 + 2 * 2 * 4 + 2];
     int root_count = 0;
     roots[root_count++] = app.paths.games;
     roots[root_count++] = "/data/PSXS5/games";
@@ -367,6 +368,14 @@ void app_rescan(void)
             snprintf(games, SwanStationPS5_PATH_MAX, "%s/%s/games", drives[d], names[n]);
             roots[root_count++] = plain;
             roots[root_count++] = games;
+        }
+    /* Settings > System > SwanStationPS5 > Games folder on USB drives: that name on both drives at once, as the drive's
+     * number changes with the ones plugged in */
+    if (app.global.usb_folder[0])
+        for (int u = 0; u < 2; ++u)
+        {
+            snprintf(usb_roots[u], SwanStationPS5_PATH_MAX, "/mnt/usb%d/%s", u, app.global.usb_folder);
+            roots[root_count++] = usb_roots[u];
         }
     char index[SwanStationPS5_PATH_MAX];
     path_join(index, sizeof(index), app.paths.root, "library.txt");
@@ -521,7 +530,7 @@ void app_draw_game(uint8_t dim)
     if (bezel_shown(&view))
         view.border = 0; /* the bezel's window is the full-height 4:3 picture */
 
-    /* around the picture: black, a soft glow, or a TV */
+    /* around the picture: black, the current background, or a TV */
     int gx, gy, gw, gh;
     plat_game_rect(&gx, &gy, &gw, &gh);
     /* Stretch fills the screen: no border or TV around it */
@@ -1294,8 +1303,18 @@ int main(void)
     /* Unlock before SDL starts any thread: the HEN changes this process's
      * credentials, which Porpoise did not survive with threads running. */
     app.sandboxed = !plat_prepare_storage(app.sandbox_reason, sizeof(app.sandbox_reason));
+    /* An update from the app asks for clean settings (update.c): the settings file the old version left is removed
+     * before anything reads it, and again for the signed-in profile's once the profiles are known. */
+    char reset_marker[SwanStationPS5_PATH_MAX];
+    path_join(reset_marker, sizeof(reset_marker), app.paths.root, "reset-settings");
+    const bool settings_reset = path_exists(reset_marker);
+    if (settings_reset)
+        remove(app.paths.config);
     /* frame interpolation wants the 120 Hz mode, chosen when the screen opens */
     plat_want_high_refresh(config_peek_bool(app.paths.config, "framegen"));
+    /* the shelf and menus on the GPU, unless Settings > System > SwanStationPS5 turned that off */
+    plat_want_gpu_ui(config_peek_bool_or(app.paths.config, "gpu_ui", true));
+    plat_want_output(config_peek_int(app.paths.config, "output_res", 2));
 
     if (!plat_init())
     {
@@ -1360,6 +1379,12 @@ int main(void)
 
     if (!app.storage_error[0])
         profiles_startup(); /* whose saves, settings and stats */
+    if (settings_reset)
+    {
+        remove(app.paths.config);
+        remove(reset_marker);
+        SwanStationPS5_log("update: the settings start clean, as after any update from the app");
+    }
     config_load(&app.global, app.paths.config);
     app.settings = app.global;
     i18n_set(app.global.language);
@@ -1440,6 +1465,7 @@ int main(void)
         case SCREEN_GUIDE: guide_screen(pressed); break;
         case SCREEN_PROFILE: profile_screen(pressed); break;
         case SCREEN_RA_LOGIN: login_screen(pressed); break;
+        case SCREEN_TEXT_INPUT: textinput_screen(pressed); break;
         default: break;
         }
         last_screen = this_screen;

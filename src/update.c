@@ -285,6 +285,15 @@ static int install_thread(void *unused)
         fail(tr("Couldn't write the new files (is /data unlocked?)"));
         return 0;
     }
+    /* the new version starts with clean settings: the next start removes the settings file (the app writes it again
+     * as it closes, so removing it now would not do) */
+    {
+        char marker[SwanStationPS5_PATH_MAX];
+        path_join(marker, sizeof(marker), app.paths.root, "reset-settings");
+        FILE *flag = fopen(marker, "w");
+        if (flag)
+            fclose(flag);
+    }
     snprintf(message, sizeof(message), tr("SwanStationPS5 %s is installed: restart SwanStationPS5 to use it"), version);
     SwanStationPS5_log("update: installed %s (%d files)", version, files);
     SDL_AtomicSet(&state, UPDATE_INSTALLED);

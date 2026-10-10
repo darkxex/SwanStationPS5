@@ -24,6 +24,7 @@ enum Screen
     SCREEN_GUIDE,
     SCREEN_PROFILE,
     SCREEN_RA_LOGIN,
+    SCREEN_TEXT_INPUT,
     SCREEN_COUNT
 };
 
@@ -95,6 +96,11 @@ void guide_open(void);
 void guide_screen(uint32_t pressed);
 /* Your RetroAchievements profile. */
 void profile_open(enum Screen back_to);
+/* A line of text typed with the on-screen keyboard; Apply hands it to `done`, Back leaves it as it was. */
+typedef void (*TextInputDone)(const char *text);
+void textinput_open(enum Screen back_to, const char *title, const char *prompt, const char *initial,
+                    TextInputDone done);
+void textinput_screen(uint32_t pressed);
 void login_open(enum Screen back_to);   /* RetroAchievements sign-in, typed on the console */
 void login_screen(uint32_t pressed);
 void profile_screen(uint32_t pressed);

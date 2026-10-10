@@ -33,6 +33,26 @@ void vkp_set_fsr(bool on);            /* Settings > Display > FSR 1 */
 double vkp_framegen_hz(void);         /* the display's rate while frames are being generated, else 0 */
 void vkp_frame_repeated(void);        /* the core's last frame repeats the picture of the one before */
 void vkp_want_high_refresh(bool on);  /* before vkp_open: the 120 Hz mode */
+bool vkp_set_mode(int width, int height, char *error, size_t size); /* the TV's mode, at once (with the GPU interface); the screen's objects are made again */
+void vkp_want_size(int width, int height); /* before vkp_open: the screen's mode (the canvas's size when the TV has none like it) */
 void vkp_show_game(float x, float y, float w, float h, float crop, int shader, int tex_w, int tex_h, int lines);
+
+/* The interface drawn by the GPU instead of the CPU canvas (vk_ui.inc). Coordinates are canvas pixels. */
+typedef struct
+{
+    float x, y, u, v;
+    uint32_t argb; /* tint, multiplied with the texture */
+} VkpUiVertex;
+bool vkp_ui_open(char *error, size_t size); /* after vkp_open; false: keep the canvas */
+bool vkp_ui_active(void);
+int vkp_ui_texture_create(const uint8_t *rgba, int w, int h, bool smooth, bool mips, bool copy); /* -1: failed; copy: else rgba must outlive it */
+void vkp_ui_texture_free(int id);
+void vkp_ui_texture_update(int id, const uint8_t *rgba);
+void vkp_ui_blend(bool on);                 /* the next draws are blended (default) or copied, ignoring the texture's alpha */
+void vkp_ui_game_here(void);                /* the game's picture goes here in the list: the border drawn so far is under it */
+void vkp_ui_begin(uint32_t clear_argb);     /* a new frame's list; the colour the screen is cleared to under it and the game (alpha 0: black) */
+void vkp_ui_clip(int x, int y, int w, int h); /* w <= 0: none */
+void vkp_ui_draw(int id, const VkpUiVertex *v, int count); /* triangles; id < 0: no texture (the tint alone) */
+void vkp_present_ui(void);                  /* the frame: the game, then the list */
 
 #endif

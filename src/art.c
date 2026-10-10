@@ -129,7 +129,7 @@ static bool load(Slot *slot)
     uint8_t *rgba = stbi_load(path, &w, &h, &n, 4);
     if (!rgba)
         return false;
-    slot->texture = plat_texture_create(rgba, w, h, true);
+    slot->texture = plat_texture_create_mips(rgba, w, h);
     stbi_image_free(rgba);
     return slot->texture != NULL;
 }

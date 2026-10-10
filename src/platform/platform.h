@@ -62,6 +62,11 @@ void plat_set_fsr(bool on); /* FSR 1 before the shader (Vulkan) */
 double plat_framegen_hz(void); /* the display's rate while frames are being generated, else 0 */
 void plat_set_framegen(bool on, double core_hz, double speed, bool nominal); /* frame interpolation (Vulkan) */
 void plat_want_high_refresh(bool on); /* before plat_init: the 120 Hz mode */
+bool plat_gpu_ui_active(void); /* the shelf and the menus are drawn by the GPU */
+bool plat_set_gpu_ui(bool on); /* ...or by the CPU, at once; false when it can't */
+bool plat_set_output(int resolution); /* 0 1080p, 1 1440p, 2 4K, at once (the GPU interface only); false when it can't be done */
+void plat_want_output(int resolution); /* before plat_init: 0 1080p, 1 1440p, 2 4K (with the GPU interface; 1080p when the TV lacks it) */
+void plat_want_gpu_ui(bool on); /* before plat_init: draw the shelf and the menus with the GPU (Vulkan), not the CPU */
 /* The console's time of day as the user set it up ("21:42" or "9:42 PM"). */
 void plat_clock(char *out, size_t size);
 /* Frame profiling: the time since the previous mark goes to `name`
@@ -70,6 +75,8 @@ void plat_profile(const char *name);
 /* A full-screen grey picture (w x h, one byte a pixel) times a colour,
  * as the background: written straight into the canvas on the PS5. */
 void plat_draw_backdrop(const uint8_t *grey, int w, int h, uint32_t tint_argb);
+/* The grey picture given to plat_draw_backdrop was rewritten in place (another theme): the GPU interface keeps a copy. */
+void plat_backdrop_changed(void);
 
 /* Audio: interleaved signed 16-bit stereo. */
 bool plat_audio_open(int sample_rate);
@@ -105,6 +112,10 @@ typedef struct
 } PlatVertex;
 
 PlatTexture *plat_texture_create(const uint8_t *rgba, int width, int height, bool smooth);
+/* For pictures drawn smaller than they are (covers, artwork): the GPU interface keeps a mip chain, so they shrink
+ * without shimmering. Glyph atlases and icons use plat_texture_create: they are drawn at their own size, or an
+ * oversampled atlas squeezed to half its width, which a mip level would blur both ways. */
+PlatTexture *plat_texture_create_mips(const uint8_t *rgba, int width, int height);
 void plat_texture_free(PlatTexture *texture);
 void plat_texture_size(const PlatTexture *texture, int *width, int *height);
 /* texture may be NULL for flat-coloured geometry. indices may be NULL for a plain triangle list. */
