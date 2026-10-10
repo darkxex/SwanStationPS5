@@ -868,7 +868,7 @@ void app_start_game(int index, bool resume)
     if (translated)
         app_toast("Translation patch applied");
     if (resume && play_load_resume())
-        app_toast("Continuing where you left off");
+        app_toast("Continuing where you left off...");
     if (controls_gun_active())
         app_toast("Light gun: point the controller at the screen, R2 fires, R3 re-centres");
     app.screen = SCREEN_GAME;
