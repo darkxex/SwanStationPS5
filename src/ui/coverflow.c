@@ -459,7 +459,7 @@ static void draw_cover(PlatTexture *tex, const Game *g, float cx, float cy, floa
     if (tex) /* flat covers are opaque: a plain copy is much cheaper than blending */
     {
         plat_draw_texture(tex, x, y, w, h, tint, app.global.cover_style == COVER_BOX3D);
-        if (selected && false)
+        if (selected)
             draw_cover_reflection(tex, x, y, w, h);
     }
     else if (no_cover_icon())
@@ -648,10 +648,11 @@ static void draw_header(void)
 static void draw_info(const Game *g, float alpha)
 {
     GameStats *st = stats_get(g->id);
-    /* default layout: the title above the cover, the tags below it, 16 px from each; Record Shelf: both below */
+    /* default layout: the title, then the tags, both above the cover (its reflection below stays clear);
+     * Record Shelf: both below */
     const bool spines = theme.layout == LAYOUT_SPINES;
-    const float title_y = spines ? 730 : flow_y() - COVER_H * 0.5f - 68;
-    const float tags_y = spines ? 814 : flow_y() + COVER_H * 0.5f + 16;
+    const float title_y = spines ? 730 : flow_y() - COVER_H * 0.5f - 120;
+    const float tags_y = spines ? 814 : flow_y() - COVER_H * 0.5f - 62;
     float tw = text_width(52, FONT_BOLD, display_title(g));
     if (st && st->favorite)
         icon_draw(ICON_STAR, CENTER_X - fminf(tw, 1500) * 0.5f - 52, title_y + 10, 40,
@@ -690,7 +691,7 @@ static void draw_info(const Game *g, float alpha)
     /* achievement progress, when known */
     if (st && st->ach_unlocked >= 0 && st->ach_total > 0)
     {
-        float bw = 340, bx = CENTER_X - bw * 0.5f + 20, by = ty + 70;
+        float bw = 340, bx = CENTER_X - bw * 0.5f + 20, by = spines ? ty + 70 : title_y - 28;
         icon_draw(ICON_TROPHY, bx - 46, by - 12, 30, argb_alpha(TH_GOLD, alpha));
         draw_rrect(bx, by, bw, 8, 4, argb_alpha(TH_PILL, alpha));
         float f = (float)st->ach_unlocked / st->ach_total;
