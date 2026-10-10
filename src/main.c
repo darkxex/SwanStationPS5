@@ -424,6 +424,117 @@ void app_save_settings(void)
         app_restart_covers();
 }
 
+/* ---------------------------------------------------------------- the update question */
+
+/* After an update the first screen asks whether to start from the new version's factory settings: X does, Circle
+ * keeps the settings as they are (the answer is saved, so it is asked once). */
+static bool question_open;
+static float question_t;
+
+static void reset_to_factory(void)
+{
+    Settings d;
+    config_defaults(&d);
+    d.last_game = app.global.last_game; /* only where the shelf is stays; the rest, language included, is the factory's */
+    app.global = d;
+    app.settings = d;
+    i18n_set(d.language);
+    theme_apply(d.theme);
+    sfx_configure(d.ui_sound, (d.ui_volume + 1) * 25);
+    remote_update(d.remote);
+    plat_set_gpu_ui(d.gpu_ui);
+    if (d.gpu_ui)
+        plat_set_output(d.output_res);
+    app_save_settings();
+    app_rescan(); /* the USB folder is back to its own */
+    app_toast("Factory settings restored");
+}
+
+static void reset_question_open(void)
+{
+    question_open = true;
+    question_t = 0.0f;
+}
+
+/* true while it is up: the screens below get no buttons */
+static bool question_input(uint32_t *pressed)
+{
+    if (!question_open)
+        return false;
+    if (*pressed & BIT(BTN_CROSS))
+    {
+        question_open = false;
+        sfx_play(SFX_SELECT);
+        reset_to_factory();
+    }
+    else if (*pressed & BIT(BTN_CIRCLE))
+    {
+        question_open = false;
+        sfx_play(SFX_BACK);
+        app_save_settings(); /* the settings stay; the file now carries this version */
+    }
+    *pressed = 0;
+    return true;
+}
+
+static void question_draw(void)
+{
+    if (!question_open)
+        return;
+    question_t = fminf(question_t + app.dt * 8.0f, 1.0f);
+    const float w = 940, h = 560, pad = 56, size = 30;
+    float x = (plat_width() - w) * 0.5f, y = (plat_height() - h) * 0.5f + (1.0f - question_t) * 24.0f;
+    draw_rect(0, 0, plat_width(), plat_height(), argb_alpha(0xa0000000u, question_t));
+    draw_rrect(x, y, w, h, TH_RADIUS, argb_alpha(TH_PILL_A(0xf8), question_t));
+    icon_draw(ICON_REFRESH, x + (w - 64) * 0.5f, y + pad, 64, argb_alpha(TH_FOCUS, question_t));
+    text_draw_fit(x + w * 0.5f, y + pad + 64 + 18, 38, FONT_BOLD, argb_alpha(TH_TEXT, question_t), ALIGN_CENTER, w - 2 * pad,
+                  tr("SwanStationPS5 was updated to the latest version!"));
+    /* the question, word-wrapped and centred */
+    char line[256];
+    float yy = y + pad + 64 + 18 + 38 + 26;
+    const char *m = tr("Resetting to the factory settings is recommended because of the new improvements. Do you want to do it?");
+    while (*m && yy < y + h - 130)
+    {
+        size_t best = 0, i = 0;
+        for (;;)
+        {
+            size_t j = i;
+            while (m[j] && m[j] != ' ')
+                ++j;
+            size_t n = j < sizeof(line) - 1 ? j : sizeof(line) - 1;
+            memcpy(line, m, n);
+            line[n] = '\0';
+            if (best > 0 && text_width(size, FONT_REGULAR, line) > w - 2 * pad)
+                break;
+            best = n;
+            if (!m[j])
+                break;
+            i = j + 1;
+        }
+        if (best == 0)
+            best = strlen(m) < sizeof(line) - 1 ? strlen(m) : sizeof(line) - 1;
+        memcpy(line, m, best);
+        line[best] = '\0';
+        text_draw(x + w * 0.5f, yy, size, FONT_REGULAR, argb_alpha(TH_TEXT, question_t), ALIGN_CENTER, line);
+        yy += size * 1.45f;
+        m += best;
+        while (*m == ' ')
+            ++m;
+    }
+    /* the two answers, each with its button: (X) Reset to factory settings   (O) Keep my settings */
+    const float hs = 28, gap = hs * 0.4f;
+    const char *yes = tr("Reset to factory settings"), *no = tr("Keep my settings");
+    const float gw1 = pad_glyph_width(GLYPH_CROSS, hs), gw2 = pad_glyph_width(GLYPH_CIRCLE, hs);
+    const float w1 = gw1 + gap + text_width(hs, FONT_BOLD, yes), w2 = gw2 + gap + text_width(hs, FONT_REGULAR, no);
+    const float space = 56, hy = y + h - pad - hs, total = w1 + space + w2;
+    float hx = x + (w - total) * 0.5f;
+    draw_pad_glyph(GLYPH_CROSS, hx + gw1 * 0.5f, hy + hs * 0.6f, hs);
+    text_draw(hx + gw1 + gap, hy, hs, FONT_BOLD, argb_alpha(TH_FOCUS, question_t), ALIGN_LEFT, yes);
+    hx += w1 + space;
+    draw_pad_glyph(GLYPH_CIRCLE, hx + gw2 * 0.5f, hy + hs * 0.6f, hs);
+    text_draw(hx + gw2 + gap, hy, hs, FONT_REGULAR, argb_alpha(TH_TEXT, question_t), ALIGN_LEFT, no);
+}
+
 /* ---------------------------------------------------------------- achievements banner */
 
 /* Top right, one message at a time: slides in, holds, fades. */
@@ -1303,13 +1414,20 @@ int main(void)
     /* Unlock before SDL starts any thread: the HEN changes this process's
      * credentials, which Porpoise did not survive with threads running. */
     app.sandboxed = !plat_prepare_storage(app.sandbox_reason, sizeof(app.sandbox_reason));
-    /* An update from the app asks for clean settings (update.c): the settings file the old version left is removed
-     * before anything reads it, and again for the signed-in profile's once the profiles are known. */
+    /* An empty file called reset-settings, beside the settings file, asks for clean settings by hand: removed before
+     * anything reads it (and the signed-in profile's once the profiles are known). */
     char reset_marker[SwanStationPS5_PATH_MAX];
     path_join(reset_marker, sizeof(reset_marker), app.paths.root, "reset-settings");
     const bool settings_reset = path_exists(reset_marker);
     if (settings_reset)
         remove(app.paths.config);
+    /* A new version after settings written by another: the first screen asks whether to start from its factory
+     * settings (the files of versions before 1.1.4 carry no version). */
+    char saved_version[32] = "";
+    const bool version_changed =
+        !settings_reset && path_exists(app.paths.config) &&
+        (!config_peek_string(app.paths.config, "version", saved_version, sizeof(saved_version)) ||
+         strcmp(saved_version, SwanStationPS5_VERSION) != 0);
     /* frame interpolation wants the 120 Hz mode, chosen when the screen opens */
     plat_want_high_refresh(config_peek_bool(app.paths.config, "framegen"));
     /* the shelf and menus on the GPU, unless Settings > System > SwanStationPS5 turned that off */
@@ -1383,7 +1501,13 @@ int main(void)
     {
         remove(app.paths.config);
         remove(reset_marker);
-        SwanStationPS5_log("update: the settings start clean, as after any update from the app");
+        SwanStationPS5_log("settings: clean start, asked for by hand");
+    }
+    if (version_changed)
+    {
+        SwanStationPS5_log("settings: saved by %s, this is %s: asking", saved_version[0] ? saved_version : "an older version",
+                           SwanStationPS5_VERSION);
+        reset_question_open();
     }
     config_load(&app.global, app.paths.config);
     app.settings = app.global;
@@ -1433,7 +1557,7 @@ int main(void)
             quit = true;
         memcpy(app.pads, pads, sizeof(app.pads));
         uint32_t pressed = nav_pressed(pads);
-        if (!sbi_check_input(&pressed))
+        if (!question_input(&pressed) && !sbi_check_input(&pressed))
             message_box_input(&pressed);
         /* the shelf and settings paint a full-screen backdrop: no clear needed */
         bool backdrop = app.screen == SCREEN_LIBRARY || (app.screen == SCREEN_SETTINGS && !app.game);
@@ -1483,6 +1607,7 @@ int main(void)
         draw_achievement();
         sbi_check_draw();
         message_box_draw();
+        question_draw();
         plat_end_frame();
     }
 

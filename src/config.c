@@ -297,6 +297,26 @@ bool config_peek_bool(const char *path, const char *key)
     return config_peek_bool_or(path, key, false);
 }
 
+/* A text value from a settings file; false when it isn't there */
+bool config_peek_string(const char *path, const char *key, char *out, size_t size)
+{
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return false;
+    char line[256];
+    size_t n = strlen(key);
+    bool found = false;
+    while (fgets(line, sizeof(line), f))
+        if (!strncmp(line, key, n) && line[n] == '=')
+        {
+            line[strcspn(line, "\r\n")] = '\0';
+            snprintf(out, size, "%s", line + n + 1);
+            found = true;
+        }
+    fclose(f);
+    return found;
+}
+
 /* A whole number from a settings file, `otherwise` when it isn't there */
 int config_peek_int(const char *path, const char *key, int otherwise)
 {
@@ -352,6 +372,7 @@ bool config_save(const Settings *s, const char *path)
             s->widescreen, s->multitap, s->rewind, s->quick_resume, s->crt, s->border, s->remote,
             s->update_check);
     fprintf(f, "renderer=%d\ngpu_ui=%d\noutput_res=%d\nusb_folder=%s\n", s->renderer, s->gpu_ui, s->output_res, s->usb_folder);
+    fprintf(f, "version=%s\n", SwanStationPS5_VERSION); /* a newer version starts with clean settings (main.c) */
     fprintf(f, "pgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->pgxp, s->ra_popups, s->ra_tracker,
             s->crop_edges);
     fprintf(f, "ra_popup_style=%d\nlightbar=%d\nshader=%d\nhd_textures=%d\ntheme=%d\n", s->ra_popup_style,
