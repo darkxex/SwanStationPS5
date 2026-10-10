@@ -1669,7 +1669,7 @@ void shelf_screen(uint32_t pressed)
     if (S.quit_hold > 0.5f)
     {
         /* O held for a while: a bar fills up to the close */
-        const char *msg = tr("Keep holding O to close the SwanStationPS5...");
+        const char *msg = tr("Keep holding to close SwanStationPS5...");
         float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
         float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
         draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));

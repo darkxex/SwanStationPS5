@@ -9,5 +9,9 @@
 OBJECTS := $(filter-out %xxh_x86dispatch.o,$(OBJECTS))
 src/core/texture_replacements.o: CXXFLAGS += -DXXH_X86DISPATCH_H_13563687684
 
+# retro_eventcount.c / rthreads.c ask for _POSIX_C_SOURCE 199309 when it is not set, and the SDK's headers then
+# hide CLOCK_REALTIME (it needs 200112). Setting it first makes their own #ifndef skip theirs.
+dep/libretro-common/rthreads/retro_eventcount.o dep/libretro-common/rthreads/rthreads.o: CFLAGS += -D_POSIX_C_SOURCE=200112L
+
 SwanStationPS5-archive: $(OBJECTS)
 	$(AR) rcs $(TARGET) $(OBJECTS)

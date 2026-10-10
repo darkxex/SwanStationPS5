@@ -30,7 +30,7 @@ index 014ebdbc..316a86ee 100644
  
  const uint8_t* GetMappedView(RFILE* fp, int64_t* size)
 diff --git a/src/common/jit_code_buffer.cpp b/src/common/jit_code_buffer.cpp
-index e29571ff..e0950384 100644
+index f768a570..8b3996fe 100644
 --- a/src/common/jit_code_buffer.cpp
 +++ b/src/common/jit_code_buffer.cpp
 @@ -10,6 +10,14 @@
@@ -103,10 +103,10 @@ index 460ea0f0..55e13889 100644
      cpu_recompiler_code_generator_x64.cpp
    )
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
-index 59ca133c..ee95c6df 100644
+index 590dd1ff..b0e662c2 100644
 --- a/src/core/cdrom.cpp
 +++ b/src/core/cdrom.cpp
-@@ -1193,6 +1193,7 @@ void CDROM::ExecuteCommand(TickCount ticks_late)
+@@ -1207,6 +1207,7 @@ void CDROM::ExecuteCommand(TickCount ticks_late)
        SoftReset(ticks_late);
  
        QueueCommandSecondResponse(Command::Reset, RESET_TICKS);
@@ -114,7 +114,7 @@ index 59ca133c..ee95c6df 100644
        return;
      }
      break;
-@@ -1993,7 +1994,19 @@ void CDROM::DoIDRead()
+@@ -2007,7 +2008,19 @@ void CDROM::DoIDRead()
    static constexpr uint32_t REGION_STRING_LENGTH = 4;
    static constexpr std::array<std::array<uint8_t, REGION_STRING_LENGTH>, static_cast<size_t>(DiscRegion::Count)>
      region_strings = {{{'S', 'C', 'E', 'I'}, {'S', 'C', 'E', 'A'}, {'S', 'C', 'E', 'E'}, {0, 0, 0, 0}}};
@@ -136,7 +136,7 @@ index 59ca133c..ee95c6df 100644
    SetAsyncInterrupt((flags_byte != 0) ? Interrupt::Error : Interrupt::Complete);
  }
 diff --git a/src/core/cpu_code_cache.cpp b/src/core/cpu_code_cache.cpp
-index adfb7057..c989f93e 100644
+index fb62e9db..55ce96bc 100644
 --- a/src/core/cpu_code_cache.cpp
 +++ b/src/core/cpu_code_cache.cpp
 @@ -24,8 +24,12 @@ static constexpr uint32_t INVALIDATE_THRESHOLD_TO_DISABLE_LINKING = 10;
@@ -226,7 +226,7 @@ index 3741e75c..06c11dc4 100644
    bool m_batch_ubo_dirty = true;
  
 diff --git a/src/core/gpu_hw_vulkan.cpp b/src/core/gpu_hw_vulkan.cpp
-index 39ba4446..5120d832 100644
+index 2f4855b1..214465a8 100644
 --- a/src/core/gpu_hw_vulkan.cpp
 +++ b/src/core/gpu_hw_vulkan.cpp
 @@ -59,6 +59,10 @@ void* LibretroVulkanHostDisplay::GetRenderContext() const
@@ -251,7 +251,7 @@ index 39ba4446..5120d832 100644
    return true;
  }
  
-@@ -3133,6 +3139,23 @@ void GPU_HW_Vulkan::UpdateDisplay()
+@@ -3075,6 +3081,23 @@ void GPU_HW_Vulkan::UpdateDisplay()
      const uint32_t scaled_display_height = display_height * resolution_scale;
      const InterlacedRenderMode interlaced = GetInterlacedRenderMode();
  
@@ -276,10 +276,10 @@ index 39ba4446..5120d832 100644
      {
        m_host_display->ClearDisplayTexture();
 diff --git a/src/core/gpu_hw_vulkan.h b/src/core/gpu_hw_vulkan.h
-index fa0d5ef3..ebd6ef0f 100644
+index 5e2b93f0..a1141a72 100644
 --- a/src/core/gpu_hw_vulkan.h
 +++ b/src/core/gpu_hw_vulkan.h
-@@ -122,6 +122,9 @@ protected:
+@@ -121,6 +121,9 @@ protected:
  
  private:
    static constexpr uint32_t MAX_PUSH_CONSTANTS_SIZE = 64, TEXTURE_REPLACEMENT_BUFFER_SIZE = 64 * 1024 * 1024;
@@ -290,10 +290,10 @@ index fa0d5ef3..ebd6ef0f 100644
    void DestroyResources();
  
 diff --git a/src/core/host_interface.h b/src/core/host_interface.h
-index 6b00b18d..f49ab5b6 100644
+index 918acd79..0c7efa2c 100644
 --- a/src/core/host_interface.h
 +++ b/src/core/host_interface.h
-@@ -110,6 +110,7 @@ public:
+@@ -113,6 +113,7 @@ public:
  
    /// Returns the path to the shader cache directory.
    std::string GetShaderCacheBasePath() const;
@@ -316,11 +316,50 @@ index 2afd38ab..3d659438 100644
    return g_host_interface->GetUserDirectoryRelativePath("%s" "textures" FS_OSPATH_SEPARATOR_STR "%s", cache_folder.c_str(), m_game_id.c_str());
  }
  
+diff --git a/src/libretro/libretro_core_options.h b/src/libretro/libretro_core_options.h
+index b96b983c..3dd1fdb0 100644
+--- a/src/libretro/libretro_core_options.h
++++ b/src/libretro/libretro_core_options.h
+@@ -223,6 +223,18 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+      {NULL, NULL},
+    },
+    "false"},
++  {"swanstation_CDROM_AllowBootingWithoutSBIFile",
++   "Allow Booting Without SBI File",
++   NULL,
++   "Lets libcrypt-protected games (most PAL releases, such as Resident Evil 3) start when no SBI file or subchannel data is found. The game will likely not run properly without it.",
++   NULL,
++   "console",
++   {
++     {"true", "Enabled"},
++     {"false", "Disabled"},
++     {NULL, NULL},
++   },
++   "false"},
+   {"swanstation_CDROM_ReadSpeedup",
+    "CD-ROM Read Speedup",
+    NULL,
 diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
-index a0613fb4..2ca51e99 100644
+index fc39fe0a..adf820c9 100644
 --- a/src/libretro/libretro_host_interface.cpp
 +++ b/src/libretro/libretro_host_interface.cpp
-@@ -438,14 +438,30 @@ std::string HostInterface::GetGameMemoryCardPath(const char* game_code, uint32_t
+@@ -390,7 +390,14 @@ void HostInterface::Shutdown()
+ 
+ void HostInterface::ReportError(const char* message)
+ {
+-  AddFormattedOSDMessage(10.0f, "ERROR: %s", message);
++  // Errors are always sent to the frontend, even with "Display OSD Messages" off: it is how it learns why a game
++  // was refused (a missing SBI file, for example) instead of only "could not load game".
++  std::string text = "ERROR: ";
++  text += message;
++  retro_message msg = {};
++  msg.msg = text.c_str();
++  msg.frames = 600;
++  g_retro_environment_callback(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+   Log_ErrorPrint(message);
+ }
+ 
+@@ -438,14 +445,30 @@ std::string HostInterface::GetGameMemoryCardPath(const char* game_code, uint32_t
                                           slot + 1);
  }
  
@@ -354,7 +393,7 @@ index a0613fb4..2ca51e99 100644
          !cache_directory_ptr)
      {
        Log_WarningPrint("No shader cache directory available, startup will be slower.");
-@@ -2188,7 +2204,11 @@ void HostInterface::SwitchToSoftwareRenderer()
+@@ -2192,7 +2215,11 @@ void HostInterface::SwitchToSoftwareRenderer()
    m_display = std::make_unique<LibretroHostDisplay>();
    m_display->CreateRenderDevice(wi, {}, false, false);
    m_display->InitializeRenderDevice({}, false, false);

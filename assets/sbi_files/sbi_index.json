@@ -1,0 +1,2590 @@
+{
+  "source": "https://psxdatacenter.com/sbifiles.html",
+  "description": "LibCrypt SBI subchannel files for PAL PlayStation games",
+  "count": 158,
+  "files": [
+    {
+      "region": "PAL",
+      "multi_language": null,
+      "languages": [],
+      "serials": [
+        "SLES-01226"
+      ],
+      "title": "ACTUA ICE HOCKEY 2",
+      "filename": "Actua Ice Hockey 2 (E) [SLES-01226] sbi.7z",
+      "zip_filenames": [
+        "SLES-01226.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMANY)",
+      "multi_language": null,
+      "languages": [
+        "Germany"
+      ],
+      "serials": [
+        "SLES-02563"
+      ],
+      "title": "ANSTOSS - PREMIER MANAGER",
+      "filename": "Anstoss - Premier Manager (G) [SLES-02563] sbi.7z",
+      "zip_filenames": [
+        "SLES-02563.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01564"
+      ],
+      "title": "APE ESCAPE",
+      "filename": "Ape Escape (E) [SCES-01564] sbi.7z",
+      "zip_filenames": [
+        "SCES-01564.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-02028"
+      ],
+      "title": "APE ESCAPE",
+      "filename": "Ape Escape (F) [SCES-02028] sbi.7z",
+      "zip_filenames": [
+        "SCES-02028.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-02029"
+      ],
+      "title": "APE ESCAPE",
+      "filename": "Ape Escape (G) [SCES-02029] sbi.7z",
+      "zip_filenames": [
+        "SCES-02029.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-02030"
+      ],
+      "title": "APE ESCAPE",
+      "filename": "Ape Escape (I) [SCES-02030] sbi.7z",
+      "zip_filenames": [
+        "SCES-02030.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02031"
+      ],
+      "title": "APE ESCAPE",
+      "filename": "Ape Escape (S) [SCES-02031] sbi.7z",
+      "zip_filenames": [
+        "SCES-02031.sbi"
+      ]
+    },
+    {
+      "region": "PAL",
+      "multi_language": null,
+      "languages": [],
+      "serials": [
+        "SLES-03324"
+      ],
+      "title": "ASTERIX - MEGA MADNESS",
+      "filename": "Asterix - Mega Madness (E) [SLES-03324] sbi.7z",
+      "zip_filenames": [
+        "SLES-03324.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-02366"
+      ],
+      "title": "BARBIE - AVENTURE EQUESTRE",
+      "filename": "Barbie - Aventure Equestre (F) [SCES-02366] sbi.7z",
+      "zip_filenames": [
+        "SCES-02366.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-02365"
+      ],
+      "title": "BARBIE - RACE & RIDE",
+      "filename": "Barbie - Race & Ride (E) [SCES-02365] sbi.7z",
+      "zip_filenames": [
+        "SCES-02365.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-02367"
+      ],
+      "title": "BARBIE - RACE & RIDE",
+      "filename": "Barbie - Race & Ride (G) [SCES-02367] sbi.7z",
+      "zip_filenames": [
+        "SCES-02367.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-02368"
+      ],
+      "title": "BARBIE - RACE & RIDE",
+      "filename": "Barbie - Race & Ride (I) [SCES-02368] sbi.7z",
+      "zip_filenames": [
+        "SCES-02368.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02369"
+      ],
+      "title": "BARBIE - RACE & RIDE",
+      "filename": "Barbie - Race & Ride (S) [SCES-02369] sbi.7z",
+      "zip_filenames": [
+        "SCES-02369.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-02488"
+      ],
+      "title": "BARBIE - SPORTS EXTREME",
+      "filename": "Barbie - Sports Extreme (F) [SCES-02488] sbi.7z",
+      "zip_filenames": [
+        "SCES-02488.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-02487"
+      ],
+      "title": "BARBIE - SUPER SPORTS",
+      "filename": "Barbie - Super Sports (E) [SCES-02487] sbi.7z",
+      "zip_filenames": [
+        "SCES-02487.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-02489"
+      ],
+      "title": "BARBIE - SUPER SPORTS",
+      "filename": "Barbie - Super Sports (G) [SCES-02489] sbi.7z",
+      "zip_filenames": [
+        "SCES-02489.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-02490"
+      ],
+      "title": "BARBIE - SUPER SPORTS",
+      "filename": "Barbie - Super Sports (I) [SCES-02490] sbi.7z",
+      "zip_filenames": [
+        "SCES-02490.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02491"
+      ],
+      "title": "BARBIE - SUPER SPORTS",
+      "filename": "Barbie - Super Sports (S) [SCES-02491] sbi.7z",
+      "zip_filenames": [
+        "SCES-02491.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02977"
+      ],
+      "title": "BDFL MANAGER 2001",
+      "filename": "BDFL Manager 2001 (G) [SLES-02977] sbi.7z",
+      "zip_filenames": [
+        "SLES-02977.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-03605"
+      ],
+      "title": "BDFL MANAGER 2002",
+      "filename": "BDFL Manager 2002 (G) [SLES-03605] sbi.7z",
+      "zip_filenames": [
+        "SLES-03605.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3) (FRENCH, SPANISH & ITALIAN)",
+      "multi_language": "M3",
+      "languages": [
+        "French",
+        "Spanish",
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02293"
+      ],
+      "title": "CANAL+ PREMIER MANAGER",
+      "filename": "Canal+ Premier Manager (F)(S)(I) [SLES-02293] sbi.7z",
+      "zip_filenames": [
+        "SLES-02293.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5) (ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02834"
+      ],
+      "title": "CRASH BASH",
+      "filename": "Crash Bash (E)(F)(G)(I)(S) [SCES-02834] sbi.7z",
+      "zip_filenames": [
+        "SCES-02834.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5) (ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02105"
+      ],
+      "title": "CTR - CRASH TEAM RACING (EDC VERSION)",
+      "filename": "CTR - Crash Team Racing (E)(F)(G)(I)(S) (EDC) [SCES-02105] sbi.7z",
+      "zip_filenames": [
+        "SCES-02105_EDC.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5) (ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02105"
+      ],
+      "title": "CTR - CRASH TEAM RACING (NO EDC VERSION)",
+      "filename": "CTR - Crash Team Racing (E)(F)(G)(I)(S) (No EDC) [SCES-02105] sbi.7z",
+      "zip_filenames": [
+        "SCES-02105_NoEDC.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02207"
+      ],
+      "title": "DINO CRISIS",
+      "filename": "Dino Crisis (E) [SLES-02207] sbi.7z",
+      "zip_filenames": [
+        "SLES-02207.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02208"
+      ],
+      "title": "DINO CRISIS",
+      "filename": "Dino Crisis (F) [SLES-02208] sbi.7z",
+      "zip_filenames": [
+        "SLES-02208.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02209"
+      ],
+      "title": "DINO CRISIS",
+      "filename": "Dino Crisis (G) [SLES-02209] sbi.7z",
+      "zip_filenames": [
+        "SLES-02209.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02210"
+      ],
+      "title": "DINO CRISIS",
+      "filename": "Dino Crisis (I) [SLES-02210] sbi.7z",
+      "zip_filenames": [
+        "SLES-02210.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02211"
+      ],
+      "title": "DINO CRISIS",
+      "filename": "Dino Crisis (S) [SLES-02211] sbi.7z",
+      "zip_filenames": [
+        "SLES-02211.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-03189"
+      ],
+      "title": "DISNEY'S 102 DALMATIANS - PUPPIES TO THE RESCUE",
+      "filename": "Disney's 102 Dalmatians - Puppies to the Rescue (E) [SLES-03189] sbi.7z",
+      "zip_filenames": [
+        "SLES-03189.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5) (FRENCH, GERMAN, SPANISH, ITALIAN & DUTCH)",
+      "multi_language": "M5",
+      "languages": [
+        "French",
+        "German",
+        "Spanish",
+        "Italian",
+        "Dutch"
+      ],
+      "serials": [
+        "SLES-03191"
+      ],
+      "title": "DISNEY'S 102 DALMATIANS - PUPPIES TO THE RESCUE",
+      "filename": "Disney's 102 Dalmatians - Puppies to the Rescue (F)(G)(S)(I)(Du) [SLES-03191] sbi.7z",
+      "zip_filenames": [
+        "SLES-03191.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-02006"
+      ],
+      "title": "DISNEY'S LIBRO ANIMATO CREATIVO - MULAN",
+      "filename": "Disney Libro Animato Creativo - Mulan (I) [SCES-02006] sbi.7z",
+      "zip_filenames": [
+        "SCES-02006.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-02005"
+      ],
+      "title": "DISNEY'S MULAN",
+      "filename": "Disney's Mulan (G) [SCES-02005] sbi.7z",
+      "zip_filenames": [
+        "SCES-02005.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02007"
+      ],
+      "title": "DISNEY'S MULAN",
+      "filename": "Disney's Mulan (S) [SCES-02007] sbi.7z",
+      "zip_filenames": [
+        "SCES-02007.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01695"
+      ],
+      "title": "DISNEY'S STORY STUDIO - MULAN",
+      "filename": "Disney's Story Studio - Mulan (E) [SCES-01695] sbi.7z",
+      "zip_filenames": [
+        "SCES-01695.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01431"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (E) [SCES-01431] sbi.7z",
+      "zip_filenames": [
+        "SCES-01431.sbi"
+      ]
+    },
+    {
+      "region": "PAL (DUTCH)",
+      "multi_language": null,
+      "languages": [
+        "Dutch"
+      ],
+      "serials": [
+        "SCES-02185"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (Du) [SCES-02185] sbi.7z",
+      "zip_filenames": [
+        "SCES-02185.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-01516"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (F) [SCES-01516] sbi.7z",
+      "zip_filenames": [
+        "SCES-01516.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-01517"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (G) [SCES-01517] sbi.7z",
+      "zip_filenames": [
+        "SCES-01517.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-01518"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (I) [SCES-01518] sbi.7z",
+      "zip_filenames": [
+        "SCES-01518.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-01519"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (S) [SCES-01519] sbi.7z",
+      "zip_filenames": [
+        "SCES-01519.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SWEDISH)",
+      "multi_language": null,
+      "languages": [
+        "Swedish"
+      ],
+      "serials": [
+        "SCES-02182"
+      ],
+      "title": "DISNEY'S TARZAN",
+      "filename": "Disney's Tarzan (Sw) [SCES-02182] sbi.7z",
+      "zip_filenames": [
+        "SCES-02182.sbi"
+      ]
+    },
+    {
+      "region": "PAL (DUTCH)",
+      "multi_language": null,
+      "languages": [
+        "Dutch"
+      ],
+      "serials": [
+        "SCES-02264"
+      ],
+      "title": "DISNEY'S VERHALENSTUDIO - MULAN",
+      "filename": "Disney's Verhalenstudio - Mulan (Du) [SCES-02264] sbi.7z",
+      "zip_filenames": [
+        "SCES-02264.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M6)(ENGLISH, FRENCH, GERMAN, ITALIAN, SPANISH & SWEDISH)",
+      "multi_language": "M6",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Swedish"
+      ],
+      "serials": [
+        "SLES-02538"
+      ],
+      "title": "EA SPORTS SUPERBIKE 2000",
+      "filename": "EA Sports Superbike 2000 (E)(F)(G)(I)(S)(Sw) [SLES-02538] sbi.7z",
+      "zip_filenames": [
+        "SLES-02538.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-01715"
+      ],
+      "title": "EAGLE ONE HARRIER ATTACK",
+      "filename": "Eagle One - Harrier Attack (E)(F)(G)(I)(S) [SLES-01715] sbi.7z",
+      "zip_filenames": [
+        "SLES-01715.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-01704"
+      ],
+      "title": "ESTO ES FUTBOL",
+      "filename": "Esto es Futbol (S) [SCES-01704] sbi.7z",
+      "zip_filenames": [
+        "SCES-01704.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M4) (ENGLISH, FRENCH, GERMAN & DUTCH)",
+      "multi_language": "M4",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Dutch"
+      ],
+      "serials": [
+        "SLES-02722"
+      ],
+      "title": "F1 2000",
+      "filename": "F1 2000 (E)(F)(G)(Du) [SLES-02722] sbi.7z",
+      "zip_filenames": [
+        "SLES-02722.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02724"
+      ],
+      "title": "F1 2000",
+      "filename": "F1 2000 (I) [SLES-02724] sbi.7z",
+      "zip_filenames": [
+        "SLES-02724.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02965",
+        "SLES-12965",
+        "SLES-22965",
+        "SLES-32965"
+      ],
+      "title": "FINAL FANTASY IX",
+      "filename": "Final Fantasy IX (E) [SLES-02965] sbi.7z",
+      "zip_filenames": [
+        "SLES-02965.sbi",
+        "SLES-12965.sbi",
+        "SLES-22965.sbi",
+        "SLES-32965.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02966",
+        "SLES-12966",
+        "SLES-22966",
+        "SLES-32966"
+      ],
+      "title": "FINAL FANTASY IX",
+      "filename": "Final Fantasy IX (F) [SLES-02966] sbi.7z",
+      "zip_filenames": [
+        "SLES-02966.sbi",
+        "SLES-12966.sbi",
+        "SLES-22966.sbi",
+        "SLES-32966.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02967",
+        "SLES-12967",
+        "SLES-22967",
+        "SLES-32967"
+      ],
+      "title": "FINAL FANTASY IX",
+      "filename": "Final Fantasy IX (G) [SLES-02967] sbi.7z",
+      "zip_filenames": [
+        "SLES-02967.sbi",
+        "SLES-12967.sbi",
+        "SLES-22967.sbi",
+        "SLES-32967.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02968",
+        "SLES-12968",
+        "SLES-22968",
+        "SLES-32968"
+      ],
+      "title": "FINAL FANTASY IX",
+      "filename": "Final Fantasy IX (I) [SLES-02968] sbi.7z",
+      "zip_filenames": [
+        "SLES-02968.sbi",
+        "SLES-12968.sbi",
+        "SLES-22968.sbi",
+        "SLES-32968.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02969",
+        "SLES-12969",
+        "SLES-22969",
+        "SLES-32969"
+      ],
+      "title": "FINAL FANTASY IX",
+      "filename": "Final Fantasy IX (S) [SLES-02969] sbi.7z",
+      "zip_filenames": [
+        "SLES-02969.sbi",
+        "SLES-12969.sbi",
+        "SLES-22969.sbi",
+        "SLES-32969.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02080",
+        "SLES-12080",
+        "SLES-22080",
+        "SLES-32080"
+      ],
+      "title": "FINAL FANTASY VIII",
+      "filename": "Final Fantasy VIII (E) [SLES-02080] sbi.7z",
+      "zip_filenames": [
+        "SLES-02080.sbi",
+        "SLES-12080.sbi",
+        "SLES-22080.sbi",
+        "SLES-32080.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02081",
+        "SLES-12081",
+        "SLES-22081",
+        "SLES-32081"
+      ],
+      "title": "FINAL FANTASY VIII",
+      "filename": "Final Fantasy VIII (F) [SLES-02081] sbi.7z",
+      "zip_filenames": [
+        "SLES-02081.sbi",
+        "SLES-12081.sbi",
+        "SLES-22081.sbi",
+        "SLES-32081.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02082",
+        "SLES-12082",
+        "SLES-22082",
+        "SLES-32082"
+      ],
+      "title": "FINAL FANTASY VIII",
+      "filename": "Final Fantasy VIII (G) [SLES-02082] sbi.7z",
+      "zip_filenames": [
+        "SLES-02082.sbi",
+        "SLES-12082.sbi",
+        "SLES-22082.sbi",
+        "SLES-32082.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02083",
+        "SLES-12083",
+        "SLES-22083",
+        "SLES-32083"
+      ],
+      "title": "FINAL FANTASY VIII",
+      "filename": "Final Fantasy VIII (I) [SLES-02083] sbi.7z",
+      "zip_filenames": [
+        "SLES-02083.sbi",
+        "SLES-12083.sbi",
+        "SLES-22083.sbi",
+        "SLES-32083.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02084",
+        "SLES-12084",
+        "SLES-22084",
+        "SLES-32084"
+      ],
+      "title": "FINAL FANTASY VIII",
+      "filename": "Final Fantasy VIII (S) [SLES-02084] sbi.7z",
+      "zip_filenames": [
+        "SLES-02084.sbi",
+        "SLES-12084.sbi",
+        "SLES-22084.sbi",
+        "SLES-32084.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02978"
+      ],
+      "title": "FOOTBALL MANAGER CAMPIONATO 2001",
+      "filename": "Football Manager Campionato 2001 (I) [SLES-02978] sbi.7z",
+      "zip_filenames": [
+        "SLES-02978.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M4) (ENGLISH, FRENCH, GERMAN & ITALIAN)",
+      "multi_language": "M4",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian"
+      ],
+      "serials": [
+        "SCES-01979"
+      ],
+      "title": "FORMULA ONE 99",
+      "filename": "Formula One 99 (E)(F)(G)(I) [SCES-01979] sbi.7z",
+      "zip_filenames": [
+        "SCES-01979.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02767"
+      ],
+      "title": "FRONTSCHWEINE (HOGS OF WAR)",
+      "filename": "Frontschweine (Hogs of War) (G) [SLES-02767] sbi.7z",
+      "zip_filenames": [
+        "SLES-02767.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-01702"
+      ],
+      "title": "FUSSBALL LIVE",
+      "filename": "Fussball Live (G) [SCES-01702] sbi.7z",
+      "zip_filenames": [
+        "SCES-01702.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-03062"
+      ],
+      "title": "FUSSBALL MANAGER 2001",
+      "filename": "Fussball Manager 2001 (G) [SLES-03062] sbi.7z",
+      "zip_filenames": [
+        "SLES-03062.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02328",
+        "SLES-12328",
+        "SLES-22328"
+      ],
+      "title": "GALERIANS",
+      "filename": "Galerians (E) [SLES-02328] sbi.7z",
+      "zip_filenames": [
+        "SLES-02328.sbi",
+        "SLES-12328.sbi",
+        "SLES-22328.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02329",
+        "SLES-12329",
+        "SLES-22329"
+      ],
+      "title": "GALERIANS",
+      "filename": "Galerians (F) [SLES-02329] sbi.7z",
+      "zip_filenames": [
+        "SLES-02329.sbi",
+        "SLES-12329.sbi",
+        "SLES-22329.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02330",
+        "SLES-12330",
+        "SLES-22330"
+      ],
+      "title": "GALERIANS",
+      "filename": "Galerians (G) [SLES-02330] sbi.7z",
+      "zip_filenames": [
+        "SLES-02330.sbi",
+        "SLES-12330.sbi",
+        "SLES-22330.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-01241"
+      ],
+      "title": "GEKIDO - URBAN FIGHTERS",
+      "filename": "Gekido - Urban Fighters (E)(F)(G)(I)(S) [SLES-01241] sbi.7z",
+      "zip_filenames": [
+        "SLES-01241.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-01041"
+      ],
+      "title": "HOGS OF WAR",
+      "filename": "Hogs of War (E) [SLES-01041] sbi.7z",
+      "zip_filenames": [
+        "SLES-01041.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01444"
+      ],
+      "title": "JACKIE CHAN STUNTMASTER",
+      "filename": "Jackie Chan Stuntmaster (E) [SCES-01444] sbi.7z",
+      "zip_filenames": [
+        "SCES-01444.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M6)(ENGLISH, FRENCH, GERMAN, SPANISH, ITALIAN & PORTUGUESE)",
+      "multi_language": "M6",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Spanish",
+        "Italian",
+        "Portuguese"
+      ],
+      "serials": [
+        "SLES-01362"
+      ],
+      "title": "LE MANS 24 HOURS",
+      "filename": "Le Mans 24 Hours (E)(F)(G)(S)(I)(P) [SLES-01362] sbi.7z",
+      "zip_filenames": [
+        "SLES-01362.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-01701"
+      ],
+      "title": "LE MONDE DES BLUES - LE JEU OFFICIEL DE L'EQUIPE DE FRANCE",
+      "filename": "Le Monde des Bleus - Le jeu officiel de l'equipe de France (F) [SCES-01701] sbi.7z",
+      "zip_filenames": [
+        "SCES-01701.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-01301"
+      ],
+      "title": "LEGACY OF KAIN - SOUL REAVER",
+      "filename": "Legacy of Kain - Soul Reaver (E) [SLES-01301] sbi.7z",
+      "zip_filenames": [
+        "SLES-01301.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02024"
+      ],
+      "title": "LEGACY OF KAIN - SOUL REAVER",
+      "filename": "Legacy of Kain - Soul Reaver (F) [SLES-02024] sbi.7z",
+      "zip_filenames": [
+        "SLES-02024.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02025"
+      ],
+      "title": "LEGACY OF KAIN - SOUL REAVER",
+      "filename": "Legacy of Kain - Soul Reaver (G) [SLES-02025] sbi.7z",
+      "zip_filenames": [
+        "SLES-02025.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02027"
+      ],
+      "title": "LEGACY OF KAIN - SOUL REAVER",
+      "filename": "Legacy of Kain - Soul Reaver (I) [SLES-02027] sbi.7z",
+      "zip_filenames": [
+        "SLES-02027.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02026"
+      ],
+      "title": "LEGACY OF KAIN - SOUL REAVER",
+      "filename": "Legacy of Kain - Soul Reaver (S) [SLES-02026] sbi.7z",
+      "zip_filenames": [
+        "SLES-02026.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02766"
+      ],
+      "title": "LES COCHONS DE GUERRE [HOGS OF WAR]",
+      "filename": "Les Cochons de Guerre (Hogs of War) (F) [SLES-02766] sbi.7z",
+      "zip_filenames": [
+        "SLES-02766.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02975"
+      ],
+      "title": "LMA MANAGER 2001",
+      "filename": "LMA Manager 2001 (E) [SLES-02975] sbi.7z",
+      "zip_filenames": [
+        "SLES-02975.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-03603"
+      ],
+      "title": "LMA MANAGER 2002",
+      "filename": "LMA Manager 2002 (E) [SLES-03603] sbi.7z",
+      "zip_filenames": [
+        "SLES-03603.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M6)(ENGLISH, FRENCH, GERMAN, ITALIAN, SPANISH & DUTCH)",
+      "multi_language": "M6",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Dutch"
+      ],
+      "serials": [
+        "SLES-03530"
+      ],
+      "title": "LUCKY LUKE - WESTERN FEVER",
+      "filename": "Lucky Luke - Western Fever (E)(F)(G)(I)(S)(Du) [SLES-03530] sbi.7z",
+      "zip_filenames": [
+        "SLES-03530.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-00311"
+      ],
+      "title": "MEDIEVIL",
+      "filename": "MediEvil (E) [SCES-00311] sbi.7z",
+      "zip_filenames": [
+        "SCES-00311.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-01492"
+      ],
+      "title": "MEDIEVIL",
+      "filename": "MediEvil (F) [SCES-01492] sbi.7z",
+      "zip_filenames": [
+        "SCES-01492.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-01493"
+      ],
+      "title": "MEDIEVIL",
+      "filename": "MediEvil (G) [SCES-01493] sbi.7z",
+      "zip_filenames": [
+        "SCES-01493.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-01494"
+      ],
+      "title": "MEDIEVIL",
+      "filename": "MediEvil (I) [SCES-01494] sbi.7z",
+      "zip_filenames": [
+        "SCES-01494.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-01495"
+      ],
+      "title": "MEDIEVIL",
+      "filename": "MediEvil (S) [SCES-01495] sbi.7z",
+      "zip_filenames": [
+        "SCES-01495.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, FRENCH & GERMAN)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "French",
+        "German"
+      ],
+      "serials": [
+        "SCES-02544"
+      ],
+      "title": "MEDIEVIL 2",
+      "filename": "MediEvil 2 (E)(F)(G) [SCES-02544] sbi.7z",
+      "zip_filenames": [
+        "SCES-02544.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(SPANISH, ITALIAN & PORTUGUESE)",
+      "multi_language": "M3",
+      "languages": [
+        "Spanish",
+        "Italian",
+        "Portuguese"
+      ],
+      "serials": [
+        "SCES-02545"
+      ],
+      "title": "MEDIEVIL 2",
+      "filename": "MediEvil 2 (S)(I)(P) [SCES-02545] sbi.7z",
+      "zip_filenames": [
+        "SCES-02545.sbi"
+      ]
+    },
+    {
+      "region": "PAL (RUSSIAN)",
+      "multi_language": null,
+      "languages": [
+        "Russian"
+      ],
+      "serials": [
+        "SCES-02546"
+      ],
+      "title": "MEDIEVIL 2",
+      "filename": "MediEvil 2 (R) [SCES-02546] sbi.7z",
+      "zip_filenames": [
+        "SCES-02546.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-03519"
+      ],
+      "title": "MEN IN BLACK - THE SERIES - CRASHDOWN",
+      "filename": "Men in Black - The Series - Crashdown (E) [SLES-03519] sbi.7z",
+      "zip_filenames": [
+        "SLES-03519.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-03520"
+      ],
+      "title": "MEN IN BLACK - THE SERIES - CRASHDOWN",
+      "filename": "Men in Black - The Series - Crashdown (F) [SLES-03520] sbi.7z",
+      "zip_filenames": [
+        "SLES-03520.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-03521"
+      ],
+      "title": "MEN IN BLACK - THE SERIES - CRASHDOWN",
+      "filename": "Men in Black - The Series - Crashdown (G) [SLES-03521] sbi.7z",
+      "zip_filenames": [
+        "SLES-03521.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-03522"
+      ],
+      "title": "MEN IN BLACK - THE SERIES - CRASHDOWN",
+      "filename": "Men in Black - The Series - Crashdown (I) [SLES-03522] sbi",
+      "zip_filenames": [
+        "SLES-03522.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-03523"
+      ],
+      "title": "MEN IN BLACK - THE SERIES - CRASHDOWN",
+      "filename": "Men in Black - The Series - Crashdown (S) [SLES-03523] sbi.7z",
+      "zip_filenames": [
+        "SLES-03523.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, GERMAN & SWEDISH)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "German",
+        "Swedish"
+      ],
+      "serials": [
+        "SLES-01545"
+      ],
+      "title": "MICHELIN RALLY MASTERS - RACE OF CHAMPIONS",
+      "filename": "Michelin Rally Masters - Race of Champions (E)(G)(Sw) [SLES-01545] sbi.7z",
+      "zip_filenames": [
+        "SLES-01545.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(FRENCH, ITALIAN & SPANISH)",
+      "multi_language": "M3",
+      "languages": [
+        "French",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02395"
+      ],
+      "title": "MICHELIN RALLY MASTERS - RACE OF CHAMPIONS",
+      "filename": "Michelin Rally Masters - Race of Champions (F)(I)(S) [SLES-02395] sbi.7z",
+      "zip_filenames": [
+        "SLES-02395.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02839"
+      ],
+      "title": "MIKE TYSON BOXING",
+      "filename": "Mike Tyson Boxing (E)(F)(G)(I)(S) [SLES-02839] sbi.7z",
+      "zip_filenames": [
+        "SLES-02839.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-01906"
+      ],
+      "title": "MISSION IMPOSSIBLE",
+      "filename": "Mission - Impossible (E)(F)(G)(I)(S) [SLES-01906] sbi.7z",
+      "zip_filenames": [
+        "SLES-01906.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02830"
+      ],
+      "title": "MOHO",
+      "filename": "MoHo (E)(F)(G)(I)(S) [SLES-02830] sbi.7z",
+      "zip_filenames": [
+        "SLES-02830.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, GERMAN & SWEDISH)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "German",
+        "Swedish"
+      ],
+      "serials": [
+        "SLES-02689"
+      ],
+      "title": "NEED FOR SPEED - PORSCHE 2000",
+      "filename": "Need for Speed - Porsche 2000 (E)(G)(Sw) [SLES-02689] sbi.7z",
+      "zip_filenames": [
+        "SLES-02689.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(FRENCH, SPANISH & ITALIAN)",
+      "multi_language": "M3",
+      "languages": [
+        "French",
+        "Spanish",
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02700"
+      ],
+      "title": "NEED FOR SPEED - PORSCHE 2000",
+      "filename": "Need for Speed - Porsche 2000 (F)(S)(I) [SLES-02700] sbi.7z",
+      "zip_filenames": [
+        "SLES-02700.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02086"
+      ],
+      "title": "N-GEN RACING",
+      "filename": "N-Gen Racing (E)(F)(G)(I)(S) [SLES-02086] sbi.7z",
+      "zip_filenames": [
+        "SLES-02086.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02558",
+        "SLES-12558"
+      ],
+      "title": "PARASITE EVE II",
+      "filename": "Parasite Eve II (E) [SLES-02558] sbi.7z",
+      "zip_filenames": [
+        "SLES-02558.sbi",
+        "SLES-12558.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02559",
+        "SLES-12559"
+      ],
+      "title": "PARASITE EVE II",
+      "filename": "Parasite Eve II (F) [SLES-02559] sbi.7z",
+      "zip_filenames": [
+        "SLES-02559.sbi",
+        "SLES-12559.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02560",
+        "SLES-12560"
+      ],
+      "title": "PARASITE EVE II",
+      "filename": "Parasite Eve II (G) [SLES-02560] sbi.7z",
+      "zip_filenames": [
+        "SLES-02560.sbi",
+        "SLES-12560.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02561",
+        "SLES-12561"
+      ],
+      "title": "PARASITE EVE II",
+      "filename": "Parasite Eve II (S) [SLES-02561] sbi.7z",
+      "zip_filenames": [
+        "SLES-02561.sbi",
+        "SLES-12561.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02562",
+        "SLES-12562"
+      ],
+      "title": "PARASITE EVE II",
+      "filename": "Parasite Eve II (I) [SLES-02562] sbi.7z",
+      "zip_filenames": [
+        "SLES-02562.sbi",
+        "SLES-12562.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02992"
+      ],
+      "title": "PREMIER MANAGER 2000",
+      "filename": "Premier Manager 2000 (E) [SLES-02992] sbi.7z",
+      "zip_filenames": [
+        "SLES-02992.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-00017"
+      ],
+      "title": "PRINCE NASEEM BOXING",
+      "filename": "Prince Naseem Boxing (E)(F)(G)(I)(S) [SLES-00017] sbi.7z",
+      "zip_filenames": [
+        "SLES-00017.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-01943"
+      ],
+      "title": "RADIKAL BIKERS",
+      "filename": "Radikal Bikers (E)(F)(G)(I)(S) [SLES-01943] sbi.7z",
+      "zip_filenames": [
+        "SLES-01943.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M4)(ENGLISH, FRENCH, GERMAN & SPANISH)",
+      "multi_language": "M4",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02824"
+      ],
+      "title": "RC REVENGE",
+      "filename": "RC Revenge (E)(F)(G)(S) [SLES-02824] sbi.7z",
+      "zip_filenames": [
+        "SLES-02824.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02529"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (E) [SLES-02529] sbi.7z",
+      "zip_filenames": [
+        "SLES-02529.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02530"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (F) [SLES-02530] sbi.7z",
+      "zip_filenames": [
+        "SLES-02530.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02531"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (G) [SLES-02531] sbi.7z",
+      "zip_filenames": [
+        "SLES-02531.sbi"
+      ]
+    },
+    {
+      "region": "PAL (IRELAND)",
+      "multi_language": null,
+      "languages": [
+        "Ireland"
+      ],
+      "serials": [
+        "SLES-02698"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (Ir) [SLES-02698] sbi.7z",
+      "zip_filenames": [
+        "SLES-02698.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02533"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (I) [SLES-02533] sbi.7z",
+      "zip_filenames": [
+        "SLES-02533.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02532"
+      ],
+      "title": "RESIDENT EVIL 3 - NEMESIS",
+      "filename": "Resident Evil 3 - Nemesis (S) [SLES-02532] sbi.7z",
+      "zip_filenames": [
+        "SLES-02532.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M4)(ENGLISH, FRENCH, DUTCH & SWEDISH)",
+      "multi_language": "M4",
+      "languages": [
+        "English",
+        "French",
+        "Dutch",
+        "Swedish"
+      ],
+      "serials": [
+        "SLES-00995"
+      ],
+      "title": "RONALDO V-FOOTBALL",
+      "filename": "Ronaldo V-Football (E)(F)(Du)(Sw) [SLES-00995] sbi.7z",
+      "zip_filenames": [
+        "SLES-00995.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M4)(GERMAN, SPANISH, ITALIAN & PORTUGUESE)",
+      "multi_language": "M4",
+      "languages": [
+        "German",
+        "Spanish",
+        "Italian",
+        "Portuguese"
+      ],
+      "serials": [
+        "SLES-02681"
+      ],
+      "title": "RONALDO V-FOOTBALL",
+      "filename": "Ronaldo V-Football (G)(S)(I)(P) [SLES-02681] sbi.7z",
+      "zip_filenames": [
+        "SLES-02681.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02112"
+      ],
+      "title": "SAGA FRONTIER 2",
+      "filename": "Saga Frontier 2 (E) [SLES-02112] sbi.7z",
+      "zip_filenames": [
+        "SLES-02112.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02113"
+      ],
+      "title": "SAGA FRONTIER 2",
+      "filename": "Saga Frontier 2 (F) [SLES-02113] sbi.7z",
+      "zip_filenames": [
+        "SLES-02113.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02118"
+      ],
+      "title": "SAGA FRONTIER 2",
+      "filename": "Saga Frontier 2 (G) [SLES-02118] sbi.7z",
+      "zip_filenames": [
+        "SLES-02118.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02763"
+      ],
+      "title": "SNO-CROSS CHAMPIONSHIP RACING",
+      "filename": "Sno-Cross Championship Racing (E)(F)(G)(I)(S) [SLES-02763] sbi.7z",
+      "zip_filenames": [
+        "SLES-02763.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-02290"
+      ],
+      "title": "SPACE DEBRIS",
+      "filename": "Space Debris (E) [SCES-02290] sbi.7z",
+      "zip_filenames": [
+        "SCES-02290.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SCES-02430"
+      ],
+      "title": "SPACE DEBRIS",
+      "filename": "Space Debris (F) [SCES-02430] sbi.7z",
+      "zip_filenames": [
+        "SCES-02430.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SCES-02431"
+      ],
+      "title": "SPACE DEBRIS",
+      "filename": "Space Debris (G) [SCES-02431] sbi.7z",
+      "zip_filenames": [
+        "SCES-02431.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-02432"
+      ],
+      "title": "SPACE DEBRIS",
+      "filename": "Space Debris (I) [SCES-02432] sbi.7z",
+      "zip_filenames": [
+        "SCES-02432.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01763"
+      ],
+      "title": "SPEED FREAKS",
+      "filename": "Speed Freaks (E) [SCES-01763] sbi.7z",
+      "zip_filenames": [
+        "SCES-01763.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02104"
+      ],
+      "title": "SPYRO 2 - GATEWAY TO GLIMMER",
+      "filename": "Spyro 2 - Gateway to Glimmer (E)(F)(G)(I)(S) [SCES-02104] sbi.7z",
+      "zip_filenames": [
+        "SCES-02104.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02835"
+      ],
+      "title": "SPYRO - YEAR OF THE DRAGON (V.1.0)",
+      "filename": "Spyro - Year of the Dragon (E)(F)(G)(I)(S) (v1.0) [SCES-02835] sbi.7z",
+      "zip_filenames": [
+        "SCES-02835_v1.0.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M5)(ENGLISH, FRENCH, GERMAN, ITALIAN & SPANISH)",
+      "multi_language": "M5",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SCES-02835"
+      ],
+      "title": "SPYRO - YEAR OF THE DRAGON (V.1.1) (PLATINUM)",
+      "filename": "Spyro - Year of the Dragon (E)(F)(G)(I)(S) (v1.1) [SCES-02835] sbi.7z",
+      "zip_filenames": [
+        "SCES-02835_v1.1.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02857"
+      ],
+      "title": "SYDNEY 2000",
+      "filename": "Sydney 2000 (E) [SLES-02857] sbi.7z",
+      "zip_filenames": [
+        "SLES-02857.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02858"
+      ],
+      "title": "SYDNEY 2000",
+      "filename": "Sydney 2000 (F) [SLES-02858] sbi.7z",
+      "zip_filenames": [
+        "SLES-02858.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02859"
+      ],
+      "title": "SYDNEY 2000",
+      "filename": "Sydney 2000 (G) [SLES-02859] sbi.7z",
+      "zip_filenames": [
+        "SLES-02859.sbi"
+      ]
+    },
+    {
+      "region": "PAL (SPANISH)",
+      "multi_language": null,
+      "languages": [
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02861"
+      ],
+      "title": "SYDNEY 2000",
+      "filename": "Sydney 2000 (S) [SLES-02861] sbi.7z",
+      "zip_filenames": [
+        "SLES-02861.sbi"
+      ]
+    },
+    {
+      "region": "PAL (DUTCH)",
+      "multi_language": null,
+      "languages": [
+        "Dutch"
+      ],
+      "serials": [
+        "SLES-03245"
+      ],
+      "title": "TECHNOMAGE - DE TERUGKEER DER EEUWIGHEID",
+      "filename": "TechnoMage - De Terugkeer der Eeuwigheid (Du) [SLES-03245] sbi.7z",
+      "zip_filenames": [
+        "SLES-03245.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02831"
+      ],
+      "title": "TECHNOMAGE - DIE RUECKKEHR DER EWIGKEIT",
+      "filename": "TechnoMage - Die Rueckkehr der Ewigkeit (G) [SLES-02831] sbi.7z",
+      "zip_filenames": [
+        "SLES-02831.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-03242"
+      ],
+      "title": "TECHNOMAGE - EN QUETE DE L'ETERNITE",
+      "filename": "TechnoMage - En Quete de L'Eternite (F) [SLES-03242] sbi.7z",
+      "zip_filenames": [
+        "SLES-03242.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-03241"
+      ],
+      "title": "TECHNOMAGE - RETURN OF ETERNITY",
+      "filename": "TechnoMage - Return of Eternity (E) [SLES-03241] sbi.7z",
+      "zip_filenames": [
+        "SLES-03241.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-03489"
+      ],
+      "title": "THE ITALIAN JOB",
+      "filename": "The Italian Job (E) [SLES-03489] sbi.7z",
+      "zip_filenames": [
+        "SLES-03489.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-03626"
+      ],
+      "title": "THE ITALIAN JOB",
+      "filename": "The Italian Job (G) [SLES-03626] sbi.7z",
+      "zip_filenames": [
+        "SLES-03626.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M7)(ENGLISH, FRENCH, GERMAN, ITALIAN, SPANISH, DUTCH & SWEDISH)",
+      "multi_language": "M7",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Dutch",
+        "Swedish"
+      ],
+      "serials": [
+        "SLES-02688"
+      ],
+      "title": "THEME PARK WORLD",
+      "filename": "Theme Park World (E)(F)(G)(I)(S)(Du)(Sw) [SLES-02688] sbi.7z",
+      "zip_filenames": [
+        "SLES-02688.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SCES-01700"
+      ],
+      "title": "THIS IS FOOTBALL",
+      "filename": "This Is Football (E) [SCES-01700] sbi.7z",
+      "zip_filenames": [
+        "SCES-01700.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SCES-01703"
+      ],
+      "title": "THIS IS FOOTBALL",
+      "filename": "This Is Football (I) [SCES-01703] sbi.7z",
+      "zip_filenames": [
+        "SCES-01703.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M2)(FRENCH & DUTCH)",
+      "multi_language": "M2",
+      "languages": [
+        "French",
+        "Dutch"
+      ],
+      "serials": [
+        "SCES-01882"
+      ],
+      "title": "THIS IS FOOTBALL",
+      "filename": "This Is Football (F)(Du) [SCES-01882] sbi.7z",
+      "zip_filenames": [
+        "SCES-01882.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, FRENCH & GERMAN)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "French",
+        "German"
+      ],
+      "serials": [
+        "SLES-02572"
+      ],
+      "title": "TOCA - WORLD TOURING CARS",
+      "filename": "TOCA World Touring Cars (E)(F)(G) [SLES-02572] sbi.7z",
+      "zip_filenames": [
+        "SLES-02572.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M2)(ITALIAN & SPANISH)",
+      "multi_language": "M2",
+      "languages": [
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02573"
+      ],
+      "title": "TOCA - WORLD TOURING CARS",
+      "filename": "TOCA World Touring Cars (I)(S) [SLES-02573] sbi.7z",
+      "zip_filenames": [
+        "SLES-02573.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02704"
+      ],
+      "title": "UEFA EURO 2000",
+      "filename": "UEFA Euro 2000 (E) [SLES-02704] sbi.7z",
+      "zip_filenames": [
+        "SLES-02704.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02705"
+      ],
+      "title": "UEFA EURO 2000",
+      "filename": "UEFA Euro 2000 (F) [SLES-02705] sbi.7z",
+      "zip_filenames": [
+        "SLES-02705.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02706"
+      ],
+      "title": "UEFA EURO 2000",
+      "filename": "UEFA Euro 2000 (G) [SLES-02706] sbi.7z",
+      "zip_filenames": [
+        "SLES-02706.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ITALIAN)",
+      "multi_language": null,
+      "languages": [
+        "Italian"
+      ],
+      "serials": [
+        "SLES-02707"
+      ],
+      "title": "UEFA EURO 2000",
+      "filename": "UEFA Euro 2000 (I) [SLES-02707] sbi.7z",
+      "zip_filenames": [
+        "SLES-02707.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M6)(ENGLISH, FRENCH, GERMAN, ITALIAN, SPANISH & DUTCH)",
+      "multi_language": "M6",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Dutch"
+      ],
+      "serials": [
+        "SLES-01733"
+      ],
+      "title": "UEFA STRIKER",
+      "filename": "UEFA Striker (E)(F)(G)(I)(S)(Du) [SLES-01733] sbi.7z",
+      "zip_filenames": [
+        "SLES-01733.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, ITALIAN & SPANISH)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "Italian",
+        "Spanish"
+      ],
+      "serials": [
+        "SLES-02071"
+      ],
+      "title": "URBAN CHAOS",
+      "filename": "Urban Chaos (E)(S)(I) [SLES-02071] sbi.7z",
+      "zip_filenames": [
+        "SLES-02071.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02355"
+      ],
+      "title": "URBAN CHAOS",
+      "filename": "Urban Chaos (G) [SLES-02355] sbi.7z",
+      "zip_filenames": [
+        "SLES-02355.sbi"
+      ]
+    },
+    {
+      "region": "PAL (ENGLISH)",
+      "multi_language": null,
+      "languages": [
+        "English"
+      ],
+      "serials": [
+        "SLES-02754"
+      ],
+      "title": "VAGRANT STORY",
+      "filename": "Vagrant Story (E) [SLES-02754] sbi.7z",
+      "zip_filenames": [
+        "SLES-02754.sbi"
+      ]
+    },
+    {
+      "region": "PAL (FRENCH)",
+      "multi_language": null,
+      "languages": [
+        "French"
+      ],
+      "serials": [
+        "SLES-02755"
+      ],
+      "title": "VAGRANT STORY",
+      "filename": "Vagrant Story (F) [SLES-02755] sbi.7z",
+      "zip_filenames": [
+        "SLES-02755.sbi"
+      ]
+    },
+    {
+      "region": "PAL (GERMAN)",
+      "multi_language": null,
+      "languages": [
+        "German"
+      ],
+      "serials": [
+        "SLES-02756"
+      ],
+      "title": "VAGRANT STORY",
+      "filename": "Vagrant Story (G) [SLES-02756] sbi.7z",
+      "zip_filenames": [
+        "SLES-02756.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M3)(ENGLISH, FRENCH & GERMAN)",
+      "multi_language": "M3",
+      "languages": [
+        "English",
+        "French",
+        "German"
+      ],
+      "serials": [
+        "SLES-01907"
+      ],
+      "title": "V-RALLY - CHAMPIONSHIP EDITION 2",
+      "filename": "V-Rally - Championship Edition 2 (E)(F)(G) [SLES-01907] sbi.7z",
+      "zip_filenames": [
+        "SLES-01907.sbi"
+      ]
+    },
+    {
+      "region": "PAL (M9)(ENGLISH, FRENCH, GERMAN, ITALIAN, SPANISH, DUTCH, SWEDISH, NORWEIGAN & DANKS)",
+      "multi_language": "M9",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Italian",
+        "Spanish",
+        "Dutch",
+        "Swedish",
+        "Norweigan",
+        "Danks"
+      ],
+      "serials": [
+        "SLES-02733"
+      ],
+      "title": "WALT DISNEY'S WORLD QUEST - MAGICAL RACING TOUR",
+      "filename": "Walt Disney World Quest - Magical Racing Tour (E)(F)(G)(I)(S)(Du)(Sw)(N)(D) [SLES-02733] sbi.7z",
+      "zip_filenames": [
+        "SLES-02733.sbi"
+      ]
+    }
+  ]
+}

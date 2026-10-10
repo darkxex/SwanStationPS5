@@ -143,6 +143,7 @@ static bool options_dirty;
 static const Paths *host_paths;
 /* The game being loaded, for the HD texture pack check. */
 static char loading_path[SwanStationPS5_PATH_MAX];
+static bool sbi_missing; /* the core refused the disc: a libcrypt game with no SBI file */
 extern const Paths *app_paths(void);
 static PadState pad_state[SwanStationPS5_MAX_PADS];
 static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
@@ -807,6 +808,12 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
         /* the core's on-screen messages (its "Display OSD Messages" option decides whether it sends them) */
         const char *msg = ((const struct retro_message *)data)->msg;
         SwanStationPS5_log("core message: %s", msg);
+        /* a libcrypt game refused for want of an SBI file: host_load says it (once, in the interface's language);
+         * the core's own two errors ("You are attempting..." and "System failed to boot") stay out */
+        if (msg && strstr(msg, "libcrypt protected game without an SBI file"))
+            sbi_missing = true;
+        if (sbi_missing && msg && (strstr(msg, "libcrypt protected game") || strstr(msg, "System failed to boot")))
+            return true;
         if (msg && msg[0])
         {
             char shown[512];
@@ -1161,9 +1168,12 @@ bool host_load(const char *game_path, const char *serial, const Paths *paths, co
 
     STEP("retro_load_game");
     struct retro_game_info info = {game_path, NULL, 0, NULL};
+    sbi_missing = false;
     if (!core->load_game(&info))
     {
-        snprintf(error, error_size, "The core could not load this game.");
+        snprintf(error, error_size, "%s",
+                 sbi_missing ? "This game has libcrypt protection: put its .sbi file next to the disc."
+                             : "The core could not load this game.");
         core->deinit();
         return false;
     }

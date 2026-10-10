@@ -221,7 +221,7 @@ The log shows the result: `storage: unlocked`, or `storage: sandboxed (...)` wit
 |---|---|
 | OPTIONS | PS1 START |
 | Touchpad tap | PS1 SELECT |
-| Hold the touchpad (0.5 s) or L3 + R3 | The SwanStationPS5 menu |
+| L3 + R3 | The SwanStationPS5 menu |
 | Hold the touchpad + R2 | Fast forward |
 | Hold the touchpad + L2 | Rewind (turn on *Settings → System → Rewind*) |
 | Hold the touchpad + Square | Screenshot (in `/data/SwanStationPS5/screenshots`) |

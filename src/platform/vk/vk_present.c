@@ -139,6 +139,7 @@ static struct
     VkImageView fg_views[2]; /* the interpolator's two frames, and their framebuffers */
     VkFramebuffer fg_fbs[2];
     VkDescriptorSet fg_sets[FRAMES];
+    VkDescriptorSet fsr_sets[FRAMES]; /* FSR 1's picture, read by the interpolator's frame (fg_new_frame) */
     VkImageView fg_real; /* the game's last frame, shown after the generated one */
     bool fg_have, fg_reset;
     bool fg_failed;
@@ -693,6 +694,7 @@ static bool create_canvas(char *error, size_t size)
     da.pSetLayouts = layouts;
     CHECK(vkAllocateDescriptorSets(V.device, &da, V.game_sets), "game descriptors");
     CHECK(vkAllocateDescriptorSets(V.device, &da, V.fg_sets), "frame generation descriptors");
+    CHECK(vkAllocateDescriptorSets(V.device, &da, V.fsr_sets), "FSR descriptors");
 
     VkCommandPoolCreateInfo cp = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     cp.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -930,6 +932,8 @@ static void point_set(VkDescriptorSet set, VkImageView view, VkImageLayout layou
     vkUpdateDescriptorSets(V.device, 1, &w, 0, NULL);
 }
 
+static VkImageView fsr_scale(VkCommandBuffer cb, int f, int out_w, int out_h);
+
 /* The game into the interpolator's frame with the picture's shader (not its colours),
  * then the frame halfway to the previous one (fg_made, ssfg_output_view). Returns the game's own frame. */
 static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
@@ -948,6 +952,12 @@ static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
     VkFramebuffer fb = fg_framebuffer(target);
     if (!fb)
         return VK_NULL_HANDLE;
+    /* FSR 1 before the interpolation: the game's own picture (its resolution) scaled to the size it has on screen, edge-adaptively
+     * and sharpened, once per new frame of the game; the interpolator then works on FSR's pictures. Only when there is
+     * something to scale up. The picture's top and bottom are cut off below, as without FSR. */
+    const float shown = 1.0f - 2.0f * V.game_crop;
+    VkImageView fsr_view = V.fsr_wanted ? fsr_scale(cb, f, (int)V.fg_w, (int)(V.fg_h / (shown > 0.1f ? shown : 1.0f) + 0.5f))
+                                        : VK_NULL_HANDLE;
     VkClearValue clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     VkRenderPassBeginInfo rp = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     rp.renderPass = V.fg_pass;
@@ -964,11 +974,20 @@ static VkImageView fg_new_frame(VkCommandBuffer cb, int f)
     /* the picture as the core drew it (only the supersampling, which brings it down to the screen's size): the picture's
      * shader comes after the interpolation, on every frame shown */
     int sh = V.game_shader == 99 ? 99 : 0;
-    vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
+    VkDescriptorSet source = V.game_sets[f];
     float info[4];
-    game_info(info, sh, (float)V.fg_w, (float)V.fg_h, V.game_tex[0], V.game_tex[1], false);
+    if (fsr_view)
+    {
+        sh = 0; /* FSR's picture is at the screen's size already */
+        point_set(V.fsr_sets[f], fsr_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        source = V.fsr_sets[f];
+        game_info(info, sh, (float)V.fg_w, (float)V.fg_h, (float)V.fg_w, (float)V.fg_h / (shown > 0.1f ? shown : 1.0f), false);
+    }
+    else
+        game_info(info, sh, (float)V.fg_w, (float)V.fg_h, V.game_tex[0], V.game_tex[1], false);
+    vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS, game_pipeline(sh));
     static const float plain[4] = {1, 1, 0, 0}; /* the colours come after, on the screen */
-    draw_quad_in(cb, V.game_sets[f], (float)V.fg_w, (float)V.fg_h, 0, 0, (float)V.fg_w, (float)V.fg_h, V.game_crop,
+    draw_quad_in(cb, source, (float)V.fg_w, (float)V.fg_h, 0, 0, (float)V.fg_w, (float)V.fg_h, V.game_crop,
                  1.0f - V.game_crop, info, plain);
     vkCmdEndRenderPass(cb);
     VkMemoryBarrier mb = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
@@ -1634,6 +1653,27 @@ static void royale_record(VkCommandBuffer cb, int f)
     ++R.frames;
 }
 
+/* FSR 1 (chain 5, offscreen): the core's picture scaled to out_w x out_h, edge-adaptively and sharpened. Its view, in
+ * SHADER_READ_ONLY layout; NULL when there is nothing to scale up (the picture is not smaller) or the chain is not there. */
+static VkImageView fsr_scale(VkCommandBuffer cb, int f, int out_w, int out_h)
+{
+    if (V.game_tex[0] < 1.0f || V.game_tex[1] < 1.0f || out_w < 16 || out_h < 16)
+        return VK_NULL_HANDLE;
+    int src_w = (int)V.game_tex[0], src_h = (int)V.game_tex[1];
+    if (src_w >= out_w && src_h >= out_h)
+        return VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
+    CH = &CHS[1];
+    if (royale_prepare(5, true, src_w, src_h, out_w, out_h))
+    {
+        R.source_view = VK_NULL_HANDLE; /* the core's picture */
+        royale_record(cb, f);
+        view = R.out[R.n - 1].view;
+    }
+    CH = &CHS[0];
+    return view;
+}
+
 /* The last pass, inside the swapchain's render pass: the game's rectangle. */
 static void royale_final(VkCommandBuffer cb, int f, int x, int y, int w, int h)
 {
@@ -1811,23 +1851,11 @@ void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
     /* FSR 1, before the picture's shader: the picture (the core's, or the interpolator's frame) scaled to the size it has on
      * screen, edge-adaptively, and sharpened; the shader then reads that. Only when there is something to scale up. */
     VkImageView fsr_view = VK_NULL_HANDLE;
-    if (game && V.fsr_wanted && V.game_tex[0] >= 1.0f && V.game_tex[1] >= 1.0f && want_w >= 16 && want_h >= 16)
+    if (game && !fg_show && V.fsr_wanted && want_w >= 16 && want_h >= 16)
     {
-        float full = fg_show ? 1.0f : 1.0f - 2.0f * V.game_crop; /* the interpolator's frame is cropped already */
-        int out_w = (int)want_w, out_h = (int)(want_h / (full > 0.1f ? full : 1.0f) + 0.5f);
-        int src_w = fg_show ? (int)V.fg_w : (int)V.game_tex[0], src_h = fg_show ? (int)V.fg_h : (int)V.game_tex[1];
-        if (src_w < out_w || src_h < out_h)
-        {
-            CH = &CHS[1];
-            if (royale_prepare(5, true, src_w, src_h, out_w, out_h))
-            {
-                R.source_view = fg_show;
-                R.source_layout = VK_IMAGE_LAYOUT_GENERAL;
-                royale_record(cb, f);
-                fsr_view = R.out[R.n - 1].view;
-            }
-            CH = &CHS[0];
-        }
+        /* (with the interpolator, FSR 1 already scaled the game's frames before it: fg_new_frame) */
+        float full = 1.0f - 2.0f * V.game_crop;
+        fsr_view = fsr_scale(cb, f, (int)want_w, (int)(want_h / (full > 0.1f ? full : 1.0f) + 0.5f));
     }
     if (fsr_view)
         point_set(V.fg_sets[f], fsr_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -1952,7 +1980,10 @@ static void destroy_device_objects(void)
     V.fg_pass = VK_NULL_HANDLE;
     V.fg_failed = false;
     for (int f = 0; f < FRAMES; ++f)
+    {
         V.fg_sets[f] = VK_NULL_HANDLE;
+        V.fsr_sets[f] = VK_NULL_HANDLE;
+    }
     for (int f = 0; f < FRAMES; ++f)
     {
         if (V.done[f])

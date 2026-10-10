@@ -80,6 +80,16 @@ opt("swanstation_CDROM_MuteCDAudio",
     ("Coupe de force l'audio CD-DA et XA du CD-ROM. Permet de supprimer la musique de fond de certains jeux.",
      "Silencia à força o áudio CD-DA e XA do CD-ROM. Permite desativar a música de fundo em alguns jogos.",
      "Silencia a la fuerza el audio CD-DA y XA del CD-ROM. Sirve para quitar la música de fondo en algunos juegos."))
+opt("swanstation_CDROM_AllowBootingWithoutSBIFile",
+    ("Autoriser le démarrage sans fichier SBI", "Permitir arrancar sem ficheiro SBI",
+     "Permitir arrancar sin archivo SBI"),
+    ("Permet de lancer les jeux protégés par libcrypt (la plupart des éditions PAL, comme Resident Evil 3) quand "
+     "aucun fichier SBI ni données de sous-canal ne sont trouvés. Le jeu ne fonctionnera probablement pas "
+     "correctement.",
+     "Permite iniciar jogos protegidos por libcrypt (a maioria das edições PAL, como Resident Evil 3) quando não é "
+     "encontrado nenhum ficheiro SBI nem dados de subcanal. O jogo provavelmente não funcionará bem.",
+     "Permite iniciar juegos protegidos con libcrypt (la mayoría de ediciones PAL, como Resident Evil 3) cuando no "
+     "se encuentra ningún archivo SBI ni datos de subcanal. Es probable que el juego no funcione bien."))
 opt("swanstation_CDROM_SeekSpeedup",
     ("Accélération de la recherche du CD-ROM", "Aceleração da procura do CD-ROM",
      "Aceleración de búsqueda del CD-ROM"),

@@ -37,6 +37,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <math.h>
+#include <SDL2/SDL.h>
 #include <string.h>
 #include <time.h>
 
@@ -85,6 +87,46 @@ void app_toast_for(const char *message, float seconds)
     show_next_toast(text, length_us);
 }
 
+/* A message's line, with the pictures of the buttons where it says [touchpad], [L3] or [R3]; its width (drawn when asked) */
+static float toast_runs(const char *s, float x, float y, float a, bool draw)
+{
+    static const struct
+    {
+        const char *tag;
+        enum PadGlyph glyph;
+    } TAGS[] = {{"[touchpad]", GLYPH_TOUCHPAD}, {"[L3]", GLYPH_L3}, {"[R3]", GLYPH_R3}};
+    const float size = 26, gap = 10;
+    float start = x;
+    while (*s)
+    {
+        const char *next = NULL;
+        int which = -1;
+        for (int t = 0; t < 3; ++t)
+        {
+            const char *at = strstr(s, TAGS[t].tag);
+            if (at && (!next || at < next))
+                next = at, which = t;
+        }
+        char run[160];
+        size_t n = next ? (size_t)(next - s) : strlen(s);
+        n = n < sizeof(run) - 1 ? n : sizeof(run) - 1;
+        memcpy(run, s, n);
+        run[n] = '\0';
+        if (n && draw)
+            text_draw(x, y, size, FONT_REGULAR, argb_alpha(TH_TEXT, a), ALIGN_LEFT, run);
+        x += text_width(size, FONT_REGULAR, run);
+        if (!next)
+            break;
+        float gw = pad_glyph_width(TAGS[which].glyph, size);
+        x += gap;
+        if (draw)
+            draw_pad_glyph(TAGS[which].glyph, x + gw * 0.5f, y + size * 0.6f, size);
+        x += gw + gap;
+        s = next + strlen(TAGS[which].tag);
+    }
+    return x - start;
+}
+
 void app_draw_toast(void)
 {
     uint64_t now = plat_ticks_us();
@@ -102,11 +144,89 @@ void app_draw_toast(void)
     float left = (float)(toast_until - now) / 1e6f;
     float a = left < 0.3f ? left / 0.3f : 1.0f;
     float rise = shown < 0.15f ? (1.0f - shown / 0.15f) * 24.0f : 0.0f;
-    float w = text_width(26, FONT_REGULAR, toast) + 96, h = 64;
+    float w = toast_runs(toast, 0, 0, 0, false) + 96, h = 64;
     float x = (plat_width() - w) * 0.5f, y = plat_height() - 190 + rise;
     draw_rrect(x, y, w, h, h * 0.5f, argb_alpha(TH_PILL_A(0xf0), a));
     icon_draw(ICON_INFO_CIRCLE, x + 22, y + 18, 28, argb_alpha(TH_FOCUS, a));
-    text_draw(x + 62, y + 17, 26, FONT_REGULAR, argb_alpha(TH_TEXT, a), ALIGN_LEFT, toast);
+    toast_runs(toast, x + 62, y + 17, a, true);
+}
+
+/* ---------------------------------------------------------------- message box */
+
+static char box_text[480];
+static bool box_open;
+static float box_t; /* 0..1, the fade in */
+
+void app_message_box(const char *message)
+{
+    str_copy(box_text, sizeof(box_text), tr(message));
+    box_open = true;
+    box_t = 0.0f;
+}
+
+/* X closes it; true while it is up (the screens below get no buttons then) */
+static bool message_box_input(uint32_t *pressed)
+{
+    if (!box_open)
+        return false;
+    if (*pressed & BIT(BTN_CROSS))
+    {
+        box_open = false;
+        sfx_play(SFX_BACK);
+    }
+    *pressed = 0;
+    return true;
+}
+
+static void message_box_draw(void)
+{
+    if (!box_open)
+        return;
+    box_t = fminf(box_t + app.dt * 8.0f, 1.0f);
+    const float side = 640, pad = 48, size = 28;
+    float x = (plat_width() - side) * 0.5f, y = (plat_height() - side) * 0.5f + (1.0f - box_t) * 24.0f;
+    draw_rrect(x, y, side, side, TH_RADIUS, argb_alpha(TH_PILL_A(0xf0), box_t));
+    icon_draw(ICON_INFO_CIRCLE, x + (side - 56) * 0.5f, y + pad, 56, argb_alpha(TH_FOCUS, box_t));
+    /* the message, word-wrapped and centred */
+    char line[256];
+    float yy = y + pad + 56 + 28;
+    const char *m = box_text;
+    while (*m && yy < y + side - 110)
+    {
+        size_t best = 0, i = 0;
+        for (;;)
+        {
+            size_t j = i;
+            while (m[j] && m[j] != ' ')
+                ++j;
+            size_t n = j < sizeof(line) - 1 ? j : sizeof(line) - 1;
+            memcpy(line, m, n);
+            line[n] = '\0';
+            if (best > 0 && text_width(size, FONT_REGULAR, line) > side - 2 * pad)
+                break;
+            best = n;
+            if (!m[j])
+                break;
+            i = j + 1;
+        }
+        if (best == 0)
+            best = strlen(m) < sizeof(line) - 1 ? strlen(m) : sizeof(line) - 1;
+        memcpy(line, m, best);
+        line[best] = '\0';
+        text_draw(x + side * 0.5f, yy, size, FONT_REGULAR, argb_alpha(TH_TEXT, box_t), ALIGN_CENTER, line);
+        yy += size * 1.45f;
+        m += best;
+        while (*m == ' ')
+            ++m;
+    }
+    /* "(X) Close" at the bottom */
+    const char *close = tr("Close");
+    const float hs = 26;
+    float gw = pad_glyph_width(GLYPH_CROSS, hs);
+    float hw = gw + hs * 0.35f + text_width(hs, FONT_REGULAR, close);
+    float hx = x + (side - hw) * 0.5f, hy = y + side - pad - hs;
+    draw_pad_glyph(GLYPH_CROSS, hx + gw * 0.5f, hy + hs * 0.6f, hs);
+    text_draw(hx + gw + hs * 0.35f, hy, hs, FONT_REGULAR, argb_alpha(TH_TEXT, box_t), ALIGN_LEFT, close);
 }
 
 void app_draw_hints(const int *glyphs, const char *const *labels, int count, const char *right)
@@ -456,12 +576,227 @@ static void bios_use_legacy_dir(void)
     SwanStationPS5_log("bios: none in our bios folder, using %s", legacy);
 }
 
+/* A libcrypt game (most PAL discs) needs its .sbi file beside the disc image, with the image's name. The package holds
+ * them (assets/sbi_files/<serial>.sbi: patches, from psxdatacenter): when the disc has none, its copy is put there. */
+
+/* Spyro: Year of the Dragon and CTR have two pressings under one serial, each with its own .sbi: they are told apart by
+ * the CRC-32 of the first .bin of the disc (Redump's). */
+static const struct
+{
+    const char *serial;
+    uint32_t crc;
+    const char *file;
+} SBI_BY_CRC[] = {
+    {"SCES-02105", 0xf21229a3u, "SCES-02105_NoEDC.sbi"}, /* CTR, original */
+    {"SCES-02105", 0x2a98762fu, "SCES-02105_EDC.sbi"},   /* CTR, Platinum */
+    {"SCES-02835", 0x5d3785eeu, "SCES-02835_v1.0.sbi"},  /* Spyro, original */
+    {"SCES-02835", 0x9bcfefe1u, "SCES-02835_v1.1.sbi"},  /* Spyro, Platinum */
+};
+
+/* CRC-32 of a file; `permille` (0..1000) says how far it is, for the bar */
+static bool crc32_of_file(const char *path, uint32_t *out, SDL_atomic_t *permille)
+{
+    static uint32_t table[256];
+    if (!table[1])
+        for (uint32_t i = 0; i < 256; ++i)
+        {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k)
+                c = c & 1 ? 0xedb88320u ^ (c >> 1) : c >> 1;
+            table[i] = c;
+        }
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return false;
+    fseek(f, 0, SEEK_END);
+    long total = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    static uint8_t buf[256 * 1024];
+    uint32_t crc = 0xffffffffu;
+    size_t n;
+    long done = 0;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+    {
+        for (size_t i = 0; i < n; ++i)
+            crc = table[(crc ^ buf[i]) & 0xff] ^ (crc >> 8);
+        done += (long)n;
+        SDL_AtomicSet(permille, total > 0 ? (int)(done * 1000 / total) : 0);
+    }
+    fclose(f);
+    *out = ~crc;
+    return true;
+}
+
+/* The disc's first .bin: the image itself, or the first FILE of its .cue (beside it) */
+static bool first_bin_of(const char *image, char *bin, size_t size)
+{
+    const char *ext = path_ext(image);
+    if (!strcasecmp(ext, "bin"))
+    {
+        str_copy(bin, size, image);
+        return true;
+    }
+    if (strcasecmp(ext, "cue"))
+        return false;
+    FILE *f = fopen(image, "rb");
+    if (!f)
+        return false;
+    char line[512], name[SwanStationPS5_PATH_MAX] = "";
+    while (fgets(line, sizeof(line), f))
+    {
+        const char *p = line;
+        while (*p == ' ' || *p == '\t')
+            ++p;
+        if (strncasecmp(p, "FILE", 4))
+            continue;
+        const char *q = strchr(p, '"'), *e = q ? strchr(q + 1, '"') : NULL;
+        if (!e)
+            break;
+        size_t len = (size_t)(e - q - 1);
+        if (len < sizeof(name))
+        {
+            memcpy(name, q + 1, len);
+            name[len] = '\0';
+        }
+        break;
+    }
+    fclose(f);
+    if (!name[0])
+        return false;
+    str_copy(bin, size, image);
+    char *slash = strrchr(bin, '/');
+    size_t dir = slash ? (size_t)(slash - bin) + 1 : 0;
+    if (dir + strlen(name) >= size)
+        return false;
+    strcpy(bin + dir, name);
+    return true;
+}
+
+/* The CRC-32 runs in a thread, with a bar on screen meanwhile; the game starts when it is done */
+static struct
+{
+    bool active;
+    SDL_atomic_t done, permille;
+    bool ok;
+    uint32_t crc;
+    char bin[SwanStationPS5_PATH_MAX], serial[16], target[SwanStationPS5_PATH_MAX];
+    int game;
+    bool resume;
+} SC;
+static int sbi_checked_game = -1; /* its CRC was read: start it, whatever the result was */
+
+static int sbi_crc_thread(void *unused)
+{
+    (void)unused;
+    SC.ok = crc32_of_file(SC.bin, &SC.crc, &SC.permille);
+    SDL_AtomicSet(&SC.done, 1);
+    return 0;
+}
+
+/* The copy that matches the CRC-32, once it is known */
+static void sbi_finish(void)
+{
+    char name[64], source[SwanStationPS5_PATH_MAX];
+    if (!SC.ok)
+        return;
+    for (size_t i = 0; i < sizeof(SBI_BY_CRC) / sizeof(SBI_BY_CRC[0]); ++i)
+    {
+        if (strcmp(SBI_BY_CRC[i].serial, SC.serial) || SBI_BY_CRC[i].crc != SC.crc)
+            continue;
+        snprintf(name, sizeof(name), "sbi_files/%s", SBI_BY_CRC[i].file);
+        plat_asset_path(source, sizeof(source), name);
+        file_copy(source, SC.target);
+        return;
+    }
+}
+
+/* false when the CRC-32 is being read: the game starts when it is done */
+static bool sbi_prepare(int index, bool resume)
+{
+    const Game *g = &app.library.games[index];
+    if (index == sbi_checked_game)
+    {
+        sbi_checked_game = -1;
+        return true;
+    }
+    if (SC.active || !g->serial[0] || !strcasecmp(path_ext(g->path), "m3u"))
+        return !SC.active;
+    char target[SwanStationPS5_PATH_MAX], name[64], source[SwanStationPS5_PATH_MAX];
+    str_copy(target, sizeof(target), g->path);
+    char *slash = strrchr(target, '/'), *dot = strrchr(target, '.');
+    if (!dot || (slash && dot < slash) || (size_t)(dot - target) + 5 > sizeof(target))
+        return true;
+    strcpy(dot, ".sbi");
+    FILE *have = fopen(target, "rb");
+    if (have)
+    {
+        fclose(have);
+        return true;
+    }
+    snprintf(name, sizeof(name), "sbi_files/%s.sbi", g->serial);
+    plat_asset_path(source, sizeof(source), name);
+    if (file_copy(source, target))
+        return true;
+    /* a serial with two pressings: the disc's CRC-32 says which */
+    bool listed = false;
+    for (size_t i = 0; i < sizeof(SBI_BY_CRC) / sizeof(SBI_BY_CRC[0]); ++i)
+        listed |= !strcmp(SBI_BY_CRC[i].serial, g->serial);
+    if (!listed || !first_bin_of(g->path, SC.bin, sizeof(SC.bin)))
+        return true;
+    str_copy(SC.serial, sizeof(SC.serial), g->serial);
+    str_copy(SC.target, sizeof(SC.target), target);
+    SC.game = index;
+    SC.resume = resume;
+    SC.ok = false;
+    SDL_AtomicSet(&SC.done, 0);
+    SDL_AtomicSet(&SC.permille, 0);
+    SDL_Thread *t = SDL_CreateThread(sbi_crc_thread, "sbi-crc", NULL);
+    if (!t)
+        return true; /* no thread: no patch, the box says why the game does not start */
+    SDL_DetachThread(t);
+    SC.active = true;
+    return false;
+}
+
+/* Every frame while it runs: the buttons stay out of the screens below; when it is done, the game starts */
+static bool sbi_check_input(uint32_t *pressed)
+{
+    if (!SC.active)
+        return false;
+    *pressed = 0;
+    if (SDL_AtomicGet(&SC.done))
+    {
+        SC.active = false;
+        sbi_finish();
+        sbi_checked_game = SC.game;
+        app_start_game(SC.game, SC.resume);
+    }
+    return true;
+}
+
+/* The bar, as the one that comes up when O is held to close the app: a panel with the message and the progress */
+static void sbi_check_draw(void)
+{
+    if (!SC.active)
+        return;
+    const char *msg = tr("Extracting the CRC-32 to try to apply the LibCrypt patch...");
+    float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
+    float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
+    float p = SDL_AtomicGet(&SC.permille) / 1000.0f;
+    draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
+    text_draw(plat_width() * 0.5f, y + 12, 26, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, msg);
+    draw_rrect(x + 32, y + 56, w - 64, 12, 6, TH_DIVIDER);
+    draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(p, 1.0f)), 12, 6, TH_FOCUS);
+}
+
 void app_start_game(int index, bool resume)
 {
     if (index < 0 || index >= app.library.count)
         return;
+    if (!sbi_prepare(index, resume))
+        return;
     const Game *g = &app.library.games[index];
-    char error[160], own[SwanStationPS5_PATH_MAX];
+    char error[480], own[SwanStationPS5_PATH_MAX];
     app_game_config_path(own, sizeof(own), g);
     app.game_has_own = config_load_game(&app.settings, &app.global, own);
     bool translated = play_prepare_patch(g);
@@ -487,7 +822,10 @@ void app_start_game(int index, bool resume)
     {
         controls_stop();
         app.settings = app.global;
-        app_toast(error);
+        if (strstr(error, "libcrypt protection"))
+            app_message_box(error); /* it stays until X: it says what to do */
+        else
+            app_toast(error);
         return;
     }
     app.game = g;
@@ -504,6 +842,7 @@ void app_start_game(int index, bool resume)
         app_toast_for("BIOS not found, SCPH1001.BIN is recommended due to the low compatibility of OpenBios.", 10.0f);
     if (app.settings.renderer == 1)
         app_toast_for("Rendering on the CPU, using the GPU is recommended.", 5.0f);
+    app_toast_for("Press [L3] + [R3] to open the game menu...", 5.0f);
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     ra_game_loaded(g->path);
@@ -637,7 +976,7 @@ static void game_screen(PadState *pads)
     combo_prev = combo;
 
     /* Touchpad: a tap is the PS1's Select (the PS5 SDL driver has no Create
-     * button); holding it opens the SwanStationPS5 menu. */
+     * button); the menu is L3 + R3. */
     static uint64_t touch_since;
     static bool touch_used;
     static int select_frames;
@@ -693,8 +1032,7 @@ static void game_screen(PadState *pads)
             touch_since = t_now;
         else if (!touch_used && t_now - touch_since > 500000)
         {
-            touch_used = true;
-            open_menu = true;
+            touch_used = true; /* held for a while: not a tap, not Select */
         }
     }
     else
@@ -1054,6 +1392,8 @@ int main(void)
             quit = true;
         memcpy(app.pads, pads, sizeof(app.pads));
         uint32_t pressed = nav_pressed(pads);
+        if (!sbi_check_input(&pressed))
+            message_box_input(&pressed);
         /* the shelf and settings paint a full-screen backdrop: no clear needed */
         bool backdrop = app.screen == SCREEN_LIBRARY || (app.screen == SCREEN_SETTINGS && !app.game);
         plat_begin_frame(backdrop ? 0 : 0xff000000u);
@@ -1099,6 +1439,8 @@ int main(void)
         if (app.screen != SCREEN_GAME)
             ra_idle();
         draw_achievement();
+        sbi_check_draw();
+        message_box_draw();
         plat_end_frame();
     }
 
