@@ -1639,6 +1639,9 @@ int main(void)
     config_save(&app.global, app.paths.config);
     stats_save();
     SwanStationPS5_log("shutdown: settings and stats saved");
+#if !defined(__PROSPERO__)
+    /* the console takes the title down with its threads and sockets: waiting for them (a cover download, a
+     * RetroAchievements request, the phone's server) could leave the screen frozen for up to half a minute */
     remote_update(false);
     ra_shutdown();
     SwanStationPS5_log("shutdown: network and RetroAchievements stopped");
@@ -1650,14 +1653,19 @@ int main(void)
     SwanStationPS5_log("shutdown: interface freed");
     plat_shutdown();
     SwanStationPS5_log("shutdown: done");
+#endif
 #if defined(__PROSPERO__)
     /* The system closes the title: exit()/_exit() raise SIGSYS on the console. */
     extern int sceSystemServiceGetAppIdOfRunningBigApp(void);
     extern int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
+    SwanStationPS5_log("shutdown: closing the title");
+    plat_audio_close();
     fflush(NULL);
-    sceSystemServiceKillApp(sceSystemServiceGetAppIdOfRunningBigApp(), -1, 0, 0);
     for (;;)
-        plat_sleep_us(100000); /* until the shell takes the title down */
+    {
+        sceSystemServiceKillApp(sceSystemServiceGetAppIdOfRunningBigApp(), -1, 0, 0);
+        plat_sleep_us(1000000); /* until the shell takes the title down; asked again if it did not */
+    }
 #endif
     return 0;
 }
