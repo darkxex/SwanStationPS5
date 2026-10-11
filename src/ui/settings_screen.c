@@ -169,7 +169,7 @@ static const Row DISPLAY[] = {
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
     {NULL, "Double frames",
      "Doubles the game's real frames with AMD FSR 3's frame interpolation: from 30 to 60 fps, or from 60 to 120 fps if your screen supports it; if not, it stays at 60 fps. It works at once, except 60 to 120 fps, which needs it turned on before the app starts.",
-     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(framegen), OFF_ON, 2, 0},
+     K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(framegen), OFF_ON, 2, 0},
     {NULL, "Load HD textures",
      "Loads HD texture packs. Over FTP, go to /data/SwanStationPS5/cache/ and create the folder textures if it doesn't exist, then create your game's folder inside it, for example \"SCUS-94900\" (Crash Bandicoot), and put the pack's PNG files there. Needs the GPU renderer. Takes effect with the next game.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_HDTEX, false, NO_FIELD, OFF_ON, 2, 0},
@@ -1285,13 +1285,13 @@ static void draw_help(const Row *r)
     }
     if (r->kind != K_INFO && r->kind != K_ACTION)
     {
-        icon_draw(r->apply == APPLY_NOW ? ICON_CHECK : ICON_CLOCK, x + 32, top + 664, 28, TH_FOCUS);
-        text_draw(x + 72, top + 666, 22, FONT_REGULAR, TH_FOCUS, ALIGN_LEFT, tr(notes[r->apply]));
+        icon_draw(r->apply == APPLY_NOW ? ICON_CHECK : ICON_CLOCK, x + 32, top + 684, 28, TH_FOCUS);
+        text_draw(x + 72, top + 686, 22, FONT_REGULAR, TH_FOCUS, ALIGN_LEFT, tr(notes[r->apply]));
     }
     if (r->global_only && S.game_scope && app.game)
     {
-        icon_draw(ICON_WORLD, x + 32, top + 670, 28, TH_TEXT_DIM);
-        text_draw(x + 72, top + 672, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, tr("Same for every game"));
+        icon_draw(ICON_WORLD, x + 32, top + 646, 28, TH_TEXT_DIM);
+        text_draw(x + 72, top + 648, 22, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, tr("Same for every game"));
     }
 }
 

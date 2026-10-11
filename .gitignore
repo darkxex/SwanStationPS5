@@ -24,3 +24,7 @@ dist/
 
 # SwanStationPS5
 .ref/
+
+# Claude Code notes (local only)
+CLAUDE.md
+.claude/

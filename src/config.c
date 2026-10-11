@@ -269,8 +269,15 @@ void config_load(Settings *s, const char *path)
 bool config_load_game(Settings *out, const Settings *global, const char *path)
 {
     *out = *global;
+    /* the file only lists the core options that differ from their default, so the rest are the default
+     * and not whatever the console-wide settings hold */
+    for (int i = 0; i < SS_OPT_COUNT; ++i)
+        out->ss_opt[i] = SS_OPTS[i].def;
     if (!config_apply(out, path))
+    {
+        memcpy(out->ss_opt, global->ss_opt, sizeof(out->ss_opt));
         return false;
+    }
     /* these always follow the console-wide settings */
     out->last_game = global->last_game;
     out->cover_style = global->cover_style;

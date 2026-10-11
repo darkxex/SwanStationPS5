@@ -431,8 +431,27 @@ void app_save_settings(void)
 static bool question_open;
 static float question_t;
 
+/* A factory reset also drops every game's own settings. */
+static void remove_game_settings(void)
+{
+    char dir[SwanStationPS5_PATH_MAX], file[SwanStationPS5_PATH_MAX];
+    path_join(dir, sizeof(dir), app.paths.user, "game-settings");
+    DIR *d = opendir(dir);
+    if (!d)
+        return;
+    struct dirent *e;
+    while ((e = readdir(d)))
+        if (e->d_name[0] != '.')
+        {
+            path_join(file, sizeof(file), dir, e->d_name);
+            remove(file);
+        }
+    closedir(d);
+}
+
 static void reset_to_factory(void)
 {
+    remove_game_settings();
     Settings d;
     config_defaults(&d);
     d.last_game = app.global.last_game; /* only where the shelf is stays; the rest, language included, is the factory's */
@@ -670,7 +689,7 @@ void app_draw_game(uint8_t dim)
     {
         double core_hz = host_fps();
         double speed = app.fps > 1.0f && core_hz > 1.0 ? app.fps * 100.0 / core_hz : 100.0;
-        plat_set_framegen(app.global.framegen, core_hz, speed, !speed_changed);
+        plat_set_framegen(app.settings.framegen, core_hz, speed, !speed_changed);
     }
     plat_draw_game(&view, host_aspect(), dim);
     bezel_draw(&view, dim);
@@ -1263,7 +1282,7 @@ static void game_screen(PadState *pads)
     static void *ahead_state;
     static size_t ahead_size;
     /* run-ahead shows frames of a look-ahead that are not the game's own: Double frames needs the real ones */
-    int ahead = !fast && !back && !app.global.framegen ? app.settings.run_ahead : 0;
+    int ahead = !fast && !back && !app.settings.framegen ? app.settings.run_ahead : 0;
     if (ahead > 0 && runs > 0 && (!ahead_state || host_state_size() != ahead_size))
     {
         free(ahead_state); /* another game's states are another size */
@@ -1501,6 +1520,7 @@ int main(void)
     {
         remove(app.paths.config);
         remove(reset_marker);
+        remove_game_settings();
         SwanStationPS5_log("settings: clean start, asked for by hand");
     }
     if (version_changed)
