@@ -41,7 +41,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instan
 
 #define FRAMES 2 /* frames in flight */
 #define MAX_IMAGES 8
-#define SHADED_N 6 /* pipelines in shaded[] */
+#define SHADED_N 5 /* pipelines in shaded[] */
 #define MAXP 12    /* passes of a shader chain */
 
 /* ---------------------------------------------------------------- functions */
@@ -102,7 +102,7 @@ static struct
     VkRenderPass pass;
     VkPipelineLayout layout;
     VkPipeline opaque, blended;
-    VkPipeline shaded[SHADED_N]; /* the game through lcd3x.frag, downsample.frag, then crt_lottes, crt_pi, sameboy_lcd, zfast_lcd */
+    VkPipeline shaded[SHADED_N]; /* the game through lcd3x.frag, downsample.frag, then crt_lottes, crt_pi, zfast_lcd */
     VkDescriptorSetLayout set_layout;
     VkDescriptorPool pool;
     VkSampler sampler, sampler_nearest; /* the game picture uses _nearest when the final scale is not smoothed */
@@ -131,7 +131,7 @@ static struct
     bool game_shown; /* plat asked for the picture this frame */
     float game_rect[4];
     float game_crop; /* share of the picture's height hidden at top and bottom */
-    int game_shader;  /* 0 none, 1 LCD3x, 2 CRT Royale Fast, 5 to 8 NTSC, 9 to 12 CRT Lottes, CRT Pi, Game Boy LCD, zfast LCD, 13 to 16 CRT Royale, Newpixie, Hyllian NTSC, Mattias, 99 supersampling */
+    int game_shader;  /* 0 none, 1 LCD3x, 2 CRT Royale Fast, 5 to 8 NTSC, 9 to 12 CRT Lottes, CRT Pi, 11 retired, zfast LCD, 13 to 16 CRT Royale, Newpixie, Hyllian NTSC, Mattias, 99 supersampling */
     float game_tex[2], game_lines;
     /* frame generation (fg_bridge.h): the game drawn into the interpolator's frame,
      * the frame halfway to the previous one shown first, then this one */
@@ -612,11 +612,11 @@ static bool create_pipeline(char *error, size_t size)
     gp.renderPass = V.pass;
     VkResult r = vkCreateGraphicsPipelines(V.device, VK_NULL_HANDLE, 1, &gp, NULL, &V.opaque);
     /* the game's shaders: the same opaque pipeline with another fragment stage */
-    const uint32_t *shader_code[SHADED_N] = {SPV_LCD3X_FRAG,      SPV_DOWNSAMPLE_FRAG, SPV_CRT_LOTTES_FRAG,
-                                             SPV_CRT_PI_FRAG,     SPV_SAMEBOY_LCD_FRAG, SPV_ZFAST_LCD_FRAG};
-    const size_t shader_size[SHADED_N] = {sizeof(SPV_LCD3X_FRAG),      sizeof(SPV_DOWNSAMPLE_FRAG),
+    const uint32_t *shader_code[SHADED_N] = {SPV_LCD3X_FRAG, SPV_DOWNSAMPLE_FRAG, SPV_CRT_LOTTES_FRAG, SPV_CRT_PI_FRAG,
+                                             SPV_ZFAST_LCD_FRAG};
+    const size_t shader_size[SHADED_N] = {sizeof(SPV_LCD3X_FRAG), sizeof(SPV_DOWNSAMPLE_FRAG),
                                           sizeof(SPV_CRT_LOTTES_FRAG), sizeof(SPV_CRT_PI_FRAG),
-                                          sizeof(SPV_SAMEBOY_LCD_FRAG), sizeof(SPV_ZFAST_LCD_FRAG)};
+                                          sizeof(SPV_ZFAST_LCD_FRAG)};
     for (int k = 0; k < SHADED_N && r == VK_SUCCESS; ++k)
     {
         VkShaderModule fm;
@@ -803,11 +803,11 @@ static void draw_quad(VkCommandBuffer cb, VkDescriptorSet set, float x, float y,
     draw_quad_in(cb, set, (float)V.extent.width, (float)V.extent.height, x, y, w, h, v0, v1, info, colour);
 }
 
-/* The pipeline of each shader value: shaded[] holds LCD3x, supersampling, then the four single-pass
- * shaders 9 to 12 (the chains, CRT Royale and NTSC, draw through their own passes). */
+/* The pipeline of each shader value: shaded[] holds LCD3x, supersampling, then the three single-pass
+ * shaders 9, 10 and 12 (the chains, CRT Royale and NTSC, draw through their own passes). */
 static VkPipeline game_pipeline(int sh)
 {
-    int slot = sh == 99 ? 1 : sh == 1 ? 0 : sh >= 9 && sh <= 12 ? sh - 7 : -1;
+    int slot = sh == 99 ? 1 : sh == 1 ? 0 : sh == 9 || sh == 10 ? sh - 7 : sh == 12 ? 4 : -1;
     return slot >= 0 && V.shaded[slot] ? V.shaded[slot] : V.opaque;
 }
 
@@ -821,7 +821,7 @@ static void game_info(float info[4], int sh, float w, float h, float tw, float t
     float lines = V.game_lines * (1.0f - 2.0f * V.game_crop);
     info[0] = tw;
     info[1] = th;
-    info[2] = sh == 1 || (sh >= 9 && sh <= 12) ? lines : w / (tw > 0 ? tw : 1);
+    info[2] = sh == 1 || sh == 9 || sh == 10 || sh == 12 ? lines : w / (tw > 0 ? tw : 1);
     info[3] = h / (th * shown > 0 ? th * shown : 1);
 }
 

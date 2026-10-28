@@ -140,9 +140,9 @@ static const char *const BORDERS[] = {"Black", "Current background", "TV frame"}
 static const char *const CROPS[] = {"Off", "A little", "More"};
 static const char *const SHADERS[] = {"Off", "LCD3x", "NTSC 320px S-Video", "NTSC 320px Composite",
                                       "NTSC 256px S-Video", "NTSC 256px Composite", "CRT Lottes", "CRT Pi",
-                                      "Game Boy LCD", "zfast LCD", "CRT Royale Fast", "CRT Royale", "CRT Newpixie",
+                                      "zfast LCD", "CRT Royale Fast", "CRT Royale", "CRT Newpixie",
                                       "CRT Hyllian NTSC", "CRT Mattias"};
-static const unsigned char SHADER_ORDER[] = {0, 1, 5, 6, 7, 8, 9, 10, 11, 12, 2, 13, 14, 15, 16};
+static const unsigned char SHADER_ORDER[] = {0, 1, 5, 6, 7, 8, 9, 10, 12, 2, 13, 14, 15, 16};
 static const char *const POPUP_STYLES[] = {"Banner", "Compact", "Big trophy"};
 static const char *const BIOS_START_REGIONS[] = {"NTSC-U/C (US, Canada)", "NTSC-J (Japan)", "PAL (Europe, Australia)"};
 static const char *const LIGHTBARS[] = {"System", "Player colours", "Game cover colour", "Analog mode"};
@@ -175,7 +175,7 @@ static const Row DISPLAY[] = {
      SP_NONE, false, INT_FIELD(upscale), UPSCALE, 4, 1},
     */
     {"Picture", "Shader", "Gives the picture the look of a CRT TV, a handheld LCD or the analog NTSC signal. The most detailed ones are heavy.",
-     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 15, 0, SHADER_ORDER},
+     K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 14, 0, SHADER_ORDER},
     {NULL, "AMD FidelityFX Super Resolution",
      "Scales the picture to your screen before the shader, following the edges of the image, and sharpens it (AMD FSR 1).",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(fsr), OFF_ON, 2, 0},
