@@ -8,6 +8,7 @@
 
 <p align="center">
   <img alt="Platform: jailbroken PS5" src="https://img.shields.io/badge/platform-jailbroken%20PS5-3d55c8">
+  <a href="https://github.com/darkxex/SwanStationUWP/releases"><img alt="Also on Xbox Series X|S" src="https://img.shields.io/badge/also%20on-Xbox%20Series%20X%7CS-107c10"></a>
   <img alt="SwanStation" src="https://img.shields.io/badge/emulation-SwanStation-5a6fe0">
   <img alt="Vulkan" src="https://img.shields.io/badge/GPU-Vulkan%20up%20to%2016x-c83d5a">
   <img alt="RetroAchievements" src="https://img.shields.io/badge/RetroAchievements-supported-f0b429">
@@ -25,6 +26,12 @@ Its frontend (the shelf, menus, controls and tools) began as PSXS5's and has bee
 - The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
+
+## Also on Xbox Series X|S
+
+SwanStation is also available for the **Xbox Series X|S** as a UWP app: [SwanStationUWP](https://github.com/darkxex/SwanStationUWP). Download it from its [releases](https://github.com/darkxex/SwanStationUWP/releases) page. It needs the console in Xbox **developer mode**. Each release carries the app package (`.msix`), its signing certificate (`.cer`) and the `Microsoft.VCLibs` x64 dependency: trust the certificate, install the dependency, then install the package.
+
+SwanStationUWP is a separate project with its own releases and issues; everything else in this README is about the PS5 app.
 
 ## Screenshots
 
