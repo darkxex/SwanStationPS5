@@ -81,19 +81,12 @@ a resident Lapy service is not already running. `downloadDataSize` must be
 positive in `sce_sys/param.json`. A missing loader, rejection, timeout or
 failed `/data` proof never authorizes privileged work.
 
-SwanStationPS5 does not use that client as is. Its own copy,
-`src/platform/elevation/elevation.cpp`, drops the resident phase (steps 2 and
-3): it streams `lapy.elf` to port 9021 right after the `/data` probe and then waits for
-`/data` to list, with no resident service to wait for. Its `elevation::path()`
-reports `existing`, `helper` or `none`. `make test-elevation` still exercises
-the example client, not that copy.
-
 ## Pinned upstream inputs
 
 `tools/build-lapy-helper.py` pins:
 
 - blackbearreloaded's Lapy commit `57fcc19b7f57e46c823d6f2a6c6233ebf3288079`;
-- official PS5 Payload SDK v0.45, used for the helper; and
+- official PS5 Payload SDK v0.42, used for the helper; and
 - the pinned `ps5log/1` header used by upstream's build.
 
 The normal boilerplate application build uses Payload SDK v0.42.

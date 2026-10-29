@@ -10,7 +10,7 @@
  *    /data/whitelist.txt (Settings > System can add SwanStationPS5 there);
  *  - etaHEN answers a HijackerCommand on TCP 127.0.0.1:9028 when its "Legacy
  *    CMD server" setting is on (LegacyJB listens there too).
- * The TCP command goes first (it is refused at once when nothing listens); the file when it did not open /data. Porpoise was killed right after its grant; it asks from a process that
+ * The file goes first; the TCP command when nothing answered it. Porpoise was killed right after its grant; it asks from a process that
  * already runs threads, so SwanStationPS5 asks first thing in main(), single-threaded,
  * after giving itself its own credential.
  *
@@ -157,24 +157,23 @@ UnlockResult ps5_unlock_etahen(void)
     seteuid(geteuid()); /* own credential before the HEN changes it */
     UnlockResult result = UNLOCK_NO_ANSWER;
     const int pid = (int)getpid();
-    /* The command server refuses at once when nobody listens, so it costs nothing to ask it first. */
-    if (request_over_tcp(pid) && wait_listable(60))
-        result = UNLOCK_OK;
-    if (result != UNLOCK_OK)
+    for (int round = 0; round < 3 && result != UNLOCK_OK; ++round)
     {
         int published = 0;
         for (int i = 0; i < REQUEST_COUNT; ++i)
             published += publish(REQUESTS[i], pid);
         if (published == 0)
-            result = UNLOCK_CANT_REQUEST;
-        else
         {
-            /* ~1.5 s for a service to act and /data to open up */
-            if (wait_listable(90))
-                result = UNLOCK_OK;
-            for (int i = 0; i < REQUEST_COUNT; ++i)
-                unlink(REQUESTS[i]);
+            result = UNLOCK_CANT_REQUEST;
+            break;
         }
+        /* ~1.5 s for a service to act and /data to open up */
+        if (wait_listable(90))
+            result = UNLOCK_OK;
+        for (int i = 0; i < REQUEST_COUNT; ++i)
+            unlink(REQUESTS[i]);
+        if (result != UNLOCK_OK && round == 0 && request_over_tcp(pid) && wait_listable(60))
+            result = UNLOCK_OK; /* etaHEN's command server */
     }
     unlink(CRASH_MARKER); /* we survived the request either way */
     return result;
