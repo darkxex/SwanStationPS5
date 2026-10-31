@@ -1578,6 +1578,12 @@ void plat_upload_game(const void *pixels, int width, int height, size_t pitch, i
 }
 
 static int game_rect[4];
+static float game_crop_shown;
+
+float plat_game_crop(void)
+{
+    return game_crop_shown;
+}
 
 void plat_game_rect(int *x, int *y, int *w, int *h)
 {
@@ -1607,6 +1613,7 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
         (!settings->manual_crop && settings->crop_edges > 0 && settings->crop_edges < 3 ? settings->crop_edges * 8 : 0) / 240.0f;
 
     float aspect = display_aspect > 0.0f ? display_aspect : 4.0f / 3.0f;
+    game_crop_shown = crop;
 
     int dh = out_h, dw = (int)(out_h * aspect + 0.5f);
     if (dw > out_w)

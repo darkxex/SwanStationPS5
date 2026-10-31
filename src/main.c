@@ -439,8 +439,97 @@ void app_nfs_notify(void)
     nfs_notify = true;
 }
 
+#define SCAN_ROOTS_MAX (3 + DRIVE_COUNT * 2 * 2 + DRIVE_COUNT + NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 2)
+#define SCAN_PATH_MAX (NFS_PATH_MAX > SwanStationPS5_PATH_MAX ? NFS_PATH_MAX : SwanStationPS5_PATH_MAX)
+
+/* The scan that follows an NFS mount lists the shares over the network: it runs on its own thread, into a library of its
+ * own, while the shelf keeps the games it had. The main loop takes the result when the thread is done. */
+static struct
+{
+    SDL_Thread *thread;
+    SDL_atomic_t done;
+    Library lib;
+    char paths[SCAN_ROOTS_MAX][SCAN_PATH_MAX];
+    const char *roots[SCAN_ROOTS_MAX];
+    char index[SwanStationPS5_PATH_MAX];
+    int count, nfs_first, shared;
+    bool sandboxed;
+} scan_async;
+
+static int rescan_thread(void *unused)
+{
+    (void)unused;
+    if (scan_async.sandboxed)
+    {
+        if (!library_load_index(&scan_async.lib, scan_async.index))
+            scan_async.lib.count = 0;
+        library_scan_append(&scan_async.lib, scan_async.roots + scan_async.nfs_first, scan_async.shared);
+    }
+    else
+    {
+        library_scan(&scan_async.lib, scan_async.roots, scan_async.count);
+        if (scan_async.lib.count == 0)
+            library_load_index(&scan_async.lib, scan_async.index);
+    }
+    SDL_AtomicSet(&scan_async.done, 1);
+    return 0;
+}
+
+static void rescan_async_wait(void)
+{
+    if (!scan_async.thread)
+        return;
+    if (scan_async.thread != (SDL_Thread *)1)
+        SDL_WaitThread(scan_async.thread, NULL);
+    scan_async.thread = NULL;
+    SDL_AtomicSet(&scan_async.done, 0);
+    library_free(&scan_async.lib);
+}
+
+static void rescan_async_start(const char *const *roots, int count, const char *index, int nfs_first, int shared)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        str_copy(scan_async.paths[i], sizeof(scan_async.paths[i]), roots[i]);
+        scan_async.roots[i] = scan_async.paths[i];
+    }
+    str_copy(scan_async.index, sizeof(scan_async.index), index);
+    scan_async.count = count;
+    scan_async.nfs_first = nfs_first;
+    scan_async.shared = shared;
+    scan_async.sandboxed = app.sandboxed;
+    SDL_AtomicSet(&scan_async.done, 0);
+    scan_async.thread = SDL_CreateThread(rescan_thread, "library-scan", NULL);
+    if (!scan_async.thread)
+    {
+        scan_async.thread = NULL;
+        rescan_thread(NULL);
+        scan_async.thread = (SDL_Thread *)1;
+    }
+}
+
+static void rescan_async_poll(void)
+{
+    if (!scan_async.thread || app.game || !SDL_AtomicGet(&scan_async.done))
+        return;
+    if (scan_async.thread != (SDL_Thread *)1)
+        SDL_WaitThread(scan_async.thread, NULL);
+    scan_async.thread = NULL;
+    SDL_AtomicSet(&scan_async.done, 0);
+    library_free(&app.library);
+    app.library = scan_async.lib;
+    memset(&scan_async.lib, 0, sizeof(scan_async.lib));
+    if (dg_active)
+        library_add_game(&app.library, &dg);
+    if (dp_active)
+        library_add_game(&app.library, &dp);
+    shelf_library_changed();
+    app_restart_covers();
+}
+
 void app_rescan(void)
 {
+    rescan_async_wait();
     if (app.settings_game)
     {
         /* the games are listed again: the shelf's game may not be the same pointer (or there) any more */
@@ -509,6 +598,11 @@ void app_rescan(void)
     char serials[SwanStationPS5_PATH_MAX];
     path_join(serials, sizeof(serials), app.paths.cache, "serials.tsv");
     library_serial_cache_load(serials);
+    if (nfs_rescan_from_mount && !app.game)
+    {
+        rescan_async_start(roots, root_count, index, nfs_first, shared_count);
+        return;
+    }
     if (app.sandboxed)
     {
         /* Can't list folders: the sync tool's index is the library. */
@@ -1291,6 +1385,19 @@ static const char *play_why(DiscImportState s)
     }
 }
 
+static void disc_game_id(const DiscId *id, char *out, size_t size)
+{
+    if (id->serial[0])
+    {
+        str_copy(out, size, id->serial);
+        return;
+    }
+    size_t w = 0;
+    for (const char *p = id->title; *p && w + 1 < size; ++p)
+        out[w++] = isalnum((unsigned char)*p) ? *p : '_';
+    out[w] = '\0';
+}
+
 static void dg_make(void)
 {
     const DiscId *id = discplay_id();
@@ -1304,15 +1411,7 @@ static void dg_make(void)
     char *dot = strrchr(dg.disc_name, '.');
     if (dot)
         *dot = '\0';
-    if (dg.serial[0])
-        str_copy(dg.id, sizeof(dg.id), dg.serial);
-    else
-    {
-        size_t w = 0;
-        for (const char *p = dg.title; *p && w + 1 < sizeof(dg.id); ++p)
-            dg.id[w++] = isalnum((unsigned char)*p) ? *p : '_';
-        dg.id[w] = '\0';
-    }
+    disc_game_id(id, dg.id, sizeof(dg.id));
     dg.discs = 1;
 }
 
@@ -1542,7 +1641,7 @@ static void dp_make(const DiscId *id)
     snprintf(dp.path, sizeof(dp.path), "/discpending/%s", id->key);
     str_copy(dp.folder, sizeof(dp.folder), "/discpending");
     str_copy(dp.disc_name, sizeof(dp.disc_name), id->key);
-    str_copy(dp.id, sizeof(dp.id), id->serial[0] ? id->serial : id->key);
+    disc_game_id(id, dp.id, sizeof(dp.id));
     dp.discs = 1;
     dp_id = *id;
 }
@@ -2615,7 +2714,6 @@ static void game_screen(PadState *pads)
     last_us = now;
 
     app_draw_game(255);
-    controls_draw();
     if (auto_shown > 0)
     {
         /* a quiet sign that an auto-save was written */
@@ -3100,6 +3198,7 @@ int main(int argc, char **argv)
             app_toast("The NTFS disk was disconnected.");
             app_rescan();
         }
+        rescan_async_poll();
         if (nfs_mount_finished() && !app.game)
         {
             nfs_rescan_from_mount = true;

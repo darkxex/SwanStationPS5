@@ -280,6 +280,7 @@ static void apply_game_fixes(void)
 
 static void apply_swanstation_options(const Settings *s)
 {
+    bool stretch = false;
     static const char *const regions[] = {"Auto", "NTSC-J", "NTSC-U", "PAL"};
     int level = s->internal_res >= 1 && s->internal_res <= 16 ? s->internal_res : 1;
     if (game_fixes & GDB_NO_UPSCALING)
@@ -309,9 +310,20 @@ static void apply_swanstation_options(const Settings *s)
             osd_wanted = !strcmp(value, "true");
             value = "true";
         }
+        if (!strcmp(SS_OPTS[i].key, "swanstation_Display_AspectRatio"))
+        {
+            stretch = !strcmp(value, "Stretch");
+            if (stretch)
+                value = "Custom";
+        }
         set_option(SS_OPTS[i].key, value);
         if (!strcmp(SS_OPTS[i].key, "swanstation_Display_CropMode"))
             crop_borders = !strcmp(value, "Borders");
+    }
+    if (stretch)
+    {
+        set_option_int("swanstation_Display_CustomAspectRatioNumerator", plat_width());
+        set_option_int("swanstation_Display_CustomAspectRatioDenominator", plat_height());
     }
     set_option("swanstation_CPU_FastmemMode", "LUT");
     apply_game_fixes();

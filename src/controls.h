@@ -30,8 +30,6 @@ void controls_start(const Game *g, const Settings *s);
 void controls_stop(void);
 /* Each frame, on the buttons the game will see. */
 void controls_apply(PadState pads[SwanStationPS5_MAX_PADS], const Settings *s, float dt);
-/* The gun's crosshair, over the game. */
-void controls_draw(void);
 bool controls_gun_active(void);
 /* A setting that picks the controller changed while a game runs. */
 void controls_reconfigure(const Game *g, const Settings *s);

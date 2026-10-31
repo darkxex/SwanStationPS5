@@ -12,6 +12,7 @@
 #include "../app.h"
 #include "../art.h"
 #include "../config.h"
+#include "../core/host.h"
 #include "../covers.h"
 #include "../gamedb.h"
 #include "../play.h"
@@ -83,8 +84,9 @@ static struct
     bool buzz_locked; /* it buzzed already: not again until the direction is let go (holding it auto-repeats) */
     float nudge, nudge_v; /* a knock to the left or right, as if the right stick had been flicked: on a spring */
     bool details;
-    float details_t, launch_t, quit_hold, delete_hold;
+    float details_t, launch_t, quit_hold, delete_hold, save_hold;
     bool delete_armed; /* Triangle was pressed with Details already open: not the press that opened it */
+    bool save_armed;   /* the same for L3 and the exit save */
     bool starting; /* the launch is over: this frame shows "Loading", the next one loads */
     float chip_x, chip_w; /* animated category highlight (from the start of the row of chips) */
     float chips_scroll;   /* how far the row of chips has slid to the left to keep the chosen one in view */
@@ -1446,8 +1448,8 @@ static void draw_launch_disc(int game, float d, float t)
 
 static bool start_black; /* the frame in which the game starts: all black, with the loading text */
 
-/* X on a game: offers Continue when it has a quick-resume save, else starts it. `ask` false (a disc put in the drive):
- * it starts from the beginning, with no Continue box. `silent`: without the click of the button press. */
+/* X on a game: offers Continue when it has a quick-resume save, else starts it. `ask` false: it starts from the
+ * beginning, with no Continue box. `silent`: without the click of the button press. */
 static void play_game(int game, bool ask, bool silent)
 {
     if (ask && app_disc_pending(game))
@@ -1677,8 +1679,8 @@ bool shelf_play_game(int library_index, bool direct)
 {
     if (!shelf_show_game(library_index))
         return false;
-    play_game(library_index, false, true);
-    if (direct)
+    play_game(library_index, true, true);
+    if (direct && !S.dialog)
     {
         /* the disc daemon opened the app: nobody is watching the case open, so the animation is skipped and only its
          * last frame is shown while the game loads */
@@ -1733,6 +1735,7 @@ void shelf_screen(uint32_t pressed)
         if (pressed & BIT(BTN_CIRCLE))
         {
             S.dialog = false;
+            host_set_initial_disc(-1);
             sfx_play(SFX_BACK);
         }
         pressed = 0;
@@ -1869,6 +1872,39 @@ void shelf_screen(uint32_t pressed)
             {
                 S.delete_hold = 0.0f;
                 S.delete_armed = false;
+            }
+        }
+        {
+            const bool l3 = (app.pads[app_nav_pad()].buttons & BIT(BTN_L3)) != 0;
+            if (details_was_open && S.details && game >= 0 && (pressed & BIT(BTN_L3)))
+            {
+                if (play_has_resume(&app.library.games[game], NULL))
+                {
+                    S.save_armed = true;
+                    app_toast("Hold {L3} to delete this game's exit save.");
+                }
+                else
+                    app_toast("This game has no exit save.");
+            }
+            if (S.details && game >= 0 && l3 && S.save_armed && !S.dialog)
+            {
+                S.save_hold += app.dt;
+                if (S.save_hold >= DELETE_HOLD)
+                {
+                    char path[SwanStationPS5_PATH_MAX];
+                    play_resume_path(&app.library.games[game], path, sizeof(path));
+                    S.save_hold = 0.0f;
+                    S.save_armed = false;
+                    const bool removed = remove(path) == 0;
+                    app_toast(removed ? "The exit save was deleted." : "The exit save could not be deleted.");
+                    if (removed)
+                        sfx_play(SFX_BACK);
+                }
+            }
+            else if (!l3 || !S.details)
+            {
+                S.save_hold = 0.0f;
+                S.save_armed = false;
             }
         }
         if ((pressed & BIT(BTN_CIRCLE)) && S.details)
@@ -2203,8 +2239,9 @@ void shelf_screen(uint32_t pressed)
                           GLYPH_R3, GLYPH_TOUCHPAD};
     const char *const labels[] = {"Play", "Details", "Settings", "Reload", "Favorite", "M.Card"};
     /* in Details: only Play down here; Choose a cover and Delete (held) are in the panel itself */
-    const int details_glyphs[] = {GLYPH_CROSS};
-    const char *const details_labels[] = {"Play"};
+    const int details_glyphs[] = {GLYPH_CROSS, GLYPH_L3};
+    const char *const details_labels[] = {"Play", "Delete save (hold)"};
+    const int details_count = game >= 0 && play_has_resume(&app.library.games[game], NULL) ? 2 : 1;
     if (F.open)
     {
         static const int fglyphs[] = {GLYPH_CROSS, GLYPH_SQUARE, GLYPH_TRIANGLE, GLYPH_START, GLYPH_CIRCLE};
@@ -2216,7 +2253,7 @@ void shelf_screen(uint32_t pressed)
     else
     {
         if (S.details && S.view_count)
-            app_draw_hints(details_glyphs, details_labels, 1, NULL);
+            app_draw_hints(details_glyphs, details_labels, details_count, NULL);
         else
             app_draw_hints(glyphs, labels, S.view_count ? 6 : 1, NULL);
         if (S.view_count)
@@ -2293,16 +2330,18 @@ void shelf_screen(uint32_t pressed)
         if (disc && !shelf_cases()) /* the 3D cases bring their own CD out */
             draw_launch_disc(game, fminf(S.launch_t / DISC_TIME, 1.0f), S.launch_t);
     }
-    if (S.delete_hold > 0.5f)
+    if (S.delete_hold > 0.5f || S.save_hold > 0.5f)
     {
-        /* Triangle held in Details: a bar fills up to the deletion */
-        const char *msg = tr("Keep holding to delete this game's files...");
+        /* Triangle (the game's files) or L3 (its exit save) held in Details: a bar fills up to the deletion */
+        const float hold = fmaxf(S.delete_hold, S.save_hold);
+        const char *msg = tr(S.delete_hold >= S.save_hold ? "Keep holding to delete this game's files..."
+                                                          : "Keep holding to delete this game's exit save...");
         float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
         float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
         draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
         text_draw(CENTER_X, y + 12, 26, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, msg);
         draw_rrect(x + 32, y + 56, w - 64, 12, 6, TH_DIVIDER);
-        draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(S.delete_hold / DELETE_HOLD, 1.0f)), 12, 6, TH_DANGER);
+        draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(hold / DELETE_HOLD, 1.0f)), 12, 6, TH_DANGER);
     }
     if (S.quit_hold > 0.5f)
     {

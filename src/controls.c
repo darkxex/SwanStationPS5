@@ -13,8 +13,6 @@
 #include "core/host.h"
 #include "gamedb.h"
 #include "platform/platform.h"
-#include "ui/draw.h"
-#include "ui/theme.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -335,8 +333,9 @@ static void update_gun(PadState *p, float dt)
     }
     C.offscreen = fabsf(C.x) > 1.0f || fabsf(C.y) > 1.0f;
     p->gun_x = clamp16(C.x * 32767.0f);
-    p->gun_y = clamp16(C.y * 32767.0f);
-    p->gun_offscreen = C.offscreen;
+    const float crop = plat_game_crop();
+    p->gun_y = clamp16(((crop + (C.y + 1.0f) * 0.5f * (1.0f - 2.0f * crop)) * 2.0f - 1.0f) * 32767.0f);
+    p->gun_offscreen = C.offscreen || (p->buttons & (BIT(BTN_L2) | BIT(BTN_SQUARE)));
 }
 
 /* ---------------------------------------------------------------- each frame */
@@ -369,7 +368,7 @@ static void update_triggers(int port, const Settings *s)
     else if (s->trigger_effects == 1 && C.gun && port == 0)
     {
         PlatTrigger click = {TRIGGER_WEAPON, {3, 6, 6}}; /* a gun's trigger: resists, then gives */
-        r2 = click;
+        l2 = r2 = click;
     }
     else if (s->trigger_effects == 1 && C.pedal && (C.special == 1 || s->racing_triggers))
     {
@@ -424,28 +423,4 @@ void controls_apply(PadState pads[SwanStationPS5_MAX_PADS], const Settings *s, f
         }
         update_triggers(i, s);
     }
-}
-
-void controls_draw(void)
-{
-    if (!C.gun || C.offscreen)
-        return;
-    int gx, gy, gw, gh;
-    plat_game_rect(&gx, &gy, &gw, &gh);
-    if (gw <= 0 || gh <= 0)
-        return;
-    float cx = gx + (C.x + 1.0f) * 0.5f * gw, cy = gy + (C.y + 1.0f) * 0.5f * gh;
-    const uint32_t shade = 0x90000000u, ink = 0xffff4040u;
-    draw_ring(cx, cy, 20, 6, shade);
-    draw_ring(cx, cy, 20, 3, ink);
-    for (int k = 0; k < 2; ++k)
-    {
-        float t = k ? 3.0f : 6.0f;
-        uint32_t c = k ? ink : shade;
-        draw_line(cx - 34, cy, cx - 12, cy, t, c);
-        draw_line(cx + 12, cy, cx + 34, cy, t, c);
-        draw_line(cx, cy - 34, cx, cy - 12, t, c);
-        draw_line(cx, cy + 12, cx, cy + 34, t, c);
-    }
-    draw_circle(cx, cy, 3, ink);
 }

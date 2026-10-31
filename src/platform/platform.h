@@ -104,6 +104,8 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
 void plat_fill_rect(int x, int y, int w, int h, uint32_t argb);
 /* Where plat_draw_game last put the picture (for borders around it). */
 void plat_game_rect(int *x, int *y, int *w, int *h);
+/* The share of the picture's height cut at the top and at the bottom of what plat_game_rect holds (0 when none). */
+float plat_game_crop(void);
 void plat_end_frame(void);
 
 /* Textures and textured triangle meshes: the UI (covers in perspective,

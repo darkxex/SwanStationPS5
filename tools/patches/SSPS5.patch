@@ -141837,7 +141837,7 @@ index fb62e9db..2037349f 100644
  #endif
  
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
-index bd443b7c..b1bf53d8 100644
+index bd443b7c..04696058 100644
 --- a/src/core/gpu.cpp
 +++ b/src/core/gpu.cpp
 @@ -72,6 +72,7 @@ void GPU::Reset(bool clear_vram)
@@ -141848,7 +141848,17 @@ index bd443b7c..b1bf53d8 100644
    m_crtc_state.interlaced_field = 0;
    m_crtc_state.interlaced_display_field = 0;
    SoftReset();
-@@ -629,6 +630,26 @@ void GPU::UpdateCRTCDisplayParameters()
+@@ -516,8 +517,7 @@ float GPU::GetDisplayAspectRatio() const
+   {
+     return 4.0f / 3.0f;
+   }
+-  else if (g_settings.display_aspect_ratio == DisplayAspectRatio::Native || g_settings.display_aspect_ratio == DisplayAspectRatio::Auto ||
+-           g_settings.controller_types[0] == ControllerType::NamcoGunCon || g_settings.controller_types[1] == ControllerType::NamcoGunCon)
++  else if (g_settings.display_aspect_ratio == DisplayAspectRatio::Native || g_settings.display_aspect_ratio == DisplayAspectRatio::Auto)
+   {
+     const CRTCState& cs = m_crtc_state;
+     float relative_width = static_cast<float>(cs.horizontal_visible_end - cs.horizontal_visible_start);
+@@ -629,6 +629,26 @@ void GPU::UpdateCRTCDisplayParameters()
    const uint16_t vertical_display_start = std::min<uint16_t>(cs.regs.Y1, vertical_total);
    const uint16_t vertical_display_end = std::min<uint16_t>(cs.regs.Y2, vertical_total);
  
@@ -141875,7 +141885,7 @@ index bd443b7c..b1bf53d8 100644
    if (m_GPUSTAT.pal_mode)
    {
      // TODO: Verify PAL numbers.
-@@ -652,10 +673,8 @@ void GPU::UpdateCRTCDisplayParameters()
+@@ -652,10 +672,8 @@ void GPU::UpdateCRTCDisplayParameters()
  
        case DisplayCropMode::Borders:
        default:
@@ -141888,7 +141898,7 @@ index bd443b7c..b1bf53d8 100644
          break;
      }
      cs.horizontal_visible_start =
-@@ -689,10 +708,8 @@ void GPU::UpdateCRTCDisplayParameters()
+@@ -689,10 +707,8 @@ void GPU::UpdateCRTCDisplayParameters()
  
        case DisplayCropMode::Borders:
        default:
@@ -141901,7 +141911,7 @@ index bd443b7c..b1bf53d8 100644
          break;
      }
      cs.horizontal_visible_start =
-@@ -780,6 +797,44 @@ void GPU::UpdateCRTCDisplayParameters()
+@@ -780,6 +796,44 @@ void GPU::UpdateCRTCDisplayParameters()
    cs.display_vram_height = std::min<uint16_t>(cs.display_vram_height, cs.display_height - cs.display_origin_top);
  }
  
@@ -141946,7 +141956,7 @@ index bd443b7c..b1bf53d8 100644
  TickCount GPU::GetPendingCRTCTicks() const
  {
    const TickCount pending_sysclk_ticks = m_crtc_tick_event->GetTicksSinceLastExecution();
-@@ -909,6 +964,8 @@ void GPU::CRTCTickEvent(TickCount ticks)
+@@ -909,6 +963,8 @@ void GPU::CRTCTickEvent(TickCount ticks)
        {
          g_interrupt_controller.InterruptRequest(InterruptController::IRQ::VBLANK);
  
@@ -141955,6 +141965,16 @@ index bd443b7c..b1bf53d8 100644
          // flush any pending draws and "scan out" the image
          FlushRender();
          UpdateDisplay();
+@@ -1010,7 +1066,8 @@ bool GPU::ConvertScreenCoordinatesToBeamTicksAndLines(int32_t window_x, int32_t
+       static_cast<uint32_t>(display_y) >= m_crtc_state.display_height)
+     return false;
+ 
+-  *out_line = (static_cast<uint32_t>(std::round(display_y)) >> static_cast<uint8_t>(m_GPUSTAT.vertical_interlace)) +
++  const bool dh = m_GPUSTAT.vertical_interlace && (!m_force_progressive_scan || m_GPUSTAT.vertical_resolution);
++  *out_line = (static_cast<uint32_t>(std::round(display_y)) >> static_cast<uint8_t>(dh)) +
+               m_crtc_state.vertical_visible_start;
+   *out_tick = static_cast<uint32_t>(std::round(display_x * static_cast<float>(m_crtc_state.dot_clock_divider))) +
+               m_crtc_state.horizontal_visible_start;
 diff --git a/src/core/gpu.h b/src/core/gpu.h
 index 0a0959f0..ee094cea 100644
 --- a/src/core/gpu.h
@@ -142806,7 +142826,7 @@ index 5e2b93f0..13dee2b2 100644
  
    VkPipeline m_vram_readback_pipeline = VK_NULL_HANDLE;
 diff --git a/src/core/gte.cpp b/src/core/gte.cpp
-index d33a0430..a4e7e753 100644
+index d33a0430..025cf7f6 100644
 --- a/src/core/gte.cpp
 +++ b/src/core/gte.cpp
 @@ -10,6 +10,7 @@
@@ -142817,7 +142837,37 @@ index d33a0430..a4e7e753 100644
  #include <cstring>
  #include <numeric>
  namespace GTE {
-@@ -763,7 +764,17 @@ static void RTPS(const int16_t V[3], uint8_t shift, bool lm, bool last)
+@@ -677,6 +678,14 @@ static void RTPS(const int16_t V[3], uint8_t shift, bool lm, bool last)
+       Sx = ((((int64_t(result) * int64_t(REGS.IR1)) * int64_t(3)) / int64_t(5)) + int64_t(REGS.OFX));
+       break;
+ 
++    case DisplayAspectRatio::R21_9:
++      Sx = ((((int64_t(result) * int64_t(REGS.IR1)) * int64_t(4)) / int64_t(7)) + int64_t(REGS.OFX));
++      break;
++
++    case DisplayAspectRatio::R16_10:
++      Sx = ((((int64_t(result) * int64_t(REGS.IR1)) * int64_t(5)) / int64_t(6)) + int64_t(REGS.OFX));
++      break;
++
+     case DisplayAspectRatio::Custom:
+     case DisplayAspectRatio::MatchWindow:
+       Sx = ((((int64_t(result) * int64_t(REGS.IR1)) * int64_t(s_custom_aspect_ratio_numerator)) /
+@@ -750,6 +759,14 @@ static void RTPS(const int16_t V[3], uint8_t shift, bool lm, bool last)
+         precise_x = (precise_x * 3.0f) / 5.0f;
+         break;
+ 
++      case DisplayAspectRatio::R21_9:
++        precise_x = (precise_x * 4.0f) / 7.0f;
++        break;
++
++      case DisplayAspectRatio::R16_10:
++        precise_x = (precise_x * 5.0f) / 6.0f;
++        break;
++
+       case DisplayAspectRatio::Auto:
+       case DisplayAspectRatio::R4_3:
+       case DisplayAspectRatio::PAR1_1:
+@@ -763,7 +780,17 @@ static void RTPS(const int16_t V[3], uint8_t shift, bool lm, bool last)
  
      precise_x = std::clamp<float>(precise_x, -1024.0f, 1023.0f);
      precise_y = std::clamp<float>(precise_y, -1024.0f, 1023.0f);
@@ -142848,6 +142898,32 @@ index 92107c5d..2549267d 100644
  
  union FLAGS
  {
+diff --git a/src/core/host_display.cpp b/src/core/host_display.cpp
+index f1cea561..d3c5d855 100644
+--- a/src/core/host_display.cpp
++++ b/src/core/host_display.cpp
+@@ -152,18 +152,9 @@ std::tuple<float, float> HostDisplay::ConvertWindowCoordinatesToDisplayCoordinat
+                                                                                    int32_t window_width, int32_t window_height,
+                                                                                    int32_t top_margin) const
+ {
+-  float left, top, width, height, left_padding, top_padding;
+-  float scale, x_scale;
+-  CalculateDrawRect(window_width, window_height - top_margin, &left, &top, &width, &height, &left_padding, &top_padding,
+-                    &scale, &x_scale);
+-
+-  // convert coordinates to active display region, then to full display region
+-  const float scaled_display_x = static_cast<float>(window_x) - left_padding;
+-  const float scaled_display_y = static_cast<float>(window_y) - top_padding + static_cast<float>(top_margin);
+-
+-  // scale back to internal resolution
+-  const float display_x = scaled_display_x / scale / x_scale;
+-  const float display_y = scaled_display_y / scale;
++  const float display_x = static_cast<float>(window_x) * static_cast<float>(m_display_width) / static_cast<float>(window_width);
++  const float display_y = static_cast<float>(window_y - top_margin) * static_cast<float>(m_display_height) /
++                          static_cast<float>(window_height - top_margin);
+ 
+   return std::make_tuple(display_x, display_y);
+ }
 diff --git a/src/core/host_interface.cpp b/src/core/host_interface.cpp
 index 1d6f503c..929e2a14 100644
 --- a/src/core/host_interface.cpp
@@ -142886,6 +142962,35 @@ index 918acd79..0c7efa2c 100644
  
    /// Returns a setting value from the configuration.
    std::string GetStringSettingValue(const char* section, const char* key, const char* default_value = "");
+diff --git a/src/core/namco_guncon.cpp b/src/core/namco_guncon.cpp
+index 900c7b38..e9f896cd 100644
+--- a/src/core/namco_guncon.cpp
++++ b/src/core/namco_guncon.cpp
+@@ -187,6 +187,15 @@ void NamcoGunCon::UpdatePosition()
+     return;
+   }
+ 
++  static constexpr int32_t TO = -140;
++  const int32_t at = static_cast<int32_t>(tick) + TO;
++  if (at < 0)
++  {
++    m_position_x = 0x01;
++    m_position_y = 0x0A;
++    return;
++  }
++
+   // 8MHz units for X = 44100*768*11/7 = 53222400 / 8000000 = 6.6528
+   const double divider = static_cast<double>(g_gpu->GetCRTCFrequency()) / 8000000.0;
+   // Keep the divide in double (the divider is computed in double; narrowing
+@@ -195,7 +204,7 @@ void NamcoGunCon::UpdatePosition()
+   // beam-position mapping, not a hardware register value being reproduced, so
+   // rounding is strictly closer to where the player is aiming. tick is
+   // non-negative and divider > 0, so + 0.5 is a correct round-half-up.
+-  m_position_x = static_cast<uint16_t>((static_cast<double>(tick) / divider) + 0.5);
++  m_position_x = static_cast<uint16_t>((static_cast<double>(at) / divider) + 0.5);
+   m_position_y = static_cast<uint16_t>(line);
+ }
+ 
 diff --git a/src/core/pgxp.cpp b/src/core/pgxp.cpp
 index 1c1eb1ff..0166de3c 100644
 --- a/src/core/pgxp.cpp
@@ -144095,7 +144200,7 @@ index 1c1eb1ff..0166de3c 100644
  
  void CPU_MFHI(uint32_t instr, uint32_t hiVal)
 diff --git a/src/core/settings.cpp b/src/core/settings.cpp
-index f676325b..9ca50997 100644
+index f676325b..072f5da4 100644
 --- a/src/core/settings.cpp
 +++ b/src/core/settings.cpp
 @@ -97,6 +97,20 @@ void Settings::Load(LibretroSettingsInterface& si)
@@ -144146,6 +144251,18 @@ index f676325b..9ca50997 100644
 +              "MMPX30BinAlpha", "MMPX32", "MMPX32BinAlpha");
  
  std::optional<GPUTextureFilter> Settings::ParseTextureFilterName(const char* str)
+ {
+@@ -401,9 +420,9 @@ const char* Settings::GetDisplayCropModeName(DisplayCropMode crop_mode)
+ 
+ static std::array<const char*, static_cast<size_t>(DisplayAspectRatio::Count)> s_display_aspect_ratio_names = {
+   {TRANSLATABLE("DisplayAspectRatio", "Auto (Game Native)"), TRANSLATABLE("DisplayAspectRatio", "Auto (Match Window)"),
+-   TRANSLATABLE("DisplayAspectRatio", "Custom"), "4:3", "16:9", "19:9", "20:9", "PAR 1:1", "Native"}};
++   TRANSLATABLE("DisplayAspectRatio", "Custom"), "4:3", "16:9", "19:9", "20:9", "21:9", "16:10", "PAR 1:1", "Native"}};
+ static constexpr std::array<float, static_cast<size_t>(DisplayAspectRatio::Count)> s_display_aspect_ratio_values = {
+-  {-1.0f, -1.0f, -1.0f, 4.0f / 3.0f, 16.0f / 9.0f, 19.0f / 9.0f, 20.0f / 9.0f, -1.0f, -1.0f}};
++  {-1.0f, -1.0f, -1.0f, 4.0f / 3.0f, 16.0f / 9.0f, 19.0f / 9.0f, 20.0f / 9.0f, 21.0f / 9.0f, 16.0f / 10.0f, -1.0f, -1.0f}};
+ 
+ std::optional<DisplayAspectRatio> Settings::ParseDisplayAspectRatio(const char* str)
  {
 diff --git a/src/core/settings.h b/src/core/settings.h
 index 2781a894..d7373bdc 100644
@@ -144208,7 +144325,7 @@ index 2afd38ab..699da2dc 100644
  }
  
 diff --git a/src/core/types.h b/src/core/types.h
-index c3eca738..5db2afe9 100644
+index c3eca738..58e18f52 100644
 --- a/src/core/types.h
 +++ b/src/core/types.h
 @@ -73,6 +73,12 @@ enum class GPUTextureFilter : uint8_t
@@ -144224,6 +144341,15 @@ index c3eca738..5db2afe9 100644
    Count
  };
  
+@@ -135,6 +141,8 @@ enum class DisplayAspectRatio : uint8_t
+   R16_9,
+   R19_9,
+   R20_9,
++  R21_9,
++  R16_10,
+   PAR1_1,
+   Native,
+   Count
 diff --git a/src/libretro/libretro_core_options.h b/src/libretro/libretro_core_options.h
 index b96b983c..7f14fde2 100644
 --- a/src/libretro/libretro_core_options.h
@@ -144429,7 +144555,7 @@ index 3a2301f1..b5ef43cd 100644
      if (g_settings.gpu_resolution_scale > 1)
      {
 diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
-index 6f97a844..56eaef31 100644
+index 6f97a844..6a7e3249 100644
 --- a/src/libretro/libretro_host_interface.cpp
 +++ b/src/libretro/libretro_host_interface.cpp
 @@ -135,6 +135,20 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -144498,7 +144624,17 @@ index 6f97a844..56eaef31 100644
          !cache_directory_ptr)
      {
        Log_WarningPrint("No shader cache directory available, startup will be slower.");
-@@ -1332,6 +1364,8 @@ bool HostInterface::UpdateCoreOptionsDisplay(bool controller)
+@@ -965,6 +997,9 @@ void HostInterface::retro_run_frame()
+   // because SET_GEOMETRY does not carry the timing struct - if we
+   // don't re-issue full av_info, the frontend keeps resampling audio
+   // at the stale fps ratio and the audio drifts.
++  const uint32_t ws = (g_settings.gpu_renderer != GPURenderer::Software) ? GetResolutionScale() : 1u;
++  m_display->ResizeRenderWindow(m_display->GetDisplayWidth() * ws, m_display->GetDisplayHeight() * ws);
++
+   const float aspect_ratio        = m_display->GetDisplayAspectRatio();
+   const float vertical_frequency  = (System::IsValid()) ? System::GetVerticalFrequency() : m_last_vertical_frequency;
+ 
+@@ -1332,6 +1367,8 @@ bool HostInterface::UpdateCoreOptionsDisplay(bool controller)
    g_retro_environment_callback(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
    option_display.key = "swanstation_GPU_TextureFilter";
    g_retro_environment_callback(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
@@ -144507,7 +144643,18 @@ index 6f97a844..56eaef31 100644
    option_display.key = "swanstation_GPU_DownsampleMode";
    g_retro_environment_callback(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
    option_display.key = "swanstation_GPU_ResolutionScale";
-@@ -2369,7 +2403,8 @@ void HostInterface::SwitchToSoftwareRenderer()
+@@ -2073,8 +2110,8 @@ void HostInterface::UpdateControllersNamcoGunCon(uint32_t index)
+   const int16_t gun_y = g_retro_input_state_callback(index, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
+   const bool offscreen =
+     g_retro_input_state_callback(index, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) != 0;
+-  const int32_t pos_x = offscreen ? 0 : (((static_cast<int32_t>(gun_x) + 0x7FFF) * m_display->GetWindowWidth())  / 0xFFFF);
+-  const int32_t pos_y = offscreen ? 0 : (((static_cast<int32_t>(gun_y) + 0x7FFF) * m_display->GetWindowHeight()) / 0xFFFF);
++  const int32_t pos_x = offscreen ? -1 : (((static_cast<int32_t>(gun_x) + 0x7FFF) * m_display->GetWindowWidth())  / 0xFFFF);
++  const int32_t pos_y = offscreen ? -1 : (((static_cast<int32_t>(gun_y) + 0x7FFF) * m_display->GetWindowHeight()) / 0xFFFF);
+ 
+   // The cached display mouse position is what NamcoGunCon::UpdatePosition
+   // reads during a SIO Transfer to compute the gun's beam-tick / scanline
+@@ -2369,7 +2406,8 @@ void HostInterface::SwitchToSoftwareRenderer()
    m_display = std::make_unique<LibretroHostDisplay>();
    m_display->CreateRenderDevice(wi, {}, false, false);
    m_display->InitializeRenderDevice({}, false, false);
