@@ -2109,6 +2109,32 @@ static void restart_for_clean_memory(void)
 #endif
 }
 
+static void disc_after_stop(void)
+{
+    if (!dg_active)
+        return;
+    const bool in_drive = !dg_gone && discwatch_removed() == dg_removed_mark && !discplay_lost();
+    DiscId id = *discplay_id();
+    library_remove_path(&app.library, dg.path);
+    discplay_stop();
+    dg_active = dg_gone = false;
+    if (in_drive)
+    {
+        dp_drop();
+        dp_make(&id);
+        if (library_add_game(&app.library, &dp))
+        {
+            dp_active = true;
+            dp_gone = false;
+            dp_removed_mark = discwatch_removed();
+        }
+    }
+    app_restart_covers();
+    shelf_show_all();
+    if (dp_active)
+        shelf_show_game(dp_index());
+}
+
 void app_stop_game(void)
 {
     host_set_region_override(NULL);
@@ -2139,8 +2165,10 @@ void app_stop_game(void)
         SwanStationPS5_log("forwarder: the game ended, closing (--exit-after-game)");
         app.quit_requested = true;
     }
-    else
+    else if (app.global.restart_after_game)
         restart_for_clean_memory();
+    else
+        disc_after_stop();
 }
 
 /* The library game a forwarder's --rom names: that file, else the game in the folder holding it (or in that folder).

@@ -1,4 +1,4 @@
-# libretro/libretro-database master: cht/Sony - PlayStation/ (1961 files)
+# libretro/libretro-database master: cht/Sony - PlayStation/ (1963 files)
 007 - Der Morgen stirbt nie (Germany) (GameShark).cht
 007 - Die Welt ist nicht genug (Germany) (Game Buster).cht
 007 - Die Welt ist nicht genug (Germany) (Xploder).cht
@@ -288,7 +288,8 @@ Casper (USA, Europe) (Game Buster).cht
 Casper (USA, Europe) (GameShark).cht
 Casper - Friends Around the World (USA) (GameShark).cht
 Casper - Friends Around the World (USA, Europe) (Game Buster).cht
-Castlevania - Symphony of the Night (USA, Europe) (Game Buster).cht
+Castlevania - Symphony of the Night (Europe) (Game Buster).cht
+Castlevania - Symphony of the Night (USA).cht
 Castlevania Chronicles (USA, Europe) (GameShark).cht
 Castrol Honda Superbike Racing (USA, Europe) (Game Buster).cht
 Castrol Honda Superbike Racing (USA, Europe) (GameShark).cht
@@ -783,6 +784,7 @@ Hardcore 4x4 (Europe) (GameShark).cht
 Harry Potter and the Chamber of Secrets (USA, Europe) (GameShark).cht
 Harry Potter and the Philosopher's Stone (Europe, Scandinavia) (Game Buster).cht
 Harry Potter and the Sorcerer's Stone (USA) (GameShark).cht
+Harvest Moon - Back to Nature (PAL) (GameShark).cht
 Harvest Moon - Back to Nature (USA, Europe) (Game Buster).cht
 Harvest Moon - Back to Nature (USA, Europe) (GameShark).cht
 Heart of Darkness (USA, Europe) (Game Buster).cht

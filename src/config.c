@@ -54,6 +54,7 @@ void config_defaults(Settings *s)
     s->case_lighting = true;
     s->disc_ask = true;
     s->install_to_ext = false;
+    s->restart_after_game = false;
     s->ntfs_enabled = true;
     s->negcon = false;
     s->touch_mouse = false;
@@ -272,6 +273,8 @@ static bool config_apply(Settings *s, const char *path)
             s->ntfs_enabled = as_bool(value);
         else if (strcmp(key, "install_to_ext") == 0)
             s->install_to_ext = as_bool(value);
+        else if (strcmp(key, "restart_after_game") == 0)
+            s->restart_after_game = as_bool(value);
         else if (strcmp(key, "jewel_cases") == 0)
             s->jewel_cases = as_bool(value);
         else if (strcmp(key, "case_lighting") == 0)
@@ -476,8 +479,8 @@ bool config_save(const Settings *s, const char *path)
             s->overclock, s->brightness, s->colour, s->autosave, s->bezel);
     fprintf(f, "msaa=%d\ntexture_filter=%d\nfilter_2d=%d\nsupersampling=%d\ndeinterlace=%d\npal60=%d\ngame_fixes=%d\n",
             s->msaa, s->texture_filter, s->filter_2d, s->supersampling, s->deinterlace, s->pal60, s->game_fixes);
-    fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\ndisc_in_tray=%d\nnegcon=%d\njewel_cases=%d\ncase_lighting=%d\ndisc_ask=%d\ninstall_to_ext=%d\n",
-            s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->disc_in_tray, s->negcon, s->jewel_cases, s->case_lighting, s->disc_ask, s->install_to_ext);
+    fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\ndisc_in_tray=%d\nnegcon=%d\njewel_cases=%d\ncase_lighting=%d\ndisc_ask=%d\ninstall_to_ext=%d\nrestart_after_game=%d\n",
+            s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->disc_in_tray, s->negcon, s->jewel_cases, s->case_lighting, s->disc_ask, s->install_to_ext, s->restart_after_game);
     fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\nframegen=%d\nvideo_out=%d\nfsr=%d\nframe_pacing=%d\nnostalgia=%d\n", s->touch_mouse, s->run_ahead,
             s->fast_effects, s->framegen, s->video_out, s->fsr, s->frame_pacing, s->nostalgia);
     for (int i = 0; i < SS_OPT_COUNT; ++i)

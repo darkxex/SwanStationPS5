@@ -17,7 +17,7 @@
 #define SwanStationPS5_NAME "SwanStationPS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define SwanStationPS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define SwanStationPS5_TITLE_ID "PPSA98510"
-#define SwanStationPS5_VERSION "1.6.1"
+#define SwanStationPS5_VERSION "1.6.2"
 #define SwanStationPS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core
@@ -156,6 +156,7 @@ typedef struct
     bool disc_animation;  /* the disc slides out of its case when a game starts */
     bool disc_ask; /* a disc put in opens its question by itself; off: only when the game is pressed on the shelf */
     bool ntfs_enabled; /* the NTFS disks plugged in are listed under /ntfs and their games on the shelf */
+    bool restart_after_game; /* closing a game starts the title again (gives the game's memory back); off: the library stays in the same process */
     bool install_to_ext; /* a disc is installed on the first extended storage with room (1 GB free) instead of /data */
     bool case_lighting;   /* the cover in the jewel case gets light: its shading and the glare over the lid; off: the picture as it is */
     bool jewel_cases;     /* the shelf shows 3D jewel cases; off: the flat covers with a reflection, as in 1.1.8 */
