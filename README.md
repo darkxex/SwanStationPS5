@@ -70,6 +70,7 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 - **Save states with pictures.** Ten slots per game, each showing a thumbnail and how long ago it was saved.
 - **Widescreen.** SwanStation's widescreen hack (Settings → Graphics) draws the 3D picture in 16:9.
 - **CRT look.** Light or strong scanlines, and the current background or a 90s TV around the picture.
+- **Black frame insertion.** Settings → Display → Black frame insertion dims every other refresh on a 120 Hz display for 60 Hz cores, including during fast forward and rewind, for clearer motion at the cost of brightness and possible flicker. The *BFI intensity* slider runs from 0% (unchanged brightness, no BFI) to 100% (fully black), defaults to 50%, and applies immediately. Requires *Video sync* on and *Generate frames* off. It is inactive for PAL, 60 Hz output (including a TV's fallback), and menus. The 120 Hz *Video output* setting takes effect after restarting the app.
 - **Shaders for the picture** (Settings → Display → Shader): LCD3x (a handheld's LCD) and zfast LCD, four NTSC ones (320px or 256px, S-Video or Composite) that recreate the analog TV signal, and CRT looks: CRT Royale Fast and CRT Royale (detailed, with bloom and a phosphor mask; heavy), CRT Newpixie, CRT Hyllian NTSC, CRT Mattias, CRT Lottes and CRT Pi.
 - **Generate frames.** AMD FSR 3's frame interpolation adds frames between the game's real ones. x2 puts one between each two: a 30 fps game is shown at 60, and with *Video output* at 120 Hz a 60 fps one at 120. x4 puts three: with *Video output* at 120 Hz a 30 fps game is shown at 120. At 60 Hz it only doubles. SwanStation tells the app when a picture is a repeat, so it starts from the game's real rate. The shaders run after it, CRT Royale Fast and NTSC included.
 - **Show FPS that tells the truth.** It shows the emulated frames, the game's own rate when the game repeats pictures (`60.0 FPS (game 25.0)`) and, while frames are generated, the frames you actually see and how many are made for each of the game's (`100.0 FPS (game 25.0) | FG x4`).
@@ -377,6 +378,8 @@ It also shows the time and how long you've been playing.
 | System | SwanStationPS5 (start the BIOS, games folder on USB drives, NFS shares), region, PS1 startup intro, fast CD loading, known game fixes, SwanStation's console and advanced options, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
 
 Video settings apply while you play. Internal resolution, PGXP, region, BIOS, controller and SwanStation's options apply from the next game.
+
+For GPU-readback stutters with the Vulkan renderer, enable **Graphics → Use Software Renderer For Readbacks (Restart)** and restart the game. This is off by default; its setting is `swanstation_GPU_UseSoftwareRendererForReadbacks=true` in the active global or per-game INI.
 
 ## RetroAchievements
 

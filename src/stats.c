@@ -8,6 +8,7 @@
 
 #include "i18n.h"
 
+#include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,93 @@
 static GameStats *records;
 static int count, capacity;
 static char path[SwanStationPS5_PATH_MAX];
+
+typedef struct
+{
+    char path[SwanStationPS5_PATH_MAX];
+    int count;
+    GameStats records[];
+} StatsWrite;
+
+static SDL_Thread *worker;
+static SDL_mutex *lock;
+static SDL_cond *wake;
+static StatsWrite *pending;
+static bool writing, quit;
+
+static void write_records(const char *dest, const GameStats *items, int n)
+{
+    if (!dest[0])
+        return;
+    char temp[SwanStationPS5_PATH_MAX + 8];
+    snprintf(temp, sizeof(temp), "%s.tmp", dest);
+    FILE *f = fopen(temp, "w");
+    if (!f)
+        return;
+    fprintf(f, "# SwanStationPS5 play records: id, seconds played, last played, favorite, achievements\n");
+    for (int i = 0; i < n; ++i)
+    {
+        const GameStats *g = &items[i];
+        if (!g->seconds && !g->last_played && !g->favorite && g->ach_unlocked < 0)
+            continue;
+        fprintf(f, "%s\t%u\t%lld\t%d\t%d\t%d\n", g->id, g->seconds, (long long)g->last_played,
+                g->favorite ? 1 : 0, g->ach_unlocked, g->ach_total);
+    }
+    bool ok = !ferror(f);
+    if (fclose(f) == 0 && ok)
+        rename(temp, dest);
+}
+
+static int writer_main(void *unused)
+{
+    (void)unused;
+    SDL_LockMutex(lock);
+    for (;;)
+    {
+        while (!pending && !quit)
+            SDL_CondWait(wake, lock);
+        if (!pending && quit)
+            break;
+        StatsWrite *job = pending;
+        pending = NULL;
+        writing = true;
+        SDL_UnlockMutex(lock);
+        write_records(job->path, job->records, job->count);
+        free(job);
+        SDL_LockMutex(lock);
+        writing = false;
+        SDL_CondBroadcast(wake);
+    }
+    SDL_UnlockMutex(lock);
+    return 0;
+}
+
+static void writer_start(void)
+{
+    if (worker)
+        return;
+    lock = SDL_CreateMutex();
+    wake = SDL_CreateCond();
+    if (lock && wake)
+        worker = SDL_CreateThread(writer_main, "stats", NULL);
+    if (!worker)
+    {
+        SDL_DestroyCond(wake);
+        SDL_DestroyMutex(lock);
+        wake = NULL;
+        lock = NULL;
+    }
+}
+
+static void writer_flush(void)
+{
+    if (!worker)
+        return;
+    SDL_LockMutex(lock);
+    while (pending || writing)
+        SDL_CondWait(wake, lock);
+    SDL_UnlockMutex(lock);
+}
 
 GameStats *stats_get(const char *id)
 {
@@ -41,6 +129,8 @@ GameStats *stats_get(const char *id)
 
 void stats_load(const char *root)
 {
+    writer_flush();
+    writer_start();
     path_join(path, sizeof(path), root, "stats.txt");
     count = 0;
     FILE *f = fopen(path, "r");
@@ -80,24 +170,51 @@ void stats_load(const char *root)
 
 void stats_save(void)
 {
-    if (!path[0])
+    writer_flush();
+    write_records(path, records, count);
+}
+
+void stats_save_async(void)
+{
+    if (!worker || !path[0])
         return;
-    char temp[SwanStationPS5_PATH_MAX + 8];
-    snprintf(temp, sizeof(temp), "%s.tmp", path);
-    FILE *f = fopen(temp, "w");
-    if (!f)
+    size_t bytes = sizeof(GameStats) * (size_t)count;
+    StatsWrite *job = malloc(sizeof(*job) + bytes);
+    if (!job)
         return;
-    fprintf(f, "# SwanStationPS5 play records: id, seconds played, last played, favorite, achievements\n");
-    for (int i = 0; i < count; ++i)
+    str_copy(job->path, sizeof(job->path), path);
+    job->count = count;
+    if (bytes)
+        memcpy(job->records, records, bytes);
+    SDL_LockMutex(lock);
+    StatsWrite *old = pending;
+    pending = job;
+    SDL_CondSignal(wake);
+    SDL_UnlockMutex(lock);
+    free(old);
+}
+
+void stats_shutdown(void)
+{
+    stats_save();
+    if (worker)
     {
-        const GameStats *g = &records[i];
-        if (!g->seconds && !g->last_played && !g->favorite && g->ach_unlocked < 0)
-            continue;
-        fprintf(f, "%s\t%u\t%lld\t%d\t%d\t%d\n", g->id, g->seconds, (long long)g->last_played,
-                g->favorite ? 1 : 0, g->ach_unlocked, g->ach_total);
+        SDL_LockMutex(lock);
+        quit = true;
+        SDL_CondSignal(wake);
+        SDL_UnlockMutex(lock);
+        SDL_WaitThread(worker, NULL);
+        worker = NULL;
     }
-    if (fclose(f) == 0)
-        rename(temp, path);
+    SDL_DestroyCond(wake);
+    SDL_DestroyMutex(lock);
+    wake = NULL;
+    lock = NULL;
+    quit = false;
+    free(records);
+    records = NULL;
+    count = capacity = 0;
+    path[0] = '\0';
 }
 
 void stats_format_time(uint32_t seconds, char *out, size_t size)

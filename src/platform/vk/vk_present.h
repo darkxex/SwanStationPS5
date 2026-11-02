@@ -12,14 +12,17 @@
 /* Takes over the TV through Vulkan. The interface keeps drawing on the CPU
  * into a canvas_w x canvas_h RGBA canvas, which is uploaded every frame. */
 bool vkp_open(int canvas_w, int canvas_h, char *error, size_t size);
-/* Uploads the canvas (R,G,B,A bytes), draws it over the game picture (none
- * yet), presents, and waits for the TV's refresh. */
+/* Call before emulation; false means skip the frame. */
+bool vkp_begin_frame(void);
+/* Composite the RGBA canvas over the game and queue FIFO presentation. */
 void vkp_present(const uint32_t *pixels, size_t pitch_bytes);
 void vkp_close(void);
 /* "1920x1080 @ 59.94 Hz" once open */
 const char *vkp_describe(void);
 /* A core renders through Vulkan and has handed over a picture. */
 bool vkp_game_image_ready(void);
+/* Compile the selected display shaders and upload static textures before gameplay. */
+void vkp_prepare_game(int shader, bool fsr);
 /* Draw that picture in this rectangle of the canvas, under it, this frame. */
 /* crop: share of the picture's height hidden at the top and at the bottom */
 /* shader: the values of Settings > Display > Shader, 99 supersampling (averaged down); tex_*: the picture's size; lines: the PS1's */

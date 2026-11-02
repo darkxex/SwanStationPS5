@@ -14,6 +14,7 @@
 #include "core/host.h"
 #include "core/swanstation_options.h"
 #include "bezels.h"
+#include "black_frames.h"
 #include "controls.h"
 #include "gamedb.h"
 #include "profiles.h"
@@ -30,6 +31,7 @@
 #include "update.h"
 #include "ra/achievements.h"
 #include "stats.h"
+#include "state_save.h"
 #include "ui/coverflow.h"
 #include "ui/draw.h"
 #include "ui/icons.h"
@@ -951,6 +953,8 @@ static void draw_achievement(void)
 static void draw_timer(void);
 
 static bool speed_changed; /* fast forward or rewind: not the game's normal speed */
+
+static BlackFramePhase black_frame_phase;
 
 void app_draw_game(uint8_t dim)
 {
@@ -2137,6 +2141,7 @@ void app_start_game(int index, bool resume)
         app_toast("Translation patch applied");
     if (resume)
         play_load_resume();
+    plat_prepare_game(&app.settings);
     if (controls_gun_active())
         app_toast("Light gun: point the controller at the screen, {R2} fires, {R3} re-centres");
     app.screen = SCREEN_GAME;
@@ -2176,6 +2181,7 @@ void app_start_bios(void)
     plat_audio_open(host_sample_rate());
     plat_audio_clear();
     cheats_clear(&app.cheats);
+    plat_prepare_game(&app.settings);
     app_toast_for(menu_combo_hint(), 8.0f);
     app.screen = SCREEN_GAME;
 }
@@ -2238,6 +2244,7 @@ void app_stop_game(void)
 {
     host_set_region_override(NULL);
     play_save_resume(false);
+    state_save_flush();
     play_rewind_reset();
     int unlocked, total;
     GameStats *st = app.game && !game_is_bios(app.game) ? stats_get(app.game->id) : NULL;
@@ -2553,14 +2560,20 @@ static void game_screen(PadState *pads)
         runs = 2;
     else if (queued > per_frame * 5)
         runs = 0;
-    /* Optimal frame pacing: one frame per refresh, the sound stretched (at most 0.5 %) to keep the queue where it is.
-     * Only when the screen's rate and the core's are within 3 % (else 0 and 2 frames per refresh, as before). */
+    /* Video sync: one core frame per refresh (every other refresh for BFI). */
     double sound_ratio = 1.0;
+    const bool fast_forward = fast && !ra_hardcore();
     bool optimal_active = false;
+    bool bfi_active = false;
     {
         const double display_hz = plat_display_hz(), core_hz = host_fps();
-        if (app.settings.frame_pacing && !app.settings.framegen && !back && !fast && display_hz > 20.0 && core_hz > 20.0 &&
-            display_hz > core_hz * 0.97 && display_hz < core_hz * 1.03)
+        bfi_active = black_frames_active(app.screen == SCREEN_GAME && app.settings.black_frames &&
+                                            app.settings.black_frame_intensity > 0,
+                                        app.settings.frame_pacing, app.settings.framegen,
+                                        display_hz, core_hz);
+        if (app.settings.frame_pacing && !app.settings.framegen && !back && !fast_forward &&
+            display_hz > 20.0 && core_hz > 20.0 &&
+            ((display_hz > core_hz * 0.97 && display_hz < core_hz * 1.03) || bfi_active))
         {
             runs = 1;
             optimal_active = true;
@@ -2589,12 +2602,15 @@ static void game_screen(PadState *pads)
         plat_audio_clear();
         runs = 0;
     }
-    else if (fast && !ra_hardcore())
+    else if (fast_forward)
     {
         runs = 4;
         if (queued > per_frame * 3)
             plat_audio_clear(); /* keep up instead of queueing sound */
     }
+    const BlackFrameStep bfi = black_frames_step(&black_frame_phase, bfi_active, runs, fast_forward || back);
+    const bool bfi_dim = bfi.dim;
+    runs = bfi.runs;
     if (timer.running)
         timer.seconds += app.dt;
     update_lightbars();
@@ -2644,10 +2660,10 @@ static void game_screen(PadState *pads)
             host_set_speculative(false);
         }
     }
-    /* quick resume: a background save every three minutes */
+    /* Quick resume: checkpoint every three minutes. */
     static float since_resume;
     since_resume += app.dt;
-    if (since_resume > 180.0f)
+    if (since_resume > 180.0f && !bfi_dim)
     {
         since_resume = 0;
         play_save_resume(true);
@@ -2659,7 +2675,7 @@ static void game_screen(PadState *pads)
     if (app.settings.autosave > 0 && !ra_hardcore())
     {
         auto_since += app.dt;
-        if (auto_since > app.settings.autosave * 300.0f)
+        if (auto_since > app.settings.autosave * 300.0f && !bfi_dim)
         {
             auto_since = 0;
             if (play_save_auto())
@@ -2709,11 +2725,11 @@ static void game_screen(PadState *pads)
         fps_frames = 0;
         fps_window_start = now;
     }
-    if (runs == 0 && now - last_us < 4000)
+    if (!bfi_active && runs == 0 && now - last_us < 4000)
         plat_sleep_us(1000);
     last_us = now;
 
-    app_draw_game(255);
+    app_draw_game(bfi_dim ? black_frames_dim(app.settings.black_frame_intensity) : 255);
     if (auto_shown > 0)
     {
         /* a quiet sign that an auto-save was written */
@@ -2774,7 +2790,7 @@ static void count_play_time(void)
             st->ach_unlocked = unlocked;
             st->ach_total = total;
         }
-        stats_save();
+        stats_save_async();
         saved_at = now;
     }
 }
@@ -2982,6 +2998,7 @@ int main(int argc, char **argv)
     i18n_set(app.global.language);
     theme_apply(app.global.theme);
     stats_load(app.paths.user);
+    state_save_init();
     plat_audio_open(UI_RATE);
     sfx_init(UI_RATE);
     sfx_configure(app.global.ui_sound, (app.global.ui_volume + 1) * 25);
@@ -3046,7 +3063,12 @@ int main(int argc, char **argv)
             message_box_input(&pressed);
         /* the shelf and settings paint a full-screen backdrop: no clear needed */
         bool backdrop = app.screen == SCREEN_LIBRARY || (app.screen == SCREEN_SETTINGS && !app.game);
-        plat_begin_frame(backdrop ? 0 : 0xff000000u);
+        state_save_poll();
+        if (!plat_begin_frame(backdrop ? 0 : 0xff000000u))
+        {
+            plat_sleep_us(1000);
+            continue;
+        }
         static const char *const screen_names[] = {"library", "game",         "menu",
                                                    "settings", "cheats", "achievements",
                                                    "memory cards", "library stats", "manual",
@@ -3064,6 +3086,7 @@ int main(int argc, char **argv)
         case SCREEN_GAME:
             if (last_screen != SCREEN_GAME)
             {
+                black_frame_phase = BFI_BRIGHT;
                 int connected = 0;
                 uint32_t held = 0;
                 for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
@@ -3265,8 +3288,9 @@ int main(int argc, char **argv)
     SwanStationPS5_log("shutdown: leaving the main loop");
     if (app.game)
         app_stop_game();
+    state_save_shutdown();
     config_save(&app.global, app.paths.config);
-    stats_save();
+    stats_shutdown();
     SwanStationPS5_log("shutdown: settings and stats saved");
 #if !defined(__PROSPERO__)
     /* the console takes the title down with its threads and sockets: waiting for them (a cover download, a

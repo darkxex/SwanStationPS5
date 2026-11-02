@@ -61,6 +61,8 @@ HOST_TEST_CFLAGS ?= -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
 HOST_TEST_CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
 	-ffunction-sections -fdata-sections
 HOST_TEST_LDFLAGS ?= -Wl,--gc-sections
+HOST_SDL_CFLAGS ?= $(shell pkg-config --cflags sdl2)
+HOST_SDL_LIBS ?= $(shell pkg-config --libs sdl2)
 GTEST_ARGS ?=
 BUILD_JOBS ?= $(shell nproc 2>/dev/null || echo 2)
 USE_CCACHE ?= 1
@@ -92,7 +94,40 @@ doctor:
 	@printf '%s\n' '==> [doctor] Checking the Linux/WSL host without changing it'
 	@bash tools/doctor.sh
 
-test: test-unit test-integration test-elevation test-update-check test-self-update
+test: test-unit test-integration test-elevation test-update-check test-self-update test-black-frames test-radv-sync test-stats test-state-save
+
+.PHONY: test-black-frames
+test-black-frames:
+	@mkdir -p build/tests
+	@$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc tests/test_black_frames.c -o build/tests/test_black_frames
+	@build/tests/test_black_frames
+
+.PHONY: test-radv-sync
+test-radv-sync:
+	@mkdir -p build/tests
+	@$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -D_POSIX_C_SOURCE=200809L \
+		-DSwanStationPS5_VULKAN -DSwanStationPS5_RADV_SYNC_TEST \
+		tests/test_radv_sync.c src/platform/vk/radv_sync.c -pthread -o build/tests/test_radv_sync
+	@build/tests/test_radv_sync
+
+.PHONY: test-state-save
+test-state-save:
+	@mkdir -p build/tests
+	@$(HOST_CC) $(HOST_TEST_CFLAGS) $(HOST_SDL_CFLAGS) -D_POSIX_C_SOURCE=200809L -Isrc \
+		-Dfopen=state_test_fopen -Dmake_dirs=state_test_make_dirs -DSDL_CreateThread=state_test_create_thread \
+		-c src/state_save.c -o build/tests/state_save.o
+	@$(HOST_CC) $(HOST_TEST_CFLAGS) $(HOST_SDL_CFLAGS) -D_POSIX_C_SOURCE=200809L -Isrc \
+		tests/test_state_save.c src/util.c build/tests/state_save.o $(HOST_SDL_LIBS) -pthread -o build/tests/test_state_save
+	@build/tests/test_state_save
+
+.PHONY: test-stats
+test-stats:
+	@mkdir -p build/tests
+	@$(HOST_CC) $(HOST_TEST_CFLAGS) $(HOST_SDL_CFLAGS) -D_POSIX_C_SOURCE=200809L -Isrc \
+		-Dfopen=stats_test_fopen -c src/stats.c -o build/tests/stats.o
+	@$(HOST_CC) $(HOST_TEST_CFLAGS) $(HOST_SDL_CFLAGS) -D_POSIX_C_SOURCE=200809L -Isrc \
+		tests/test_stats.c src/util.c build/tests/stats.o $(HOST_SDL_LIBS) -pthread -o build/tests/test_stats
+	@build/tests/test_stats
 
 .PHONY: test-elevation
 test-elevation:

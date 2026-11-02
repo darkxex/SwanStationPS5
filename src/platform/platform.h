@@ -93,13 +93,16 @@ double plat_display_hz(void);            /* the screen's refresh rate, 0 when un
 /* Drawing in output pixels (1920x1080 on PS5). */
 int plat_width(void);
 int plat_height(void);
-void plat_begin_frame(uint32_t clear_argb);
+/* False: no output image; skip emulation. */
+bool plat_begin_frame(uint32_t clear_argb);
 /* pixel_format: 0 = 0RGB1555, 1 = XRGB8888, 2 = RGB565 (libretro numbering). */
 /* upscale 1..4 prescales 32-bit frames with `filter` (enum UpscaleFilter) before the final scale. */
 void plat_upload_game(const void *pixels, int width, int height, size_t pitch, int pixel_format,
                       int upscale, int filter);
 /* The core rendered this frame on the GPU (v2): the screen draws it. */
 void plat_upload_game_gpu(int width, int height);
+/* After loading the core/resume state, before the first gameplay frame. */
+void plat_prepare_game(const Settings *settings);
 void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim);
 void plat_fill_rect(int x, int y, int w, int h, uint32_t argb);
 /* Where plat_draw_game last put the picture (for borders around it). */

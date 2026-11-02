@@ -194,6 +194,7 @@ void play_save_thumb(const char *state_path)
 
 bool play_load_thumb(const char *state_path, uint8_t *rgba)
 {
+    state_save_flush();
     char path[SwanStationPS5_PATH_MAX + 8];
     snprintf(path, sizeof(path), "%s.thumb", state_path);
     FILE *f = fopen(path, "rb");
@@ -228,42 +229,13 @@ bool play_has_resume(const Game *g, long *age_seconds)
     return true;
 }
 
-typedef struct
-{
-    char path[SwanStationPS5_PATH_MAX];
-    void *data;
-    size_t size;
-} Writer;
-
-static SDL_atomic_t writing;
-
-/* the file is written off the main thread, so play doesn't stutter */
-static int write_thread(void *arg)
-{
-    Writer *w = arg;
-    char temp[SwanStationPS5_PATH_MAX + 8];
-    snprintf(temp, sizeof(temp), "%s.tmp", w->path);
-    FILE *f = fopen(temp, "wb");
-    bool ok = f && fwrite(w->data, 1, w->size, f) == w->size;
-    if (f)
-        ok = fclose(f) == 0 && ok;
-    if (ok)
-        rename(temp, w->path);
-    free(w->data);
-    free(w);
-    SDL_AtomicSet(&writing, 0);
-    return 0;
-}
-
-static bool save_state_to(const char *path, bool background);
-
 void play_save_resume(bool background)
 {
     if (!app.game || game_is_bios(app.game) || !app.settings.quick_resume || ra_hardcore())
         return;
     char path[SwanStationPS5_PATH_MAX];
     play_resume_path(app.game, path, sizeof(path));
-    save_state_to(path, background);
+    state_save_request(path, app.paths.states, background);
 }
 
 void play_auto_path(int slot, char *out, size_t size)
@@ -319,44 +291,14 @@ bool play_save_auto(void)
         }
     char path[SwanStationPS5_PATH_MAX];
     play_auto_path(slot, path, sizeof(path));
-    return save_state_to(path, true);
-}
-
-static bool save_state_to(const char *path, bool background)
-{
-    if (SDL_AtomicGet(&writing))
-        return false; /* the previous one is still being written */
-    size_t size = host_state_size();
-    Writer *w = size ? calloc(1, sizeof(*w)) : NULL;
-    if (!w || !(w->data = malloc(size)) || !host_serialize(w->data, size))
-    {
-        if (w)
-            free(w->data);
-        free(w);
-        return false;
-    }
-    w->size = size;
-    make_dirs(app.paths.states);
-    str_copy(w->path, sizeof(w->path), path);
-    play_save_thumb(w->path);
-    SDL_AtomicSet(&writing, 1);
-    if (background)
-    {
-        SDL_Thread *t = SDL_CreateThread(write_thread, "save", w);
-        if (t)
-        {
-            SDL_DetachThread(t);
-            return true;
-        }
-    }
-    write_thread(w);
-    return true;
+    return state_save_request(path, app.paths.states, true);
 }
 
 bool play_load_resume(void)
 {
     if (!app.game || ra_hardcore())
         return false;
+    state_save_flush();
     char path[SwanStationPS5_PATH_MAX];
     play_resume_path(app.game, path, sizeof(path));
     return host_load_state(path);
