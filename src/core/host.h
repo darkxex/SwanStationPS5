@@ -57,6 +57,9 @@ bool host_serialize(void *buffer, size_t size);
 bool host_unserialize(const void *buffer, size_t size);
 /* The latest frame scaled to w x h RGBA (save-state thumbnails). */
 bool host_capture(uint8_t *rgba, int w, int h);
+/* One asynchronous thumbnail at a time: -1 failed, 0 pending, 1 ready. */
+int host_capture_begin(uint8_t *rgba, int w, int h);
+int host_capture_poll(uint8_t *rgba, int w, int h, bool wait);
 /* Folder the core reads fan-translation patches from (before host_load). */
 void host_set_patches_dir(const char *dir);
 

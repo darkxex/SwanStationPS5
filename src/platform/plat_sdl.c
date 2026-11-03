@@ -1121,18 +1121,23 @@ int plat_height(void)
     return out_h;
 }
 
-void plat_begin_frame(uint32_t clear_argb)
+bool plat_begin_frame(uint32_t clear_argb)
 {
+#if defined(__PROSPERO__)
+    if (use_vulkan && !vkp_begin_frame())
+        return false;
+#endif
     if (gpu_ui)
     {
         vkp_ui_begin(clear_argb); /* the clear is the render pass's: the game's picture is drawn over it */
-        return;
+        return true;
     }
     SDL_RenderSetClipRect(renderer, NULL);
     if ((clear_argb >> 24) == 0)
-        return; /* the screen draws an opaque backdrop: skip the clear */
+        return true; /* the screen draws an opaque backdrop: skip the clear */
     set_draw_color(clear_argb);
     SDL_RenderClear(renderer);
+    return true;
 }
 
 /* ---- prescalers (XRGB8888). Scale2x/Scale3x are the AdvanceMAME edge rules:
@@ -1593,6 +1598,17 @@ void plat_game_rect(int *x, int *y, int *w, int *h)
     *h = game_rect[3];
 }
 
+void plat_prepare_game(const Settings *settings)
+{
+#if defined(__PROSPERO__)
+    if (settings->renderer == 1)
+        return;
+    vkp_prepare_game(settings->shader, settings->fsr);
+#else
+    (void)settings;
+#endif
+}
+
 void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
 {
 #if defined(__PROSPERO__)
@@ -1977,9 +1993,9 @@ void plat_end_frame(void)
     static int frames;
     uint64_t drawn = plat_ticks_us();
     if (use_vulkan && gpu_ui)
-        vkp_present_ui(); /* the interface's list over the game; waits for vblank */
+        vkp_present_ui();
     else if (use_vulkan)
-        vkp_present(canvas->pixels, (size_t)canvas->pitch); /* waits for vblank */
+        vkp_present(canvas->pixels, (size_t)canvas->pitch);
     else
         ps5_video_present(canvas->pixels, (size_t)canvas->pitch);
     uint64_t shown = plat_ticks_us();

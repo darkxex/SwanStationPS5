@@ -74,7 +74,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instan
     X(vkCmdBeginRenderPass) X(vkCmdEndRenderPass) X(vkCmdBindPipeline)                           \
     X(vkCmdBindDescriptorSets) X(vkCmdPushConstants) X(vkCmdDraw) X(vkCmdSetViewport)            \
     X(vkCmdSetScissor) X(vkCmdBlitImage) X(vkCmdCopyImageToBuffer) X(vkQueueWaitIdle) X(vkCreateFence) X(vkDestroyFence) X(vkWaitForFences) X(vkResetFences)    \
-    X(vkCreateSemaphore) X(vkDestroySemaphore) X(vkCmdBindVertexBuffers) X(vkFreeDescriptorSets) X(vkCmdClearColorImage)
+    X(vkCreateSemaphore) X(vkDestroySemaphore) X(vkCmdBindVertexBuffers) X(vkFreeDescriptorSets) X(vkCmdClearColorImage) X(vkGetFenceStatus)
 
 #define DECLARE(name) static PFN_##name name;
 VK_INSTANCE_FUNCS(DECLARE)
@@ -121,6 +121,8 @@ static struct
     VkFence done[FRAMES];
     VkSemaphore acquired[FRAMES];
     int frame;
+    uint32_t acquired_image;
+    bool frame_open;
     bool canvas_ready;
     char description[320]; /* the mode in use, then every mode offered (for the log) */
     /* the game picture of a core rendering through Vulkan */
@@ -164,6 +166,8 @@ static struct
     double core_hz, display_hz, speed;
     bool nominal;
 } V;
+
+static void capture_destroy(void);
 
 /* asked before the screen opens (vkp_open clears V): frame generation's 120 Hz mode */
 static bool want_high_refresh;
@@ -1514,11 +1518,9 @@ static int royale_scale(int type, float scale, int source, int viewport)
     return n < 1 ? 1 : n;
 }
 
-/* Sizes of every pass for a PS1 picture of native_w x native_h shown in a
- * viewport_w x viewport_h rectangle; the images are made again when they change. */
-static bool royale_prepare(int preset, bool offscreen, int native_w, int native_h, int viewport_w, int viewport_h)
+static bool royale_setup(int preset, bool offscreen)
 {
-    if (!R.passes || R.preset != preset)
+    if (!R.passes || R.preset != preset || R.offscreen != offscreen)
     {
         /* another chain than the one made: everything of the old one goes */
         vkDeviceWaitIdle(V.device);
@@ -1563,7 +1565,28 @@ static bool royale_prepare(int preset, bool offscreen, int native_w, int native_
             R.tried = true;
         }
     }
-    if (!R.ok)
+    return R.ok;
+}
+
+void vkp_prepare_game(int shader, bool fsr)
+{
+    if (!V.device || !V.pass || !V.commands)
+        return;
+    if (fsr)
+    {
+        CH = &CHS[1];
+        royale_setup(5, true);
+    }
+    CH = &CHS[0];
+    int chain = chain_of_shader(shader);
+    if (chain >= 0)
+        royale_setup(chain, false);
+}
+
+/* Images depend on the actual frame size; pipelines and static textures do not. */
+static bool royale_prepare(int preset, bool offscreen, int native_w, int native_h, int viewport_w, int viewport_h)
+{
+    if (!royale_setup(preset, offscreen))
         return false;
     R.native[0] = native_w;
     R.native[1] = native_h;
@@ -1579,7 +1602,8 @@ static bool royale_prepare(int preset, bool offscreen, int native_w, int native_
     int key[4] = {native_w, native_h, viewport_w, viewport_h};
     if (R.have_images && memcmp(key, R.built, sizeof(key)) == 0)
         return true;
-    vkDeviceWaitIdle(V.device);
+    if (R.have_images)
+        vkDeviceWaitIdle(V.device);
     royale_free_images();
     for (int i = 0; i < (R.offscreen ? R.n : R.n - 1); ++i)
     {
@@ -1843,16 +1867,39 @@ static void royale_final(VkCommandBuffer cb, int f, int x, int y, int w, int h)
     vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
-/* ui: the interface was drawn by the GPU layer (vk_ui.inc); else the CPU's canvas is shown */
-static void present_frame(bool ui, const uint32_t *pixels, size_t pitch_bytes)
+/* Wait for a reusable slot and image before emulation. */
+bool vkp_begin_frame(void)
 {
+    if (V.frame_open)
+        return true;
     if (!V.swapchain)
-        return;
-    int f = V.frame;
-    V.frame = (V.frame + 1) % FRAMES;
-    vkWaitForFences(V.device, 1, &V.done[f], VK_TRUE, UINT64_MAX);
+        return false;
+    const int f = V.frame;
+    VkResult r = vkWaitForFences(V.device, 1, &V.done[f], VK_TRUE, UINT64_MAX);
+    if (r != VK_SUCCESS)
+        return false;
+    r = vkAcquireNextImageKHR(V.device, V.swapchain, UINT64_MAX, V.acquired[f], VK_NULL_HANDLE,
+                               &V.acquired_image);
+    if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR)
+    {
+        static int warned;
+        if (!warned++)
+            SwanStationPS5_log("vulkan: acquire failed (%d)", (int)r);
+        return false;
+    }
+    V.frame_open = true;
     ++U.stamp;
     ui_collect(false);
+    return true;
+}
+
+static void present_frame(bool ui, const uint32_t *pixels, size_t pitch_bytes)
+{
+    /* Reacquire if a device/mode change closed the frame. */
+    if (!vkp_begin_frame())
+        return;
+    const int f = V.frame;
+    const uint32_t index = V.acquired_image;
 
     if (!ui)
     {
@@ -1867,16 +1914,6 @@ static void present_frame(bool ui, const uint32_t *pixels, size_t pitch_bytes)
                 memcpy(dst + row * y, src + pitch_bytes * y, row);
     }
 
-    uint32_t index;
-    VkResult r = vkAcquireNextImageKHR(V.device, V.swapchain, UINT64_MAX, V.acquired[f], VK_NULL_HANDLE,
-                                       &index);
-    if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR)
-    {
-        static int warned;
-        if (!warned++)
-            SwanStationPS5_log("vulkan: acquire failed (%d)", (int)r);
-        return;
-    }
     vkResetFences(V.device, 1, &V.done[f]);
 
     VkCommandBuffer cb = V.cmd[f];
@@ -2140,6 +2177,8 @@ static void present_frame(bool ui, const uint32_t *pixels, size_t pitch_bytes)
     present.pSwapchains = &V.swapchain;
     present.pImageIndices = &index;
     vkQueuePresentKHR(V.queue, &present);
+    V.frame_open = false;
+    V.frame = (f + 1) % FRAMES;
 }
 
 void vkp_present(const uint32_t *pixels, size_t pitch_bytes)
@@ -2155,9 +2194,11 @@ void vkp_present_ui(void)
 /* Everything made on the device, but not the device itself. */
 static void destroy_device_objects(void)
 {
+    V.frame_open = false;
     if (!V.device)
         return;
     vkDeviceWaitIdle(V.device);
+    capture_destroy();
     ui_destroy();
     fg_free();
     if (V.fg_pacing)
@@ -2373,9 +2414,9 @@ bool vkp_game_image_ready(void)
     return V.game_view != VK_NULL_HANDLE;
 }
 
-/* The game picture scaled to w x h RGBA, for save-state thumbnails and the
- * quick-resume picture: a linear blit into a small image, copied into a
- * mapped buffer. Rare, so it simply waits for the GPU. */
+#include "vk_capture.inc"
+
+/* Blocking capture for screenshots and manual save thumbnails. */
 bool vkp_capture_game(uint8_t *rgba, int w, int h, int src_w, int src_h)
 {
     if (!V.device || !V.game_image || w <= 0 || h <= 0 || src_w <= 0 || src_h <= 0)
@@ -2489,6 +2530,13 @@ void vkp_show_game(float x, float y, float w, float h, float crop, int shader, i
 }
 
 #else
+
+void vkp_prepare_game(int shader, bool fsr)
+{
+    (void)shader, (void)fsr;
+}
+
+bool vkp_begin_frame(void) { return false; }
 
 bool vkp_open(int canvas_w, int canvas_h, char *error, size_t size)
 {

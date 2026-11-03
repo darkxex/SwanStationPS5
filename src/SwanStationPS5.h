@@ -170,6 +170,8 @@ typedef struct
     char nfs_shares[512]; /* nfs:// addresses of the servers that hold games, ';' between them (empty: none); src/nfs/nfs.h */
     bool nostalgia;       /* while a game is played: no sound of the app, no notices or trophies, and the game is silent */
     bool frame_pacing;    /* Video sync: one game frame per screen refresh, the sound stretched by a hair to keep up; off: synchronised to the sound */
+    bool black_frames;    /* dim intervening refreshes at 120 Hz */
+    int black_frame_intensity; /* intervening frame's dimming, 0-100 percent */
     int video_out;        /* picture output to the TV: 0 60 Hz, 1 120 Hz (from the next start) */
     int framegen;         /* generated frames: 0 off, 1 one between two of the game's (x2), 2 three (x4, a 30 fps game on a 120 Hz screen) */
     int aspect_before_wide; /* the aspect ratio (index) the widescreen hack replaced with 16:9, or -1; saved by value */

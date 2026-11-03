@@ -25,6 +25,8 @@ bool vkp_adopt_device(VkDevice device, VkQueue queue, uint32_t family, char *err
 void vkp_set_game_image(VkImage image, VkImageView view, VkImageLayout layout); /* VK_NULL_HANDLE: none */
 /* The game picture (src_w x src_h of it) scaled to w x h RGBA; waits for the GPU. */
 bool vkp_capture_game(uint8_t *rgba, int w, int h, int src_w, int src_h);
+bool vkp_capture_begin(int w, int h, int src_w, int src_h);
+int vkp_capture_poll(uint8_t *rgba, int w, int h, bool wait);
 uint32_t vkp_sync_index(void);
 uint32_t vkp_sync_index_mask(void);
 void vkp_wait_sync_index(void);

@@ -37,6 +37,7 @@
   .switch.on::after { left:26px; }
   .info { display:flex; justify-content:space-between; gap:12px; }
   .value { color:var(--dim); text-align:right; }
+  input[type=range] { width:calc(100% - 65px); padding:0; margin:16px 12px 8px 0; accent-color:var(--on); }
   #status { color:var(--dim); font-size:13px; text-align:center; margin-top:24px; }
   form { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
   input, textarea { font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--off);
@@ -68,6 +69,7 @@
 <div id="status">Connecting to your PS5…</div>
 <script>
 let data = null, tab = 0, busy = false, saves = null, filter = '', openGame = null;
+let editingSlider = false;
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -77,11 +79,13 @@ function el(tag, cls, text) {
 }
 
 async function load() {
-  if (busy) return;
+  if (busy || editingSlider) return;
   if (data && tab === data.tabs.length) return; /* the Saves tab refreshes itself */
   try {
     const r = await fetch('/api/settings', {cache: 'no-store'});
-    data = await r.json();
+    const next = await r.json();
+    if (busy || editingSlider) return;
+    data = next;
     render();
     document.getElementById('status').textContent = '';
   } catch (e) {
@@ -97,6 +101,7 @@ async function set(key, value) {
 
 function render() {
   if (!data || !data.tabs) return;
+  editingSlider = false;
   document.getElementById('game').textContent = data.game || '';
   const tabs = document.getElementById('tabs');
   tabs.replaceChildren();
@@ -131,6 +136,22 @@ function render() {
       sw.onclick = () => { r.value = r.value ? 0 : 1; render(); set(r.key, r.value); };
       line.append(text, sw);
       row.appendChild(line);
+    } else if (r.kind === 'slider') {
+      row.appendChild(el('div', 'name', r.name));
+      if (r.help) row.appendChild(el('div', 'help', r.help));
+      const slider = el('input');
+      slider.type = 'range';
+      slider.min = r.min;
+      slider.max = r.max;
+      slider.step = 1;
+      slider.value = r.value;
+      slider.setAttribute('aria-label', r.name);
+      slider.onfocus = () => { editingSlider = true; };
+      slider.onblur = () => { editingSlider = false; };
+      const value = el('span', 'value', r.value + '%');
+      slider.oninput = () => { value.textContent = slider.value + '%'; };
+      slider.onchange = () => { r.value = Number(slider.value); set(r.key, r.value); };
+      row.append(slider, value);
     } else if (r.kind === 'choice') {
       row.appendChild(el('div', 'name', r.name));
       if (r.help) row.appendChild(el('div', 'help', r.help));

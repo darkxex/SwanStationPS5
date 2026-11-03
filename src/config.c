@@ -21,6 +21,7 @@ void config_defaults(Settings *s)
     s->cd_speed = 1;
     s->nfs_timeout = 2;
     s->frame_pacing = true; /* Video sync */
+    s->black_frame_intensity = 50;
     s->true_colour = true; /* True Color is on by default */
     s->upscale = 2;
     s->upscale_filter = UPSCALE_XBR;
@@ -291,6 +292,10 @@ static bool config_apply(Settings *s, const char *path)
             s->nostalgia = as_bool(value);
         else if (strcmp(key, "frame_pacing") == 0)
             s->frame_pacing = as_bool(value);
+        else if (strcmp(key, "black_frames") == 0)
+            s->black_frames = as_bool(value);
+        else if (strcmp(key, "black_frame_intensity") == 0)
+            s->black_frame_intensity = clamp_int(atoi(value), 0, 100);
         else if (strcmp(key, "video_out") == 0)
             s->video_out = atoi(value) % 2;
         else if (strcmp(key, "framegen") == 0)
@@ -481,6 +486,8 @@ bool config_save(const Settings *s, const char *path)
             s->msaa, s->texture_filter, s->filter_2d, s->supersampling, s->deinterlace, s->pal60, s->game_fixes);
     fprintf(f, "fmv_smooth=%d\ntrue_colour=%d\nboot_intro=%d\nsharpen=%d\ndisc_animation=%d\ndisc_in_tray=%d\nnegcon=%d\njewel_cases=%d\ncase_lighting=%d\ndisc_ask=%d\ninstall_to_ext=%d\nrestart_after_game=%d\n",
             s->fmv_smooth, s->true_colour, s->boot_intro, s->sharpen, s->disc_animation, s->disc_in_tray, s->negcon, s->jewel_cases, s->case_lighting, s->disc_ask, s->install_to_ext, s->restart_after_game);
+    fprintf(f, "black_frames=%d\n", s->black_frames);
+    fprintf(f, "black_frame_intensity=%d\n", s->black_frame_intensity);
     fprintf(f, "touch_mouse=%d\nrun_ahead=%d\nfast_effects=%d\nframegen=%d\nvideo_out=%d\nfsr=%d\nframe_pacing=%d\nnostalgia=%d\n", s->touch_mouse, s->run_ahead,
             s->fast_effects, s->framegen, s->video_out, s->fsr, s->frame_pacing, s->nostalgia);
     for (int i = 0; i < SS_OPT_COUNT; ++i)

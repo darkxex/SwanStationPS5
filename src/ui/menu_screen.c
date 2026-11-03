@@ -282,6 +282,7 @@ void menu_screen(uint32_t pressed)
             app.screen = SCREEN_GAME;
             return;
         case MI_SAVE:
+            state_save_flush();
             make_dirs(app.paths.states);
             if (host_save_state(st))
             {
@@ -295,6 +296,7 @@ void menu_screen(uint32_t pressed)
             sfx_play(SFX_SELECT);
             return;
         case MI_LOAD:
+            state_save_flush();
             if (ra_hardcore())
                 str_copy(msg, sizeof(msg), tr("Not allowed in hardcore mode"));
             else if (host_load_state(st))
@@ -309,6 +311,7 @@ void menu_screen(uint32_t pressed)
             return;
         case MI_AUTO:
         {
+            state_save_flush();
             char path[SwanStationPS5_PATH_MAX];
             if (ra_hardcore())
                 str_copy(msg, sizeof(msg), tr("Not allowed in hardcore mode"));
@@ -374,6 +377,7 @@ void menu_screen(uint32_t pressed)
             app_open_settings(SCREEN_MENU);
             return;
         case MI_RESET:
+            state_save_flush();
             host_reset();
             ra_reset();
             app_toast("Console reset");

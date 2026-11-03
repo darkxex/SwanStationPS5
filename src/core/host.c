@@ -1501,6 +1501,25 @@ bool host_capture(uint8_t *rgba, int w, int h)
     return true;
 }
 
+int host_capture_begin(uint8_t *rgba, int w, int h)
+{
+#if defined(SwanStationPS5_VULKAN)
+    if (loaded && hw_running && !frame_data && frame_w && frame_h)
+        return vkp_capture_begin(w, h, (int)frame_w, (int)frame_h) ? 0 : -1;
+#endif
+    return host_capture(rgba, w, h) ? 1 : -1;
+}
+
+int host_capture_poll(uint8_t *rgba, int w, int h, bool wait)
+{
+#if defined(SwanStationPS5_VULKAN)
+    return vkp_capture_poll(rgba, w, h, wait);
+#else
+    (void)rgba, (void)w, (void)h, (void)wait;
+    return -1;
+#endif
+}
+
 bool host_load_state(const char *path)
 {
     if (!loaded)

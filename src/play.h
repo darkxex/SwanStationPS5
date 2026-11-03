@@ -7,6 +7,7 @@
 #define SwanStationPS5_PLAY_H
 
 #include "library.h"
+#include "state_save.h"
 
 /* Before host_load: points the core at the game's .ppf patch, if it has one.
  * Returns true when a translation patch will be applied. */
@@ -32,8 +33,6 @@ bool play_save_auto(void);
 int play_auto_list(int slots[AUTO_SLOTS], long ages[AUTO_SLOTS]);
 
 /* State thumbnails: <state file>.thumb, a small picture of the moment. */
-#define THUMB_W 192
-#define THUMB_H 144
 void play_save_thumb(const char *state_path);
 /* The game picture as a PNG in <root>/screenshots, at the size it has on screen. */
 bool play_screenshot(void);

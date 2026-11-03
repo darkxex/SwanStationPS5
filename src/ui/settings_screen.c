@@ -38,6 +38,7 @@ enum Kind
 {
     K_CHOICE,
     K_TOGGLE,
+    K_SLIDER,
     K_ACTION,
     K_INFO,
 };
@@ -188,6 +189,12 @@ static const Row DISPLAY[] = {
     {NULL, "Generate frames",
      "Adds frames AMD FSR 3 makes between the game's own, so motion looks smoother. x2: one between each two, so 30 fps shows at 60 and, with Video output at 120 Hz, 60 fps shows at 120. x4: three between each two, only with Video output at 120 Hz: a 30 fps game shows at 120. With Video output at 60 Hz it only doubles. Each extra frame adds a little input lag. It works at once. Video output is changed above and applies the next time the app starts.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(framegen), FRAMEGENS, 3, 0},
+    {NULL, "Black frame insertion",
+     "At 120 Hz, dims every other refresh for 60 Hz cores, including during fast forward and rewind. Clearer motion, but a darker picture and visible flicker. Set the amount with BFI intensity. Needs Video sync on and Generate frames off. Inactive at 60 Hz, for PAL games, and in menus.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(black_frames), OFF_ON, 2, 0},
+    {NULL, "BFI intensity",
+     "How much the intervening frame is dimmed: 0% keeps full brightness (no BFI), 50% halves its brightness, and 100% makes it fully black. Default: 50%. Requires Black frame insertion on. Adjust with Left / Right.",
+     K_SLIDER, APPLY_NOW, SP_NONE, false, INT_FIELD(black_frame_intensity), NULL, 101, 0},
     {NULL, "Load HD textures",
      "Loads HD texture packs. Over FTP, go to /data/SwanStationPS5/cache/ and create the folder textures if it doesn't exist, then create your game's folder inside it, for example \"SCUS-94900\" (Crash Bandicoot), and put the pack's PNG files there. Needs the GPU renderer. Takes effect with the next game.",
      K_TOGGLE, APPLY_NEXT_GAME, SP_HDTEX, false, NO_FIELD, OFF_ON, 2, 0},
@@ -962,7 +969,8 @@ static int read_value(const Row *r)
  * changed there (it is changed in "All games") */
 static bool row_locked(const Row *r)
 {
-    return r->global_only && S.game_scope && scope_game() && (r->kind == K_CHOICE || r->kind == K_TOGGLE);
+    return r->global_only && S.game_scope && scope_game() &&
+           (r->kind == K_CHOICE || r->kind == K_TOGGLE || r->kind == K_SLIDER);
 }
 
 static void write_value(const Row *r, int v)
@@ -1124,6 +1132,11 @@ static const char *value_label(const Row *r, char *buf, size_t size)
         default: return SwanStationPS5_VERSION;
         }
     default: break;
+    }
+    if (r->kind == K_SLIDER)
+    {
+        snprintf(buf, size, "%d%%", v + r->base);
+        return buf;
     }
     if (!r->labels || v < 0 || v >= r->count)
         return "";
@@ -1923,6 +1936,19 @@ static void draw_rows(void)
             draw_switch(right - 40 * 2.1f, ry + 18, 40, *st);
             break;
         }
+        case K_SLIDER:
+        {
+            const float width = 210.0f;
+            const float left = right - 95.0f - width;
+            float fraction = (float)read_value(r) / (float)(r->count - 1);
+            draw_rrect(left, ry + 33, width, 10, 5, TH_SWITCH_OFF);
+            if (fraction > 0)
+                draw_rrect(left, ry + 33, width * fraction, 10, 5, TH_FOCUS);
+            draw_circle(left + width * fraction, ry + 38, 10, TH_TEXT);
+            text_draw(right, ry + 24, 24, FONT_REGULAR, TH_TEXT_SOFT, ALIGN_RIGHT,
+                      value_label(r, buf, sizeof(buf)));
+            break;
+        }
         case K_ACTION:
             icon_draw(ICON_CHEVRON_RIGHT, right - 36, ry + 21, 34, TH_TEXT_SOFT);
             if (r->special == SP_UPDATE || r->special == SP_USBFOLDER || r->special == SP_NFSHARES)
@@ -2206,6 +2232,15 @@ void settings_screen(uint32_t pressed)
         int delta = (pressed & BIT(BTN_RIGHT)) ? 1 : (pressed & BIT(BTN_LEFT)) ? -1 : 0;
         if ((pressed & BIT(BTN_CROSS)) && (r->kind == K_CHOICE || r->kind == K_TOGGLE))
             delta = 1;
+        if (delta && r->kind == K_SLIDER)
+        {
+            int v = read_value(r) + delta;
+            if (v >= 0 && v < r->count)
+            {
+                write_value(r, v);
+                sfx_play(SFX_CLICK);
+            }
+        }
         if (delta && (r->kind == K_CHOICE || r->kind == K_TOGGLE))
         {
             int count = r->kind == K_TOGGLE ? 2 : r->count;
@@ -2347,6 +2382,10 @@ int settings_json(char *out, size_t size)
                 PUT(",\"kind\":\"info\",\"text\":");
                 at = json_text(out, size, at, value_label(r, buf, sizeof(buf)));
             }
+            else if (r->kind == K_SLIDER)
+            {
+                PUT(",\"kind\":\"slider\",\"value\":%d,\"min\":0,\"max\":%d", read_value(r), r->count - 1);
+            }
             else
             {
                 PUT(",\"kind\":\"%s\",\"value\":%d,\"labels\":[", r->kind == K_TOGGLE ? "toggle" : "choice",
@@ -2391,7 +2430,7 @@ const char *settings_set_by_key(const char *key, int value)
     if (sscanf(key, "%d.%d", &t, &i) != 2 || t < 0 || t >= TAB_COUNT || i < 0 || i >= TABS[t].count)
         return NULL;
     const Row *r = &TABS[t].rows[i];
-    if (r->kind != K_CHOICE && r->kind != K_TOGGLE)
+    if (r->kind != K_CHOICE && r->kind != K_TOGGLE && r->kind != K_SLIDER)
         return NULL;
     int count = r->kind == K_TOGGLE ? 2 : r->count;
     if (value < 0 || value >= count || value_conflicts(r, value))

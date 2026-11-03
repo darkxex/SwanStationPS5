@@ -250,7 +250,9 @@ fi
 linker_options=(-T "$native/ps5-pie.ld")
 stub_options=()
 if [[ ${APP_VULKAN:-0} == 1 ]]; then
-    radv_archive="$root/.deps/native/radv-release/lib/libvulkan_radeon.ps5.a"
+    bash "$root/tools/fix-radv-sync.sh"
+    radv_archive="$build/radv-sync/libvulkan_radeon.ps5.a"
+    ninja_inputs+=("$radv_archive")
     [[ -f $sdk_root/target/lib/libps5platform.a ]] || {
         echo "APP_VULKAN=1 needs the SDK platform layer (tools/fetch-radv.sh)" >&2; exit 2;
     }
