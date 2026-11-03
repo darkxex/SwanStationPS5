@@ -85,7 +85,7 @@ failed `/data` proof never authorizes privileged work.
 
 `tools/build-lapy-helper.py` pins:
 
-- blackbearreloaded's Lapy commit `57fcc19b7f57e46c823d6f2a6c6233ebf3288079`;
+- the Lapy commit (authored by BlackBearReloaded, fetched from mpereiraesaa's fork) `57fcc19b7f57e46c823d6f2a6c6233ebf3288079`;
 - official PS5 Payload SDK v0.42, used for the helper; and
 - the pinned `ps5log/1` header used by upstream's build.
 
@@ -132,8 +132,8 @@ Lapy was created by
 [ArkSama / Team PHU](https://github.com/ArkSama/PS5-Lapy-JB-Daemon). The
 cooperative exact-title helper started in
 [mpereiraesaa's fork](https://github.com/mpereiraesaa/PS5-Lapy-JB-Daemon), and
-the pinned build is fetched from
-[blackbearreloaded's fork](https://github.com/blackbearreloaded/PS5-Lapy-JB-Daemon).
+the pinned build is fetched from that same fork; the pinned commit was authored
+by [BlackBearReloaded](https://github.com/blackbearreloaded).
 Credit belongs to all these projects and their contributors.
 
 Lapy is MIT licensed; its published shared protocol header is
