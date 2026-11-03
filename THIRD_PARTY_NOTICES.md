@@ -62,8 +62,8 @@ is not linked into any PS5 application, runtime, or package artifact.
 ## Optional PS5-Lapy-JB-Daemon integration
 
 The sandbox-elevation build fetches
-[blackbearreloaded's PS5-Lapy-JB-Daemon](https://github.com/blackbearreloaded/PS5-Lapy-JB-Daemon)
-(a fork of mpereiraesaa's) at commit `57fcc19b7f57e46c823d6f2a6c6233ebf3288079`, invokes its unmodified
+[mpereiraesaa's PS5-Lapy-JB-Daemon](https://github.com/mpereiraesaa/PS5-Lapy-JB-Daemon)
+at commit `57fcc19b7f57e46c823d6f2a6c6233ebf3288079`, invokes its unmodified
 `owned-helper` target for the selected application's exact title and packages
 the generated helper ELF with Lapy's MIT license. The shared protocol header
 published upstream is LGPL-2.1-or-later; this repository's application-side
