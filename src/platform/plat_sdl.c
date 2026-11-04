@@ -189,7 +189,7 @@ static bool init_ps5_screen(void)
 static SDL_Window *create_desktop_window(bool vulkan)
 {
     return SDL_CreateWindow(SwanStationPS5_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
-                            SDL_WINDOW_RESIZABLE | (vulkan ? SDL_WINDOW_VULKAN : 0));
+                            SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP | (vulkan ? SDL_WINDOW_VULKAN : 0));
 }
 
 static void present_window_surface(void)
@@ -227,6 +227,7 @@ static bool init_desktop_screen(void)
     }
     if (!window)
         return init_failed("SDL window");
+    SDL_ShowCursor(SDL_DISABLE); /* it starts in borderless full screen (F11 goes to a window and back) */
     canvas = SDL_CreateRGBSurfaceWithFormat(0, 1920, 1080, 32, SDL_PIXELFORMAT_ABGR8888);
     if (!canvas)
         return init_failed("SDL canvas");
