@@ -72,11 +72,13 @@ typedef struct
             p##retro_cheat_set                                                                  \
     }
 
-#if !defined(SwanStationPS5_VULKAN)
-#error "SwanStation renders through Vulkan: build with APP_VULKAN=1"
+#if !defined(SwanStationPS5_VULKAN) && !defined(SwanStationPS5_DESKTOP)
+#error "SwanStation renders through Vulkan: build with APP_VULKAN=1 (PS5) or SwanStationPS5_DESKTOP (PC)"
 #endif
 
-#if defined(SwanStationPS5_VULKAN)
+/* Vulkan is the renderer (PS5, and PC with SwanStationPS5_VULKAN). A PC build without it, or whose screen could not
+ * open Vulkan, runs the core's software renderer: frames arrive through video_cb. */
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
 void swanstation_retro_set_environment(retro_environment_t);
 void swanstation_retro_set_video_refresh(retro_video_refresh_t);
 void swanstation_retro_set_audio_sample(retro_audio_sample_t);
@@ -193,7 +195,7 @@ static void register_variables(const struct retro_variable *vars)
     }
 }
 
-#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
 /* SwanStation (DuckStation): the Vulkan renderer, the recompiler with LUT
  * fastmem (MMap does not survive a title's sandbox). */
 static const char *region_override;
@@ -278,6 +280,22 @@ static void apply_game_fixes(void)
     }
 }
 
+/* The core's "GPU_Renderer": Vulkan unless the player chose Software, or (PC) there is no Vulkan screen to show it. */
+static const char *renderer_option(void)
+{
+    if (session_renderer == 1)
+        return "Software";
+#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_DESKTOP)
+    if (!vkp_describe()[0])
+        return "Software";
+#endif
+    return "Vulkan";
+#else
+    return "Software";
+#endif
+}
+
 static void apply_swanstation_options(const Settings *s)
 {
     bool stretch = false;
@@ -291,7 +309,7 @@ static void apply_swanstation_options(const Settings *s)
     int cd = s->cd_speed >= 1 && s->cd_speed <= 10 && !(game_fixes & GDB_NO_CD_SPEEDUP) ? s->cd_speed : 1;
     snprintf(cd_speed, sizeof(cd_speed), "%d", cd);
     bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
-    set_option("swanstation_GPU_Renderer", session_renderer == 1 ? "Software" : "Vulkan");
+    set_option("swanstation_GPU_Renderer", renderer_option());
     set_option("swanstation_GPU_ResolutionScale", scale);
     set_option("swanstation_Console_Region", region_override ? region_override : regions[s->region % REGION_COUNT]);
     set_option("swanstation_GPU_TrueColor", s->true_colour ? "true" : "false");
@@ -351,7 +369,7 @@ static void apply_swanstation_options(const Settings *s)
 
 static void apply_settings_to_options(const Settings *s)
 {
-#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
     if (core == &SWANSTATION)
     {
         apply_swanstation_options(s);
@@ -419,8 +437,17 @@ static bool hw_start(char *error, size_t size)
     struct retro_vulkan_context context;
     memset(&context, 0, sizeof(context));
     const char *extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+#if defined(SwanStationPS5_DESKTOP)
+    /* PC: the core makes its device through the presenter's wrapper, which hands over the presenter's own */
+    const bool made = negotiation && negotiation->interface_version >= 2 && negotiation->create_device2
+                          ? negotiation->create_device2(&context, instance, gpu, surface, gipa, vkp_hw_create_device, NULL)
+                          : negotiation && negotiation->create_device &&
+                                negotiation->create_device(&context, instance, gpu, surface, gipa, extensions, 1, NULL, 0, NULL);
+    if (!made)
+#else
     if (!negotiation || !negotiation->create_device ||
         !negotiation->create_device(&context, instance, gpu, surface, gipa, extensions, 1, NULL, 0, NULL))
+#endif
     {
         snprintf(error, size, "The core could not create its Vulkan device.");
         return false;
@@ -499,6 +526,11 @@ static void RETRO_CALLCONV core_log(enum retro_log_level level, const char *fmt,
     va_start(args, fmt);
     vsnprintf(line, sizeof(line), fmt, args);
     va_end(args);
+#if defined(SwanStationPS5_DESKTOP)
+    /* a desktop driver lists hundreds of Vulkan extensions, one line each: 1 MB of log per game */
+    if (strstr(line, "Available extension: "))
+        return;
+#endif
     SwanStationPS5_log("core: %s", line);
 }
 
@@ -854,7 +886,11 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
         struct retro_hw_render_context_negotiation_interface *i = data;
         if (i->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
             return false;
+#if defined(SwanStationPS5_DESKTOP)
+        i->interface_version = 2; /* create_device2: the presenter's device is the core's */
+#else
         i->interface_version = 1; /* create_device, not create_device2 */
+#endif
         return true;
     }
     case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:

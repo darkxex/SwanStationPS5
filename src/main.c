@@ -2613,6 +2613,9 @@ static void game_screen(PadState *pads)
         if (queued > per_frame * 3)
             plat_audio_clear(); /* keep up instead of queueing sound */
     }
+#if defined(SwanStationPS5_DESKTOP)
+    plat_want_fps_limit(fast_forward || back ? 0.0 : host_fps()); /* one present per core frame: 59.94 NTSC, 50 PAL */
+#endif
     const BlackFrameStep bfi = black_frames_step(&black_frame_phase, bfi_active, runs, fast_forward || back);
     const bool bfi_dim = bfi.dim;
     runs = bfi.runs;
@@ -3085,6 +3088,11 @@ int main(int argc, char **argv)
         if (!app.game && app.settings.lightbar != 0)
             for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
                 plat_set_lightbar(i, 0x000000);
+#if defined(SwanStationPS5_DESKTOP)
+        /* the limit is set by game_screen (the game's own rate); any other screen, a pause too, has none */
+        if (app.screen != SCREEN_GAME)
+            plat_want_fps_limit(0.0);
+#endif
         switch (app.screen)
         {
         case SCREEN_LIBRARY: shelf_screen(pressed); break;
@@ -3142,17 +3150,18 @@ int main(int argc, char **argv)
                 if (app.settings.manual_crop)
                 {
                     const int up = (pressed & BIT(BTN_UP)) != 0, down = (pressed & BIT(BTN_DOWN)) != 0,
-                              left = (pressed & BIT(BTN_LEFT)) != 0, right = (pressed & BIT(BTN_RIGHT)) != 0;
+                              left = (pressed & BIT(BTN_LEFT)) != 0, right = (pressed & BIT(BTN_RIGHT)) != 0,
+                              l1 = (pressed & BIT(BTN_L1)) != 0, r1 = (pressed & BIT(BTN_R1)) != 0;
                     if (pressed & BIT(BTN_SQUARE))
-                        manual_crop_edit(0, 0, true);
+                        manual_crop_edit(0, 0, 0, true);
                     else
-                        manual_crop_edit(right - left, 2 * (down - up), false);
+                        manual_crop_edit(right - left, 2 * (down - up), 2 * (r1 - l1), false);
                 }
                 game_screen(idle);
                 if (app.settings.manual_crop)
                 {
                     const float t = app.settings_preview_time, in = t < 0.25f ? t / 0.25f : 1.0f;
-                    const float w = 900, h = 230, x = (plat_width() - w) * 0.5f, y = plat_height() - h - 36 + (1.0f - in) * 60.0f;
+                    const float w = 900, h = 266, x = (plat_width() - w) * 0.5f, y = plat_height() - h - 36 + (1.0f - in) * 60.0f;
                     char values[96], ratio[24];
                     draw_rrect(x, y, w, h, TH_RADIUS, argb_alpha(TH_CARD_A(0xf0), in));
                     text_draw_fit(x + 36, y + 22, 26, FONT_BOLD, argb_alpha(TH_TEXT, in), ALIGN_LEFT, w - 72,
@@ -3162,12 +3171,15 @@ int main(int argc, char **argv)
                     text_draw_fit(x + 36, y + 102, 24, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, in), ALIGN_LEFT, w - 72,
                                   tr("{Up} {Down}  Move the picture up or down"));
                     text_draw_fit(x + 36, y + 138, 24, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, in), ALIGN_LEFT, w - 72,
+                                  tr("{L1} {R1}  Move the picture left or right"));
+                    text_draw_fit(x + 36, y + 174, 24, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, in), ALIGN_LEFT, w - 72,
                                   tr("{Square}  Back to the original area"));
                     crop_ratio_text(ratio, sizeof(ratio),
                                     (play_widescreen_active() ? 16.0f / 9.0f : host_aspect()) * app.settings.mc_w /
                                         app.settings.mc_h);
-                    snprintf(values, sizeof(values), "%d%%   %+d   %s", app.settings.mc_w, app.settings.mc_y, ratio);
-                    text_draw_fit(x + 36, y + 180, 22, FONT_BOLD, argb_alpha(TH_TEXT, in), ALIGN_LEFT, w - 72, values);
+                    snprintf(values, sizeof(values), "%d%%   x %+d   y %+d   %s", app.settings.mc_w, app.settings.mc_x,
+                             app.settings.mc_y, ratio);
+                    text_draw_fit(x + 36, y + 216, 22, FONT_BOLD, argb_alpha(TH_TEXT, in), ALIGN_LEFT, w - 72, values);
                 }
                 {
                     const float t = app.settings_preview_time, in = t < 0.25f ? t / 0.25f : 1.0f,

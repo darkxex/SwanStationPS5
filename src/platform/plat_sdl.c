@@ -15,17 +15,30 @@
 #include <string.h>
 #include <time.h>
 
-#if defined(__PROSPERO__)
+/* The screen is a CPU canvas (SDL's software renderer) plus the GPU interface, shown through vk_present: the PS5
+ * (vk_present.c) and the PC build with Vulkan (vk_present_desktop.c). The PS5's own calls stay under __PROSPERO__. */
+#if defined(__PROSPERO__) || defined(SwanStationPS5_VULKAN)
+#define SS5_CANVAS 1
 #include "blit.h"
+#include "vk/vk_present.h"
+#endif
+#if defined(SwanStationPS5_DESKTOP) && defined(SwanStationPS5_VULKAN)
+#include <SDL2/SDL_vulkan.h>
+#include <math.h>
+#endif
+
+#if defined(__PROSPERO__)
 #include "ps5_unlock.h"
 #include "ps5_video.h"
-#include "vk/vk_present.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 int sceKernelSendNotificationRequest(uint32_t device, void *request, size_t size, int blocking);
 int sceSystemServiceHideSplashScreen(void);
 int SwanStationPS5_elevate(const char **route); /* elevation_shim.cpp */
 #else
+#if defined(SS5_CANVAS)
+static bool init_desktop_screen(void);
+#endif
 static bool init_desktop_window(void);
 #if defined(SwanStationPS5_PREVIEW)
 static bool init_preview_screen(void);
@@ -75,7 +88,7 @@ static bool init_failed(const char *stage)
     return false;
 }
 
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
 static bool gpu_ui;        /* the interface is drawn by the GPU (vk_ui.inc): always, once the GPU layer opens */
 static bool gpu_ui_available; /* the GPU layer exists */
 static int output_wanted; /* 0 1080p, 1 1440p, 2 4K */
@@ -115,9 +128,11 @@ static int vkp_ui_texture_create(const uint8_t *rgba, int w, int h, bool smooth,
 static void vkp_ui_texture_free(int id) { (void)id; }
 #endif
 
-#if defined(__PROSPERO__)
-static SDL_Surface *canvas; /* 1920x1080 RGBA in ordinary memory; shown by ps5_video */
+#if defined(SS5_CANVAS)
+static SDL_Surface *canvas; /* 1920x1080 RGBA in ordinary memory; shown by ps5_video (PS5) or vk_present */
 static bool use_vulkan;    /* v2: shown by vk_present instead */
+#endif
+#if defined(__PROSPERO__)
 /* SDL's PS5 video driver can't provide a window surface or a renderer, so on
  * PS5 SDL is started without it: SDL draws (software renderer into `canvas`),
  * plays sound and reads controllers; ps5_video.c puts frames on screen. */
@@ -168,6 +183,59 @@ static bool init_ps5_screen(void)
         return init_failed("SDL software renderer");
     return true;
 }
+#elif defined(SS5_CANVAS)
+/* PC: the window is a Vulkan surface and the screen draws like the PS5's (a canvas, then the GPU interface). When
+ * Vulkan cannot open, the window is made again without it and the canvas goes to the window's own surface. */
+static SDL_Window *create_desktop_window(bool vulkan)
+{
+    return SDL_CreateWindow(SwanStationPS5_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
+                            SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP | (vulkan ? SDL_WINDOW_VULKAN : 0));
+}
+
+static void present_window_surface(void)
+{
+    SDL_Surface *surface = SDL_GetWindowSurface(window);
+    if (!surface)
+        return;
+    SDL_BlitScaled(canvas, NULL, surface, NULL);
+    SDL_UpdateWindowSurface(window);
+}
+
+static bool init_desktop_screen(void)
+{
+    char error[160] = "no Vulkan window";
+    window = create_desktop_window(true);
+    if (window)
+    {
+        vkp_desktop_window(window);
+        use_vulkan = vkp_open(1920, 1080, error, sizeof(error));
+    }
+    if (use_vulkan)
+    {
+        snprintf(screen_info, sizeof(screen_info), "Vulkan, %s", vkp_describe());
+        char ui_error[160];
+        gpu_ui_available = vkp_ui_open(ui_error, sizeof(ui_error));
+        gpu_ui = gpu_ui_available;
+    }
+    else
+    {
+        SwanStationPS5_log("vulkan: not available (%s), the window shows the canvas itself", error);
+        if (window)
+            SDL_DestroyWindow(window);
+        window = create_desktop_window(false);
+        snprintf(screen_info, sizeof(screen_info), "SDL window (Vulkan: %s)", error);
+    }
+    if (!window)
+        return init_failed("SDL window");
+    SDL_ShowCursor(SDL_DISABLE); /* it starts in borderless full screen (F11 goes to a window and back) */
+    canvas = SDL_CreateRGBSurfaceWithFormat(0, 1920, 1080, 32, SDL_PIXELFORMAT_ABGR8888);
+    if (!canvas)
+        return init_failed("SDL canvas");
+    renderer = SDL_CreateSoftwareRenderer(canvas);
+    if (!renderer)
+        return init_failed("SDL software renderer");
+    return true;
+}
 #endif
 
 bool plat_init(void)
@@ -191,6 +259,9 @@ bool plat_init(void)
         return false;
 #elif defined(SwanStationPS5_PREVIEW)
     if (!init_preview_screen())
+        return false;
+#elif defined(SS5_CANVAS)
+    if (!init_desktop_screen())
         return false;
 #else
     if (!init_desktop_window())
@@ -341,6 +412,10 @@ void plat_release(void)
 void plat_shutdown(void)
 {
     plat_audio_close();
+#if defined(SS5_CANVAS) && !defined(__PROSPERO__)
+    if (use_vulkan)
+        vkp_close();
+#endif
     for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
         if (controllers[i])
             SDL_GameControllerClose(controllers[i]);
@@ -865,7 +940,9 @@ static const struct
     {SDL_CONTROLLER_BUTTON_B, BTN_CIRCLE},
     {SDL_CONTROLLER_BUTTON_X, BTN_SQUARE},
     {SDL_CONTROLLER_BUTTON_Y, BTN_TRIANGLE},
-    {SDL_CONTROLLER_BUTTON_BACK, BTN_SELECT},
+    /* Select/Back is the PS5 touchpad's job here (a pad without one has no other key for the shortcuts): a tap is
+     * Select, and held with R2 / L2 / Square / ... it is fast forward, rewind, screenshot (main.c) */
+    {SDL_CONTROLLER_BUTTON_BACK, BTN_MENU},
     {SDL_CONTROLLER_BUTTON_START, BTN_START},
     {SDL_CONTROLLER_BUTTON_LEFTSHOULDER, BTN_L1},
     {SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, BTN_R1},
@@ -905,6 +982,27 @@ void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit)
             *quit = true;
         if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED)
             devices_changed = true;
+#if !defined(__PROSPERO__) && !defined(SwanStationPS5_PREVIEW)
+        /* F11: borderless full screen (the desktop's own size) and back; the cursor is hidden while it lasts */
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11 && !event.key.repeat && window)
+        {
+            const bool full = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
+            if (SDL_SetWindowFullscreen(window, full ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
+                SDL_ShowCursor(full ? SDL_ENABLE : SDL_DISABLE);
+        }
+#endif
+#if defined(SS5_CANVAS) && !defined(__PROSPERO__)
+        /* the canvas is 16:9 and the screen stretches it to the window: a window being resized keeps that shape
+         * (maximised and full-screen windows take the screen's own) */
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && window &&
+            !(SDL_GetWindowFlags(window) &
+              (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED)))
+        {
+            const int w = event.window.data1, h = event.window.data2, want_h = (w * 9 + 8) / 16;
+            if (w > 0 && h != want_h)
+                SDL_SetWindowSize(window, w, want_h);
+        }
+#endif
     }
     static bool first = true;
     if (devices_changed || first)
@@ -1123,7 +1221,7 @@ int plat_height(void)
 
 bool plat_begin_frame(uint32_t clear_argb)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     if (use_vulkan && !vkp_begin_frame())
         return false;
 #endif
@@ -1246,8 +1344,8 @@ static bool ensure_game_texture(int format, int w, int h)
     return game_texture != NULL;
 }
 
-#if defined(__PROSPERO__)
-/* PS5: the latest game picture, kept in SwanStationPS5's memory and scaled straight
+#if defined(SS5_CANVAS)
+/* The latest game picture, kept in SwanStationPS5's memory and scaled straight
  * into the canvas by blit.c (SDL's software stretch was the bottleneck). */
 static const uint32_t *game_image;
 static int game_image_w, game_image_h;
@@ -1264,7 +1362,7 @@ static uint8_t colour_lut[3][256]; /* per channel: brightness and warmth */
 
 void plat_set_fsr(bool on)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     vkp_set_fsr(on);
 #else
     (void)on;
@@ -1273,7 +1371,7 @@ void plat_set_fsr(bool on)
 
 double plat_display_hz(void)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     return vkp_display_hz();
 #else
     return 0.0;
@@ -1282,7 +1380,7 @@ double plat_display_hz(void)
 
 double plat_framegen_hz(void)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     return vkp_framegen_hz();
 #else
     return 0.0;
@@ -1291,7 +1389,7 @@ double plat_framegen_hz(void)
 
 int plat_framegen_times(void)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     return vkp_framegen_times();
 #else
     return 0;
@@ -1300,7 +1398,7 @@ int plat_framegen_times(void)
 
 void plat_set_framegen(int generated, double core_hz, double speed, bool nominal)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     vkp_set_framegen(generated, core_hz, speed, nominal);
 #else
     (void)generated, (void)core_hz, (void)speed, (void)nominal;
@@ -1317,9 +1415,33 @@ bool plat_gpu_ui_active(void)
     return gpu_ui;
 }
 
+float plat_ui_scale(void)
+{
+#if defined(SwanStationPS5_DESKTOP) && defined(SwanStationPS5_VULKAN)
+    if (!gpu_ui || !window)
+        return 1.0f;
+    int w = 0, h = 0;
+    SDL_Vulkan_GetDrawableSize(window, &w, &h);
+    if (h <= 0)
+        return 1.0f;
+    /* in quarter steps: the text is drawn again only when the step changes, not at each pixel of a resize */
+    float k = ceilf(h / 1080.0f * 4.0f) / 4.0f;
+    k = k < 0.5f ? 0.5f : k > 3.0f ? 3.0f : k;
+    static float logged;
+    if (k != logged)
+    {
+        logged = k;
+        SwanStationPS5_log("screen: interface drawn at %.2fx 1080p (drawable %dx%d)", k, w, h);
+    }
+    return k;
+#else
+    return 1.0f;
+#endif
+}
+
 bool plat_set_output(int resolution)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     static const int OUTPUT_W[] = {1920, 2560, 3840}, OUTPUT_H[] = {1080, 1440, 2160};
     if (!gpu_ui || resolution < 0 || resolution > 2)
         return false;
@@ -1336,8 +1458,10 @@ bool plat_set_output(int resolution)
 
 void plat_want_high_refresh(bool on)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     vkp_want_high_refresh(on);
+#endif
+#if defined(__PROSPERO__)
     if (!on)
     {
         extern int sceVideoOutOpen(int32_t user, int32_t bus, int32_t index, const void *parameter);
@@ -1378,7 +1502,7 @@ void plat_set_colour(int brightness, int colour, int sharpen)
             float x = v * gain[c];
             colour_lut[c][v] = (uint8_t)(x > 255.0f ? 255 : x);
         }
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     static const float sharp[] = {0.0f, 0.45f, 1.0f};
     vkp_set_colour(colour_k[0], colour_k[1], colour_k[2], sharp[sharpen >= 0 && sharpen < 3 ? sharpen : 0]);
 #endif
@@ -1487,7 +1611,7 @@ void plat_upload_game(const void *pixels, int width, int height, size_t pitch, i
     while (k > 1 && (width * k > 4096 || height * k > 2048))
         --k; /* keep the texture within limits (2x internal frames are already big) */
 
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     if (pixel_format == 1)
     {
         const uint32_t *src = pixels;
@@ -1600,7 +1724,7 @@ void plat_game_rect(int *x, int *y, int *w, int *h)
 
 void plat_prepare_game(const Settings *settings)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     if (settings->renderer == 1)
         return;
     vkp_prepare_game(settings->shader, settings->fsr);
@@ -1611,7 +1735,7 @@ void plat_prepare_game(const Settings *settings)
 
 void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
 {
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     if (!game_image && !game_texture && !(game_gpu && vkp_game_image_ready()))
         return;
 #else
@@ -1669,7 +1793,7 @@ void plat_draw_game(const Settings *settings, float display_aspect, uint8_t dim)
     game_rect[3] = dh;
     static const uint8_t scan_strength[] = {0, 110, 200};
     uint8_t scan = scan_strength[settings->crt % 3];
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     if (game_gpu && vkp_game_image_ready())
     {
         /* the CPU canvas: a hole where the GPU draws the picture; its alpha darkens the picture for the menus
@@ -1838,7 +1962,7 @@ void plat_fill_rect(int x, int y, int w, int h, uint32_t argb)
     SDL_RenderFillRect(renderer, &r);
 }
 
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
 /* The shelf's background: SDL's software renderer took 18 ms a frame to draw
  * a tinted full-screen texture. Here: a lookup table per channel, rows split
  * over the blit threads, written straight into the canvas. */
@@ -1904,7 +2028,7 @@ void plat_draw_backdrop(const uint8_t *grey, int w, int h, uint32_t tint)
             gpu_quad(tex, 0, 0, (float)out_w, (float)out_h, 0, 0, 1, 1, 0xff000000u | (tint & 0x00ffffffu));
         return;
     }
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     static BackdropJob job;
     job.grey = grey;
     job.w = w;
@@ -1980,6 +2104,15 @@ static void profile_frame_end(void)
     memset(&prof, 0, sizeof(prof));
 }
 
+#if defined(SwanStationPS5_DESKTOP)
+static double present_limit_hz;
+
+void plat_want_fps_limit(double hz)
+{
+    present_limit_hz = hz;
+}
+#endif
+
 void plat_end_frame(void)
 {
     profile_frame_end();
@@ -1988,7 +2121,7 @@ void plat_end_frame(void)
 #if defined(SwanStationPS5_PREVIEW)
     preview_clock += 16667;
 #endif
-#if defined(__PROSPERO__)
+#if defined(SS5_CANVAS)
     static uint64_t frame_start, draw_us, present_us;
     static int frames;
     uint64_t drawn = plat_ticks_us();
@@ -1997,7 +2130,29 @@ void plat_end_frame(void)
     else if (use_vulkan)
         vkp_present(canvas->pixels, (size_t)canvas->pitch);
     else
+#if defined(__PROSPERO__)
         ps5_video_present(canvas->pixels, (size_t)canvas->pitch);
+#else
+        present_window_surface();
+#endif
+#if defined(SwanStationPS5_DESKTOP)
+    /* PC: no more presents a second than the game's own rate (60, 59.94, 50...), however fast the monitor is */
+    if (present_limit_hz > 0)
+    {
+        static uint64_t next_us;
+        const uint64_t period = (uint64_t)(1000000.0 / present_limit_hz);
+        uint64_t now = plat_ticks_us();
+        if (next_us > now + period * 4 || next_us + period * 4 < now)
+            next_us = now; /* a stall or a first frame: do not run to catch up */
+        while (now < next_us)
+        {
+            if (next_us - now > 2000)
+                SDL_Delay((uint32_t)((next_us - now - 1500) / 1000));
+            now = plat_ticks_us();
+        }
+        next_us += period;
+    }
+#endif
     uint64_t shown = plat_ticks_us();
     if (frame_start)
     {

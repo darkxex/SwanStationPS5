@@ -184,7 +184,7 @@ static const Row DISPLAY[] = {
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(sharpen), SHARPENS, 3, 0},
     {NULL, "Crop black edges", "Hides the black lines many games leave at the top and bottom, which an old TV hid. Pair with Stretch to fill the screen.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(crop_edges), CROPS, 3, 0},
-    {NULL, "Manual crop", "Ignores the crop mode and draws the whole picture, whose area you set yourself. Open the preview with {Touchpad}: {Left}/{Right} stretch or narrow the picture keeping its aspect ratio, and {Up}/{Down} move it up or down. Turn it off and everything is as it was.",
+    {NULL, "Manual crop", "Ignores the crop mode and draws the whole picture, whose area you set yourself. Open the preview with {Touchpad}: {Left}/{Right} stretch or narrow the picture keeping its aspect ratio, {Up}/{Down} move it up or down, and {L1}/{R1} left or right. Turn it off and everything is as it was.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(manual_crop), OFF_ON, 2, 0},
     {NULL, "Generate frames",
      "Adds frames AMD FSR 3 makes between the game's own, so motion looks smoother. x2: one between each two, so 30 fps shows at 60 and, with Video output at 120 Hz, 60 fps shows at 120. x4: three between each two, only with Video output at 120 Hz: a 30 fps game shows at 120. With Video output at 60 Hz it only doubles. Each extra frame adds a little input lag. It works at once. Video output is changed above and applies the next time the app starts.",
@@ -1070,11 +1070,10 @@ void manual_crop_fix(void)
     for (int i = 0; i < 2 && list[i]; ++i)
     {
         list[i]->mc_w = list[i]->mc_h = (list[i]->mc_w + list[i]->mc_h + 1) / 2;
-        list[i]->mc_x = 0;
     }
 }
 
-void manual_crop_edit(int grow, int dy, bool reset)
+void manual_crop_edit(int grow, int dy, int dx, bool reset)
 {
     Settings *list[2];
     if (!mc_targets(list))
@@ -1090,6 +1089,7 @@ void manual_crop_edit(int grow, int dy, bool reset)
         }
         s->mc_w = s->mc_h = mc_clamp(s->mc_w + grow, 25, 150);
         s->mc_y = mc_clamp(s->mc_y + dy, -500, 500);
+        s->mc_x = mc_clamp(s->mc_x + dx, -500, 500);
     }
 }
 

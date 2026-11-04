@@ -10,7 +10,26 @@
  */
 #include "vk_probe.h"
 
-#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN) && defined(SwanStationPS5_DESKTOP)
+
+/* PC: the driver is the system's Vulkan loader, reached through SDL (it is loaded when the first window with
+ * SDL_WINDOW_VULKAN is made); vkp_open logs the GPUs, so there is nothing to probe. */
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+#include <vulkan/vulkan.h>
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char *name)
+{
+    PFN_vkGetInstanceProcAddr get = (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
+    return get ? get(instance, name) : NULL;
+}
+
+void vk_probe(const char *root)
+{
+    (void)root;
+}
+
+#elif defined(SwanStationPS5_VULKAN)
 
 #include "../../SwanStationPS5.h"
 

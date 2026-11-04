@@ -18,6 +18,11 @@ void vkp_hw_context(VkInstance *instance, VkPhysicalDevice *gpu, VkSurfaceKHR *s
                     PFN_vkGetInstanceProcAddr *get_instance_proc_addr);
 void vkp_hw_device(VkDevice *device, VkQueue *queue, uint32_t *family,
                    PFN_vkGetDeviceProcAddr *get_device_proc_addr);
+#if defined(SwanStationPS5_DESKTOP)
+/* PC: negotiation v2's create_device wrapper (retro_vulkan_create_device_wrapper_t). The core is handed the
+ * presenter's own device when that has what it asks for, so the screen never has to move to another one. */
+VkDevice vkp_hw_create_device(VkPhysicalDevice gpu, void *opaque, const VkDeviceCreateInfo *info);
+#endif
 /* Moves the screen onto the core's device; the old one is destroyed and
  * this one is owned by the presenter from now on. */
 bool vkp_adopt_device(VkDevice device, VkQueue queue, uint32_t family, char *error, size_t size);
