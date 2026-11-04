@@ -255,6 +255,15 @@ deploy: sync-version disc-daemon
 	@printf '%s\n' '==> [deploy] Building and publishing the selected app output over FTP'
 	@bash tools/deploy.sh
 
+# The Windows (PC) version: builds it with MSYS2 (tools/build-pc.ps1, in C:\ss5pc) and packs dist/SwanStationPS5forWindows.zip.
+# From WSL; it does not touch the PS5 build.
+.PHONY: releasepc
+releasepc:
+	@printf '%s\n' '==> [releasepc] Building the PC version and packing its zip'
+	@powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$$(wslpath -w tools/release-pc.ps1)"
+	@cd dist && rm -f SwanStationPS5forWindows.zip && python3 -m zipfile -c SwanStationPS5forWindows.zip SwanStationPS5forWindows
+	@printf 'Folder ZIP: %s\n' "$(CURDIR)/dist/SwanStationPS5forWindows.zip"
+
 undeploy:
 	@printf '%s\n' '==> [undeploy] Removing staged development files for this title over FTP'
 	@bash tools/deploy.sh undeploy
