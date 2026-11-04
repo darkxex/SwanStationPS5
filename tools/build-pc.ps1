@@ -20,11 +20,13 @@ $dir = $source
 if ($Work) {
     $dir = $Work
     New-Item -ItemType Directory -Force $dir | Out-Null
-    # Everything but .git and build output. The core's sources (third_party\swanstation) are copied once: the
+    # Everything but .git and the generated folders. The core's sources (third_party\swanstation) are copied once: the
     # build patches them in place (tools\patches\SSPS5.patch), so a later copy must not overwrite them.
-    $skip = @(".git", "build")
+    $skip = @(".git", "build", "dist", ".deps") # .deps is the PS5 build's SDK and ports (gigabytes), build and dist its outputs
     if (Test-Path (Join-Path $dir "third_party\swanstation\Makefile.libretro")) { $skip += "swanstation" }
-    robocopy $source $dir /E /XD @skip /NFL /NDL /NJH /NJS /NP | Out-Null
+    # The generated folders may be links (build-pc from a checkout whose .deps/build/dist live elsewhere): across a
+    # network path they look like files, so they are excluded as both. No long retries: a locked file should fail.
+    robocopy $source $dir /E /XD @skip /XF @skip /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
     # a submodule's .git file points back into the checkout's .git, which is not copied
     Remove-Item (Join-Path $dir "third_party\swanstation\.git"), (Join-Path $dir "third_party\rcheevos\.git") -Force -ErrorAction SilentlyContinue

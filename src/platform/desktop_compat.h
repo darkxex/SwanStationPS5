@@ -17,5 +17,10 @@ static inline struct tm *SwanStationPS5_localtime_r(const time_t *t, struct tm *
     return localtime_s(out, t) == 0 ? out : 0;
 }
 #define localtime_r SwanStationPS5_localtime_r
+/* Windows' rename() fails when the target exists, and the app saves by writing "<file>.tmp" and renaming it over the
+ * file (settings, memory cards, save states, stats...): none of those saves ever replaced the old file. */
+#include <stdio.h>
+int SwanStationPS5_rename(const char *from, const char *to);
+#define rename(from, to) SwanStationPS5_rename(from, to)
 #endif
 #endif

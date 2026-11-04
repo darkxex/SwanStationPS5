@@ -3,11 +3,42 @@
  * disks, the USB disc drive), answered as "none here". The library on PC is the folder of SwanStationPS5_ROOT.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+/* The PS5 build compiles every .c of src/: this one is the PC's and is empty there (NFS and NTFS are real there). */
+#if defined(SwanStationPS5_DESKTOP)
+
 #include "../nfs/nfs.h"
 #include "../cdscsi.h"
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/* ---- rename over an existing file (see desktop_compat.h) ---- */
+#if defined(_WIN32)
+#include <windows.h>
+
+/* The names are in the ANSI code page, like the ones fopen and opendir take and give on Windows: through the same
+ * (narrow) call, so a game folder with accents is found the same way by all of them. */
+int SwanStationPS5_rename(const char *from, const char *to)
+{
+    if (MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH))
+        return 0;
+    switch (GetLastError())
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+        errno = ENOENT;
+        break;
+    case ERROR_ACCESS_DENIED:
+    case ERROR_SHARING_VIOLATION:
+        errno = EACCES;
+        break;
+    default:
+        errno = EIO;
+    }
+    return -1;
+}
+#endif
 
 /* ---- NFS ---- */
 bool nfs_set_shares(const char *list, char *error, size_t error_size)
@@ -44,3 +75,7 @@ int ntfsfs_scan(void) { return 0; }
 int ntfsfs_mount_points(char (*out)[512], int max) { (void)out, (void)max; return 0; }
 bool ntfsfs_connection_lost(void) { return false; }
 int ntfsfs_dirty_count(void) { return 0; }
+
+#else
+typedef int SwanStationPS5_pc_only_file; /* not the PC build: nothing here */
+#endif /* SwanStationPS5_DESKTOP */

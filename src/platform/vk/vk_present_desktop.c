@@ -6,6 +6,9 @@
  * the GPU interface, the game's picture, the shaders), with the window system part (vk_present_desktop.inc) in
  * place of VK_KHR_display. vk_present.h is the interface both share.
  */
+/* The PS5 build compiles every .c of src/: this one is the PC's and is empty there (vk_present.c is the PS5's). */
+#if defined(SwanStationPS5_DESKTOP)
+
 #define SS5_VKP_DESKTOP 1
 #include "vk_present.c"
 
@@ -103,3 +106,7 @@ FgDecision ssfg_pacing_frame(FgPacing *pacing, uint32_t vsyncs, uint32_t already
 }
 const char *ssfg_pacing_state_name(int state) { (void)state; return "off"; }
 const char *ssfg_pacing_event(FgPacing *pacing) { (void)pacing; return NULL; }
+
+#else
+typedef int SwanStationPS5_pc_only_file; /* not the PC build: nothing here */
+#endif /* SwanStationPS5_DESKTOP */
