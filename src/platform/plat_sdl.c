@@ -935,7 +935,9 @@ static const struct
     {SDL_CONTROLLER_BUTTON_B, BTN_CIRCLE},
     {SDL_CONTROLLER_BUTTON_X, BTN_SQUARE},
     {SDL_CONTROLLER_BUTTON_Y, BTN_TRIANGLE},
-    {SDL_CONTROLLER_BUTTON_BACK, BTN_SELECT},
+    /* Select/Back is the PS5 touchpad's job here (a pad without one has no other key for the shortcuts): a tap is
+     * Select, and held with R2 / L2 / Square / ... it is fast forward, rewind, screenshot (main.c) */
+    {SDL_CONTROLLER_BUTTON_BACK, BTN_MENU},
     {SDL_CONTROLLER_BUTTON_START, BTN_START},
     {SDL_CONTROLLER_BUTTON_LEFTSHOULDER, BTN_L1},
     {SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, BTN_R1},
