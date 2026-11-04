@@ -2104,9 +2104,9 @@ static void profile_frame_end(void)
 }
 
 #if defined(SwanStationPS5_DESKTOP)
-static int present_limit_hz;
+static double present_limit_hz;
 
-void plat_want_fps_limit(int hz)
+void plat_want_fps_limit(double hz)
 {
     present_limit_hz = hz;
 }
@@ -2135,11 +2135,11 @@ void plat_end_frame(void)
         present_window_surface();
 #endif
 #if defined(SwanStationPS5_DESKTOP)
-    /* PC: no more presents a second than the Video output setting (60 or 120 Hz), however fast the monitor is */
+    /* PC: no more presents a second than the game's own rate (60, 59.94, 50...), however fast the monitor is */
     if (present_limit_hz > 0)
     {
         static uint64_t next_us;
-        const uint64_t period = 1000000u / (uint64_t)present_limit_hz;
+        const uint64_t period = (uint64_t)(1000000.0 / present_limit_hz);
         uint64_t now = plat_ticks_us();
         if (next_us > now + period * 4 || next_us + period * 4 < now)
             next_us = now; /* a stall or a first frame: do not run to catch up */

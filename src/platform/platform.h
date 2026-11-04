@@ -68,7 +68,7 @@ bool plat_gpu_ui_active(void); /* the shelf and the menus are drawn by the GPU (
 bool plat_set_output(int resolution); /* 0 1080p, 1 1440p, 2 4K, at once (the GPU interface only); false when it can't be done */
 void plat_want_output(int resolution); /* before plat_init: 0 1080p, 1 1440p, 2 4K (with the GPU interface; 1080p when the TV lacks it) */
 #if defined(SwanStationPS5_DESKTOP)
-void plat_want_fps_limit(int hz); /* PC: at most this many presents a second (the Video output setting: 60 or 120) */
+void plat_want_fps_limit(double hz); /* PC: at most this many presents a second (0: no limit); the game's own rate while it runs */
 #endif
 float plat_ui_scale(void); /* how many real pixels the interface has per 1080p one (PC: follows the window; 1 elsewhere) */
 /* The console's time of day as the user set it up ("21:42" or "9:42 PM"). */

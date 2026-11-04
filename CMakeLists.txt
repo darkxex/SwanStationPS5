@@ -10,7 +10,7 @@
 # SwanStation renders through its Vulkan renderer. If Vulkan cannot open, the app falls back to the window's own
 # surface and the core's software renderer. SS5_PC_VULKAN=OFF is the software-only build (milestone 1).
 cmake_minimum_required(VERSION 3.20)
-project(SwanStationPS5 C CXX)
+project(SwanStationPS5 C CXX RC)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -68,7 +68,7 @@ if(SS5_PC_VULKAN)
   list(APPEND APP_SOURCES src/platform/vk/vk_present_desktop.c)
 endif()
 
-add_executable(SwanStationPS5 ${APP_SOURCES})
+add_executable(SwanStationPS5 ${APP_SOURCES} src/platform/desktop_icon.rc) # the .rc gives the exe its icon (sce_sys/icon0.png)
 add_dependencies(SwanStationPS5 swanstation_core)
 target_compile_definitions(SwanStationPS5 PRIVATE SwanStationPS5_DESKTOP SDL_MAIN_HANDLED)
 # Cover downloads, updates and RetroAchievements go through libcurl (MSYS2: mingw-w64-ucrt-x86_64-curl-winssl)

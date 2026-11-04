@@ -2613,6 +2613,9 @@ static void game_screen(PadState *pads)
         if (queued > per_frame * 3)
             plat_audio_clear(); /* keep up instead of queueing sound */
     }
+#if defined(SwanStationPS5_DESKTOP)
+    plat_want_fps_limit(fast_forward || back ? 0.0 : host_fps()); /* one present per core frame: 59.94 NTSC, 50 PAL */
+#endif
     const BlackFrameStep bfi = black_frames_step(&black_frame_phase, bfi_active, runs, fast_forward || back);
     const bool bfi_dim = bfi.dim;
     runs = bfi.runs;
@@ -2868,9 +2871,6 @@ int main(int argc, char **argv)
     else
         setenv("PS5_VIDEOOUT_PARAM_JSON", "/nonexistent", 1);
     plat_want_high_refresh(high_refresh);
-#if defined(SwanStationPS5_DESKTOP)
-    plat_want_fps_limit(high_refresh ? 120 : 60); /* Video output: the monitor's own rate is not the app's */
-#endif
     plat_want_output(2); /* always 4K (1080p when the TV lacks the mode) */
 
     if (!plat_init())
@@ -3088,6 +3088,11 @@ int main(int argc, char **argv)
         if (!app.game && app.settings.lightbar != 0)
             for (int i = 0; i < SwanStationPS5_MAX_PADS; ++i)
                 plat_set_lightbar(i, 0x000000);
+#if defined(SwanStationPS5_DESKTOP)
+        /* the limit is set by game_screen (the game's own rate); any other screen, a pause too, has none */
+        if (app.screen != SCREEN_GAME)
+            plat_want_fps_limit(0.0);
+#endif
         switch (app.screen)
         {
         case SCREEN_LIBRARY: shelf_screen(pressed); break;
