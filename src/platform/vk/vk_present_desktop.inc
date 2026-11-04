@@ -41,6 +41,24 @@ static VkExtent2D fallback_extent(const VkSurfaceCapabilitiesKHR *caps)
     return (VkExtent2D){w, h};
 }
 
+/* The features SwanStation's device asks for (Vulkan::Context::SelectDeviceFeatures): enabled on the presenter's own
+ * device, so that the core can be handed it instead of a second one. */
+static VkPhysicalDeviceFeatures desktop_features;
+
+static const VkPhysicalDeviceFeatures *desktop_device_features(void)
+{
+    PFN_vkGetPhysicalDeviceFeatures get =
+        (PFN_vkGetPhysicalDeviceFeatures)vkGetInstanceProcAddr(V.instance, "vkGetPhysicalDeviceFeatures");
+    VkPhysicalDeviceFeatures available;
+    memset(&available, 0, sizeof(available));
+    memset(&desktop_features, 0, sizeof(desktop_features));
+    if (get)
+        get(V.gpu, &available);
+    desktop_features.dualSrcBlend = available.dualSrcBlend;
+    desktop_features.sampleRateShading = available.sampleRateShading;
+    return &desktop_features;
+}
+
 static bool create_instance(char *error, size_t size)
 {
     if (!desktop_window)

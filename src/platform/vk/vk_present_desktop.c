@@ -29,6 +29,44 @@ static bool desktop_swapchain_ready(void)
     return ok;
 }
 
+/* The device the core asks for, if the presenter's has it: one queue of the family that draws and presents, the swapchain
+ * extension, no layers, and features among those enabled in desktop_device_features(). Else the core gets a device of
+ * its own (and the screen moves onto it, vkp_adopt_device). */
+static bool device_fits(const VkDeviceCreateInfo *info)
+{
+    if (info->pNext || info->enabledLayerCount || info->queueCreateInfoCount != 1)
+        return false;
+    const VkDeviceQueueCreateInfo *queue = &info->pQueueCreateInfos[0];
+    if (queue->queueFamilyIndex != V.family || queue->queueCount != 1)
+        return false;
+    for (uint32_t i = 0; i < info->enabledExtensionCount; ++i)
+        if (strcmp(info->ppEnabledExtensionNames[i], VK_KHR_SWAPCHAIN_EXTENSION_NAME) != 0)
+            return false;
+    if (info->pEnabledFeatures)
+    {
+        const VkBool32 *want = (const VkBool32 *)info->pEnabledFeatures, *have = (const VkBool32 *)&desktop_features;
+        for (size_t i = 0; i < sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32); ++i)
+            if (want[i] && !have[i])
+                return false;
+    }
+    return true;
+}
+
+VkDevice vkp_hw_create_device(VkPhysicalDevice gpu, void *opaque, const VkDeviceCreateInfo *info)
+{
+    (void)opaque;
+    if (V.device && gpu == V.gpu && device_fits(info))
+    {
+        SwanStationPS5_log("vulkan: the core uses the screen's device");
+        return V.device;
+    }
+    SwanStationPS5_log("vulkan: the core asks for a device of its own");
+    VkDevice device = VK_NULL_HANDLE;
+    if (vkCreateDevice(gpu, info, NULL, &device) != VK_SUCCESS)
+        return VK_NULL_HANDLE;
+    return device;
+}
+
 /* Frame generation (FSR 3's interpolator, third_party/framegen) is built for the PS5 only: here it is "not available",
  * and the presenter shows the game's own frames. */
 FgInterpolator *ssfg_create(PFN_vkVoidFunction (*get_instance_proc)(VkInstance, const char *), VkInstance instance,

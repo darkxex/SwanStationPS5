@@ -447,6 +447,9 @@ static bool create_device(char *error, size_t size)
     info.pQueueCreateInfos = &queue;
     info.enabledExtensionCount = 1;
     info.ppEnabledExtensionNames = extensions;
+#if defined(SS5_VKP_DESKTOP)
+    info.pEnabledFeatures = desktop_device_features(); /* the core's too: it can use this device (vkp_hw_create_device) */
+#endif
     CHECK(vkCreateDevice(V.gpu, &info, NULL, &V.device), "vkCreateDevice");
     if (!load_device(error, size))
         return false;

@@ -437,8 +437,17 @@ static bool hw_start(char *error, size_t size)
     struct retro_vulkan_context context;
     memset(&context, 0, sizeof(context));
     const char *extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+#if defined(SwanStationPS5_DESKTOP)
+    /* PC: the core makes its device through the presenter's wrapper, which hands over the presenter's own */
+    const bool made = negotiation && negotiation->interface_version >= 2 && negotiation->create_device2
+                          ? negotiation->create_device2(&context, instance, gpu, surface, gipa, vkp_hw_create_device, NULL)
+                          : negotiation && negotiation->create_device &&
+                                negotiation->create_device(&context, instance, gpu, surface, gipa, extensions, 1, NULL, 0, NULL);
+    if (!made)
+#else
     if (!negotiation || !negotiation->create_device ||
         !negotiation->create_device(&context, instance, gpu, surface, gipa, extensions, 1, NULL, 0, NULL))
+#endif
     {
         snprintf(error, size, "The core could not create its Vulkan device.");
         return false;
@@ -517,6 +526,11 @@ static void RETRO_CALLCONV core_log(enum retro_log_level level, const char *fmt,
     va_start(args, fmt);
     vsnprintf(line, sizeof(line), fmt, args);
     va_end(args);
+#if defined(SwanStationPS5_DESKTOP)
+    /* a desktop driver lists hundreds of Vulkan extensions, one line each: 1 MB of log per game */
+    if (strstr(line, "Available extension: "))
+        return;
+#endif
     SwanStationPS5_log("core: %s", line);
 }
 
@@ -872,7 +886,11 @@ static bool RETRO_CALLCONV environment(unsigned cmd, void *data)
         struct retro_hw_render_context_negotiation_interface *i = data;
         if (i->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
             return false;
+#if defined(SwanStationPS5_DESKTOP)
+        i->interface_version = 2; /* create_device2: the presenter's device is the core's */
+#else
         i->interface_version = 1; /* create_device, not create_device2 */
+#endif
         return true;
     }
     case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:

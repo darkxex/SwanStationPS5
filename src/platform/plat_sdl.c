@@ -975,6 +975,18 @@ void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit)
             *quit = true;
         if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED)
             devices_changed = true;
+#if defined(SS5_CANVAS) && !defined(__PROSPERO__)
+        /* the canvas is 16:9 and the screen stretches it to the window: a window being resized keeps that shape
+         * (maximised and full-screen windows take the screen's own) */
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && window &&
+            !(SDL_GetWindowFlags(window) &
+              (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_MAXIMIZED)))
+        {
+            const int w = event.window.data1, h = event.window.data2, want_h = (w * 9 + 8) / 16;
+            if (w > 0 && h != want_h)
+                SDL_SetWindowSize(window, w, want_h);
+        }
+#endif
     }
     static bool first = true;
     if (devices_changed || first)
