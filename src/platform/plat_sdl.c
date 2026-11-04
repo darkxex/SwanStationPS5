@@ -1588,6 +1588,25 @@ int plat_system_language(void)
     case 7: case 17: return LANG_PT; /* Portuguese, Brazilian Portuguese */
     default: break;
     }
+#elif defined(SwanStationPS5_DESKTOP)
+    /* PC: Windows' first preferred language ("es-ES", "pt-BR", "fr-CA", "ja-JP"...): the language decides, not the country;
+     * the one Spanish is Latin American (as on the console), and any other language is English */
+    SDL_Locale *locales = SDL_GetPreferredLocales();
+    int lang = LANG_EN;
+    if (locales && locales[0].language)
+    {
+        const char *code = locales[0].language;
+        if (!strcmp(code, "es"))
+            lang = LANG_ES;
+        else if (!strcmp(code, "pt"))
+            lang = LANG_PT;
+        else if (!strcmp(code, "fr"))
+            lang = LANG_FR;
+        else if (!strcmp(code, "ja"))
+            lang = LANG_JA;
+    }
+    SDL_free(locales);
+    return lang;
 #endif
     return LANG_EN;
 }
