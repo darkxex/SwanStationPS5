@@ -396,14 +396,37 @@ static bool write_m3u(const char *path, NameBuf *discs, int count)
     return fclose(f) == 0;
 }
 
-/* One folder = one game. */
-static void scan_game_folder(Library *lib, const char *dir, const char *folder_name)
+static void scan_root(Library *lib, const char *root);
+
+/* A folder of disc files is one game when they are its discs ("Game (Disc 1)", "Game CD2"...): else it is a folder of
+ * games (a "games" folder with a CHD each) and every file is its own. `discs` are the files of the best kind. */
+static bool folder_is_one_game(NameBuf *discs, int disc_count)
+{
+    if (disc_count <= 1)
+        return true;
+    char first[160], other[160];
+    clean_title(discs[0], first, sizeof(first));
+    bool same_title = true, all_marked = true;
+    for (int i = 0; i < disc_count; ++i)
+    {
+        clean_title(discs[i], other, sizeof(other));
+        if (str_icmp(first, other) != 0)
+            same_title = false;
+        if (!contains_icase(discs[i], "disc") && !contains_icase(discs[i], "cd"))
+            all_marked = false;
+    }
+    return same_title || all_marked;
+}
+
+/* One folder = one game. Returns true instead when the folder holds several games (a "games" folder with a CHD each):
+ * then nothing was added, and the caller scans it as a root, each file its own game. */
+static bool scan_game_folder(Library *lib, const char *dir, const char *folder_name)
 {
     static NameBuf names[MAX_DIR_FILES];
     static NameBuf discs[MAX_DIR_FILES];
     int n = list_images(dir, names);
     if (n == 0)
-        return;
+        return false;
 
     int best = -1, best_rank = 0;
     bool has_sheet = false;
@@ -424,11 +447,18 @@ static void scan_game_folder(Library *lib, const char *dir, const char *folder_n
         if (image_rank(names[i]) == best_rank && best_rank != 6)
             str_copy(discs[disc_count++], sizeof(NameBuf), names[i]);
     if (best_rank == 1 && has_sheet)
-        return;
+        return false;
+
+    /* Several playlists, or several discs that are not one game's: a folder of games, not a game */
+    int playlists = 0;
+    for (int i = 0; i < n; ++i)
+        playlists += image_rank(names[i]) == 6;
+    if (best_rank >= 2 && (best_rank == 6 ? playlists > 1 : !folder_is_one_game(discs, disc_count)))
+        return true;
 
     Game *g = add_game(lib);
     if (!g)
-        return;
+        return false;
     clean_title(folder_name, g->title, sizeof(g->title));
     extract_serial(folder_name, g->serial, sizeof(g->serial));
     if (!g->serial[0])
@@ -472,10 +502,16 @@ static void scan_game_folder(Library *lib, const char *dir, const char *folder_n
     str_copy(g->folder, sizeof(g->folder), dir);
     set_disc_name(g, disc_count > 0 ? discs[0] : names[best]);
     finish_game(g);
+    return false;
 }
 
+/* The folders of games found in a root are scanned once its own entries are done: scan_root keeps its lists in static
+ * buffers, so it cannot run inside its own loop. `depth` keeps a loop of links from running away. */
 static void scan_root(Library *lib, const char *root)
 {
+    static int depth;
+    char **sub = NULL;
+    int sub_count = 0, sub_cap = 0;
     DIR *d = opendir(root);
     if (!d)
         return;
@@ -599,7 +635,20 @@ static void scan_root(Library *lib, const char *root)
         path_join(full, sizeof(full), root, entries[i]);
         if (path_is_dir(full))
         {
-            scan_game_folder(lib, full, entries[i]);
+            if (scan_game_folder(lib, full, entries[i]) && depth < 3)
+            {
+                if (sub_count == sub_cap)
+                {
+                    char **grown = realloc(sub, (size_t)(sub_cap ? sub_cap * 2 : 8) * sizeof(*sub));
+                    if (!grown)
+                        continue;
+                    sub = grown;
+                    sub_cap = sub_cap ? sub_cap * 2 : 8;
+                }
+                sub[sub_count] = strdup(full);
+                if (sub[sub_count])
+                    ++sub_count;
+            }
             continue;
         }
         int rank = image_rank(entries[i]);
@@ -607,7 +656,7 @@ static void scan_root(Library *lib, const char *root)
             continue;
         Game *g = add_game(lib);
         if (!g)
-            return;
+            break; /* the library is full */
         clean_title(entries[i], g->title, sizeof(g->title));
         extract_serial(entries[i], g->serial, sizeof(g->serial));
         str_copy(g->path, sizeof(g->path), full);
@@ -628,6 +677,15 @@ static void scan_root(Library *lib, const char *root)
         }
         finish_game(g);
     }
+
+    ++depth;
+    for (int i = 0; i < sub_count; ++i)
+    {
+        scan_root(lib, sub[i]);
+        free(sub[i]);
+    }
+    --depth;
+    free(sub);
 }
 
 static int cmp_games(const void *a, const void *b)
@@ -641,11 +699,32 @@ void library_scan(Library *lib, const char *const *roots, int root_count)
     library_scan_append(lib, roots, root_count);
 }
 
+/* The same file reached through two roots that overlap (<folder> and <folder>/games) is one game. Only an identical
+ * path counts: the same game on another source (NFS, /data, a drive) is another path and stays, each with its folder
+ * tag on the shelf. */
+static void drop_same_path(Library *lib)
+{
+    int kept = 0;
+    for (int i = 0; i < lib->count; ++i)
+    {
+        bool seen = false;
+        for (int k = 0; k < kept && !seen; ++k)
+            seen = strcmp(lib->games[k].path, lib->games[i].path) == 0;
+        if (seen)
+            continue;
+        if (kept != i)
+            lib->games[kept] = lib->games[i];
+        ++kept;
+    }
+    lib->count = kept;
+}
+
 void library_scan_append(Library *lib, const char *const *roots, int root_count)
 {
     for (int i = 0; i < root_count; ++i)
         if (path_is_dir(roots[i]))
             scan_root(lib, roots[i]);
+    drop_same_path(lib);
     if (lib->count > 1)
         qsort(lib->games, (size_t)lib->count, sizeof(Game), cmp_games);
     serial_cache_save();

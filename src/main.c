@@ -441,7 +441,7 @@ void app_nfs_notify(void)
     nfs_notify = true;
 }
 
-#define SCAN_ROOTS_MAX (3 + DRIVE_COUNT * 2 * 2 + DRIVE_COUNT + NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 2)
+#define SCAN_ROOTS_MAX (3 + DRIVE_COUNT * 2 * 2 + DRIVE_COUNT * 2 + NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 3)
 #define SCAN_PATH_MAX (NFS_PATH_MAX > SwanStationPS5_PATH_MAX ? NFS_PATH_MAX : SwanStationPS5_PATH_MAX)
 
 /* The scan that follows an NFS mount lists the shares over the network: it runs on its own thread, into a library of its
@@ -544,10 +544,10 @@ void app_rescan(void)
      * folder name and for the PSXS5 one. */
     static const char *const names[] = {"SwanStationPS5", "PSXS5"};
     static char drive_roots[DRIVE_COUNT * 2 * 2][SwanStationPS5_PATH_MAX];
-    static char usb_roots[DRIVE_COUNT][SwanStationPS5_PATH_MAX];
-    static char nfs_roots[NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 2][NFS_PATH_MAX];
+    static char usb_roots[DRIVE_COUNT * 2][SwanStationPS5_PATH_MAX];
+    static char nfs_roots[NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 3][NFS_PATH_MAX];
     static char ntfs_points[NTFSFS_MAX_VOLUMES][NTFSFS_PATH_MAX];
-    const char *roots[3 + DRIVE_COUNT * 2 * 2 + DRIVE_COUNT + NFS_MAX_SHARES + NTFSFS_MAX_VOLUMES * 2];
+    const char *roots[SCAN_ROOTS_MAX];
     int root_count = 0;
     roots[root_count++] = app.paths.games;
     roots[root_count++] = "/data/PSXS5/games";
@@ -571,8 +571,10 @@ void app_rescan(void)
         {
             if (u < DRIVE_EXT_COUNT && !drive_usable(u))
                 continue;
-            snprintf(usb_roots[u], SwanStationPS5_PATH_MAX, "%s/%s", drive_paths[u], app.global.usb_folder);
-            roots[root_count++] = usb_roots[u];
+            snprintf(usb_roots[u * 2], SwanStationPS5_PATH_MAX, "%s/%s", drive_paths[u], app.global.usb_folder);
+            snprintf(usb_roots[u * 2 + 1], SwanStationPS5_PATH_MAX, "%s/%s/games", drive_paths[u], app.global.usb_folder);
+            roots[root_count++] = usb_roots[u * 2];
+            roots[root_count++] = usb_roots[u * 2 + 1]; /* like <drive>/PSXS5/games: the folder is read the same way */
         }
     /* Settings > System > NFS shares: the ones that are not mounted are tried on their own thread, so a rescan never
      * waits for a server; the library is scanned again (in the main loop) when that is over */
@@ -589,7 +591,10 @@ void app_rescan(void)
         for (int n = 0; n < volumes; ++n)
         {
             if (app.global.usb_folder[0])
+            {
                 snprintf(nfs_roots[shared_count++], NFS_PATH_MAX, "%s/%s", ntfs_points[n], app.global.usb_folder);
+                snprintf(nfs_roots[shared_count++], NFS_PATH_MAX, "%s/%s/games", ntfs_points[n], app.global.usb_folder);
+            }
             snprintf(nfs_roots[shared_count++], NFS_PATH_MAX, "%s/SwanStationPS5/games", ntfs_points[n]);
         }
     }
