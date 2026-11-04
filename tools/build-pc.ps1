@@ -46,6 +46,11 @@ try {
     foreach ($dll in "SDL2.dll", "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll") {
         Copy-Item "$Msys\ucrt64\bin\$dll" build\pc -Force -ErrorAction SilentlyContinue
     }
+    # libcurl and the libraries it needs (every DLL that comes from MSYS2's ucrt64)
+    $curlDlls = & "$Msys\usr\bin\bash.exe" -lc "export MSYSTEM=UCRT64; ldd /ucrt64/bin/libcurl-4.dll | grep -o '/ucrt64/bin/[^ ]*dll'" 2>$null
+    foreach ($dll in @("libcurl-4.dll") + @($curlDlls | ForEach-Object { Split-Path $_ -Leaf })) {
+        Copy-Item "$Msys\ucrt64\bin\$dll" build\pc -Force -ErrorAction SilentlyContinue
+    }
     Write-Host "built $dir\build\pc\SwanStationPS5.exe"
     if ($Run) {
         if (-not $env:SwanStationPS5_ROOT) { $env:SwanStationPS5_ROOT = Join-Path $dir "data" }

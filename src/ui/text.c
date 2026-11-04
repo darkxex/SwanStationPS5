@@ -223,7 +223,15 @@ static Atlas *get_atlas(int weight, float size)
     weight = weight == FONT_MONO && font_ok[FONT_MONO] ? FONT_MONO : weight ? FONT_BOLD : FONT_REGULAR;
     if (!font_ok[weight])
         return NULL;
-    int px = bucket_for(size);
+    /* the glyphs are drawn at the screen's real pixels (PC: the window's), not at 1080p stretched */
+    static float ui_scale = 1.0f;
+    const float k = plat_ui_scale();
+    if (k != ui_scale)
+    {
+        free_atlases();
+        ui_scale = k;
+    }
+    int px = bucket_for(size * k);
     for (int i = 0; i < atlas_count; ++i)
         if (atlases[i].weight == weight && atlases[i].px == px)
             return &atlases[i];

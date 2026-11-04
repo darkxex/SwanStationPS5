@@ -52,7 +52,7 @@ int nfs_mount_all(int timeout_ms) { (void)timeout_ms; return 0; }
 int nfs_mount_points(char out[][NFS_PATH_MAX], int max) { (void)out, (void)max; return 0; }
 void nfs_mount_begin(int timeout_ms) { (void)timeout_ms; }
 bool nfs_mount_running(void) { return false; }
-bool nfs_mount_finished(void) { return true; }
+bool nfs_mount_finished(void) { return false; } /* no NFS here: true would rescan the library on every frame */
 int nfs_first_failure(char *detail, size_t size)
 {
     if (detail && size)

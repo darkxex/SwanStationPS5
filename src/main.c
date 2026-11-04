@@ -2868,6 +2868,9 @@ int main(int argc, char **argv)
     else
         setenv("PS5_VIDEOOUT_PARAM_JSON", "/nonexistent", 1);
     plat_want_high_refresh(high_refresh);
+#if defined(SwanStationPS5_DESKTOP)
+    plat_want_fps_limit(high_refresh ? 120 : 60); /* Video output: the monitor's own rate is not the app's */
+#endif
     plat_want_output(2); /* always 4K (1080p when the TV lacks the mode) */
 
     if (!plat_init())

@@ -22,6 +22,10 @@
 #include "blit.h"
 #include "vk/vk_present.h"
 #endif
+#if defined(SwanStationPS5_DESKTOP) && defined(SwanStationPS5_VULKAN)
+#include <SDL2/SDL_vulkan.h>
+#include <math.h>
+#endif
 
 #if defined(__PROSPERO__)
 #include "ps5_unlock.h"
@@ -977,6 +981,15 @@ void plat_poll(PadState pads[SwanStationPS5_MAX_PADS], bool *quit)
             *quit = true;
         if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED)
             devices_changed = true;
+#if !defined(__PROSPERO__) && !defined(SwanStationPS5_PREVIEW)
+        /* F11: borderless full screen (the desktop's own size) and back; the cursor is hidden while it lasts */
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11 && !event.key.repeat && window)
+        {
+            const bool full = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
+            if (SDL_SetWindowFullscreen(window, full ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP) == 0)
+                SDL_ShowCursor(full ? SDL_ENABLE : SDL_DISABLE);
+        }
+#endif
 #if defined(SS5_CANVAS) && !defined(__PROSPERO__)
         /* the canvas is 16:9 and the screen stretches it to the window: a window being resized keeps that shape
          * (maximised and full-screen windows take the screen's own) */
@@ -1399,6 +1412,30 @@ void plat_want_output(int resolution)
 bool plat_gpu_ui_active(void)
 {
     return gpu_ui;
+}
+
+float plat_ui_scale(void)
+{
+#if defined(SwanStationPS5_DESKTOP) && defined(SwanStationPS5_VULKAN)
+    if (!gpu_ui || !window)
+        return 1.0f;
+    int w = 0, h = 0;
+    SDL_Vulkan_GetDrawableSize(window, &w, &h);
+    if (h <= 0)
+        return 1.0f;
+    /* in quarter steps: the text is drawn again only when the step changes, not at each pixel of a resize */
+    float k = ceilf(h / 1080.0f * 4.0f) / 4.0f;
+    k = k < 0.5f ? 0.5f : k > 3.0f ? 3.0f : k;
+    static float logged;
+    if (k != logged)
+    {
+        logged = k;
+        SwanStationPS5_log("screen: interface drawn at %.2fx 1080p (drawable %dx%d)", k, w, h);
+    }
+    return k;
+#else
+    return 1.0f;
+#endif
 }
 
 bool plat_set_output(int resolution)
@@ -2066,6 +2103,15 @@ static void profile_frame_end(void)
     memset(&prof, 0, sizeof(prof));
 }
 
+#if defined(SwanStationPS5_DESKTOP)
+static int present_limit_hz;
+
+void plat_want_fps_limit(int hz)
+{
+    present_limit_hz = hz;
+}
+#endif
+
 void plat_end_frame(void)
 {
     profile_frame_end();
@@ -2087,6 +2133,24 @@ void plat_end_frame(void)
         ps5_video_present(canvas->pixels, (size_t)canvas->pitch);
 #else
         present_window_surface();
+#endif
+#if defined(SwanStationPS5_DESKTOP)
+    /* PC: no more presents a second than the Video output setting (60 or 120 Hz), however fast the monitor is */
+    if (present_limit_hz > 0)
+    {
+        static uint64_t next_us;
+        const uint64_t period = 1000000u / (uint64_t)present_limit_hz;
+        uint64_t now = plat_ticks_us();
+        if (next_us > now + period * 4 || next_us + period * 4 < now)
+            next_us = now; /* a stall or a first frame: do not run to catch up */
+        while (now < next_us)
+        {
+            if (next_us - now > 2000)
+                SDL_Delay((uint32_t)((next_us - now - 1500) / 1000));
+            now = plat_ticks_us();
+        }
+        next_us += period;
+    }
 #endif
     uint64_t shown = plat_ticks_us();
     if (frame_start)
