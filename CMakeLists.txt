@@ -5,9 +5,10 @@
 #   cmake --build build/pc                   -> build/pc/SwanStationPS5.exe
 #
 # One source tree, two builds: the PS5 defines __PROSPERO__ by itself; this one defines SwanStationPS5_DESKTOP.
-# Milestone 1: SwanStation's software renderer, frames shown by plat_upload_game() through SDL's renderer.
-# Milestone 2: SS5_PC_VULKAN=ON adds src/platform/vk/vk_present_desktop.c (SDL_Vulkan surface + swapchain) and the
-# core's Vulkan renderer (SwanStationPS5_VULKAN) - see the marked spots below.
+# Vulkan is the main renderer (SS5_PC_VULKAN=ON, the default): src/platform/vk/vk_present_desktop.c is the presenter
+# (SDL_Vulkan surface + swapchain; the PS5 builds vk_present.c, the same presenter with VK_KHR_display) and
+# SwanStation renders through its Vulkan renderer. If Vulkan cannot open, the app falls back to the window's own
+# surface and the core's software renderer. SS5_PC_VULKAN=OFF is the software-only build (milestone 1).
 cmake_minimum_required(VERSION 3.20)
 project(SwanStationPS5 C CXX)
 
@@ -16,7 +17,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-option(SS5_PC_VULKAN "Milestone 2: Vulkan renderer through SDL_Vulkan" OFF)
+option(SS5_PC_VULKAN "Vulkan renderer through SDL_Vulkan (needs the Vulkan headers); OFF: software only" ON)
 
 find_package(SDL2 CONFIG QUIET)
 if(NOT SDL2_FOUND)
@@ -62,9 +63,9 @@ set(APP_SOURCES
   ${UI_SOURCES})
 
 if(SS5_PC_VULKAN)
-  # Milestone 2: vk_present.h is the shared interface; the PS5 implements it with VK_KHR_display (vk_present.c),
-  # the PC with an SDL_Vulkan surface + swapchain.
-  list(APPEND APP_SOURCES src/platform/vk/vk_present_desktop.c src/platform/vk/vk_probe.c)
+  # vk_present.h is the shared interface; the PS5 implements it with VK_KHR_display (vk_present.c), the PC with an
+  # SDL_Vulkan surface + swapchain (vk_present_desktop.c, which includes vk_present.c).
+  list(APPEND APP_SOURCES src/platform/vk/vk_present_desktop.c)
 endif()
 
 add_executable(SwanStationPS5 ${APP_SOURCES})

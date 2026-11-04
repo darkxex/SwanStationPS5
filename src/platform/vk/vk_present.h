@@ -11,6 +11,10 @@
 
 /* Takes over the TV through Vulkan. The interface keeps drawing on the CPU
  * into a canvas_w x canvas_h RGBA canvas, which is uploaded every frame. */
+#if defined(SwanStationPS5_DESKTOP)
+struct SDL_Window;
+void vkp_desktop_window(struct SDL_Window *window); /* PC: before vkp_open, a window made with SDL_WINDOW_VULKAN */
+#endif
 bool vkp_open(int canvas_w, int canvas_h, char *error, size_t size);
 /* Call before emulation; false means skip the frame. */
 bool vkp_begin_frame(void);

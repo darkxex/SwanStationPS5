@@ -33,12 +33,6 @@ void app_toast(const char *message); /* main.c: a short notice on screen */
 
 #define MAX_OPTIONS 256
 
-#if defined(SwanStationPS5_VULKAN)
-#define SwanStationPS5_NO_VULKAN 0
-#else
-#define SwanStationPS5_NO_VULKAN 1 /* PC: software renderer only */
-#endif
-
 /* ---------------------------------------------------------------- the cores */
 
 typedef struct
@@ -82,7 +76,8 @@ typedef struct
 #error "SwanStation renders through Vulkan: build with APP_VULKAN=1 (PS5) or SwanStationPS5_DESKTOP (PC)"
 #endif
 
-/* The PC build has no Vulkan present path yet: the core runs its software renderer and frames arrive through video_cb. */
+/* Vulkan is the renderer (PS5, and PC with SwanStationPS5_VULKAN). A PC build without it, or whose screen could not
+ * open Vulkan, runs the core's software renderer: frames arrive through video_cb. */
 #if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
 void swanstation_retro_set_environment(retro_environment_t);
 void swanstation_retro_set_video_refresh(retro_video_refresh_t);
@@ -285,6 +280,22 @@ static void apply_game_fixes(void)
     }
 }
 
+/* The core's "GPU_Renderer": Vulkan unless the player chose Software, or (PC) there is no Vulkan screen to show it. */
+static const char *renderer_option(void)
+{
+    if (session_renderer == 1)
+        return "Software";
+#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_DESKTOP)
+    if (!vkp_describe()[0])
+        return "Software";
+#endif
+    return "Vulkan";
+#else
+    return "Software";
+#endif
+}
+
 static void apply_swanstation_options(const Settings *s)
 {
     bool stretch = false;
@@ -298,7 +309,7 @@ static void apply_swanstation_options(const Settings *s)
     int cd = s->cd_speed >= 1 && s->cd_speed <= 10 && !(game_fixes & GDB_NO_CD_SPEEDUP) ? s->cd_speed : 1;
     snprintf(cd_speed, sizeof(cd_speed), "%d", cd);
     bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
-    set_option("swanstation_GPU_Renderer", session_renderer == 1 || SwanStationPS5_NO_VULKAN ? "Software" : "Vulkan");
+    set_option("swanstation_GPU_Renderer", renderer_option());
     set_option("swanstation_GPU_ResolutionScale", scale);
     set_option("swanstation_Console_Region", region_override ? region_override : regions[s->region % REGION_COUNT]);
     set_option("swanstation_GPU_TrueColor", s->true_colour ? "true" : "false");

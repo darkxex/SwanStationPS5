@@ -231,6 +231,15 @@ static void barrier(VkCommandBuffer cb, VkImage image, VkImageLayout from, VkIma
 
 /* ---------------------------------------------------------------- setup steps */
 
+#if defined(SS5_VKP_DESKTOP)
+#include "vk_present_desktop.inc" /* PC: SDL's Vulkan surface; create_instance, create_surface, fallback_extent */
+#else
+static VkExtent2D fallback_extent(const VkSurfaceCapabilitiesKHR *caps)
+{
+    (void)caps;
+    return (VkExtent2D){(uint32_t)V.cw, (uint32_t)V.ch};
+}
+
 static bool create_instance(char *error, size_t size)
 {
     vkCreateInstance_ = (PFN_vkCreateInstance)vkGetInstanceProcAddr(NULL, "vkCreateInstance");
@@ -391,6 +400,7 @@ static bool create_surface(char *error, size_t size)
                        modes[i].parameters.visibleRegion.height, modes[i].parameters.refreshRate / 1000.0);
     return true;
 }
+#endif
 
 static bool load_device(char *error, size_t size)
 {
@@ -464,8 +474,7 @@ static bool create_swapchain(char *error, size_t size)
             break;
         }
     V.format = chosen.format;
-    V.extent = caps.currentExtent.width != UINT32_MAX ? caps.currentExtent
-                                                      : (VkExtent2D){(uint32_t)V.cw, (uint32_t)V.ch};
+    V.extent = caps.currentExtent.width != UINT32_MAX ? caps.currentExtent : fallback_extent(&caps);
     uint32_t images = caps.minImageCount < 3 ? 3 : caps.minImageCount;
     if (caps.maxImageCount && images > caps.maxImageCount)
         images = caps.maxImageCount;
@@ -1874,6 +1883,10 @@ bool vkp_begin_frame(void)
         return true;
     if (!V.swapchain)
         return false;
+#if defined(SS5_VKP_DESKTOP)
+    if (!desktop_swapchain_ready())
+        return false;
+#endif
     const int f = V.frame;
     VkResult r = vkWaitForFences(V.device, 1, &V.done[f], VK_TRUE, UINT64_MAX);
     if (r != VK_SUCCESS)
