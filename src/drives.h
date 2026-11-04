@@ -15,7 +15,9 @@ static const char *const drive_paths[DRIVE_COUNT] = {"/mnt/ext0", "/mnt/ext1", "
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#ifdef __linux__
+#if defined(_WIN32)
+/* PC build: no /mnt drives (the library lives in SwanStationPS5_ROOT) */
+#elif defined(__linux__)
 #include <sys/vfs.h>
 #else
 #include <sys/mount.h>
@@ -24,6 +26,11 @@ extern int drives_fstatfs(int, struct statfs *) __asm__("_fstatfs");
 
 static inline long long drive_free_mb(const char *path)
 {
+#if defined(_WIN32)
+    (void)path;
+    return -1;
+}
+#else
     struct stat st;
     if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode))
         return -1;
@@ -40,6 +47,7 @@ static inline long long drive_free_mb(const char *path)
     close(fd);
     return measured == 0 ? (long long)((unsigned long long)fs.f_bavail * fs.f_bsize >> 20) : -1;
 }
+#endif
 
 static inline bool drive_usable(int d)
 {

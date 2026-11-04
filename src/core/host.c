@@ -33,6 +33,12 @@ void app_toast(const char *message); /* main.c: a short notice on screen */
 
 #define MAX_OPTIONS 256
 
+#if defined(SwanStationPS5_VULKAN)
+#define SwanStationPS5_NO_VULKAN 0
+#else
+#define SwanStationPS5_NO_VULKAN 1 /* PC: software renderer only */
+#endif
+
 /* ---------------------------------------------------------------- the cores */
 
 typedef struct
@@ -72,11 +78,12 @@ typedef struct
             p##retro_cheat_set                                                                  \
     }
 
-#if !defined(SwanStationPS5_VULKAN)
-#error "SwanStation renders through Vulkan: build with APP_VULKAN=1"
+#if !defined(SwanStationPS5_VULKAN) && !defined(SwanStationPS5_DESKTOP)
+#error "SwanStation renders through Vulkan: build with APP_VULKAN=1 (PS5) or SwanStationPS5_DESKTOP (PC)"
 #endif
 
-#if defined(SwanStationPS5_VULKAN)
+/* The PC build has no Vulkan present path yet: the core runs its software renderer and frames arrive through video_cb. */
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
 void swanstation_retro_set_environment(retro_environment_t);
 void swanstation_retro_set_video_refresh(retro_video_refresh_t);
 void swanstation_retro_set_audio_sample(retro_audio_sample_t);
@@ -193,7 +200,7 @@ static void register_variables(const struct retro_variable *vars)
     }
 }
 
-#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
 /* SwanStation (DuckStation): the Vulkan renderer, the recompiler with LUT
  * fastmem (MMap does not survive a title's sandbox). */
 static const char *region_override;
@@ -291,7 +298,7 @@ static void apply_swanstation_options(const Settings *s)
     int cd = s->cd_speed >= 1 && s->cd_speed <= 10 && !(game_fixes & GDB_NO_CD_SPEEDUP) ? s->cd_speed : 1;
     snprintf(cd_speed, sizeof(cd_speed), "%d", cd);
     bool pgxp = s->pgxp && !(game_fixes & GDB_NO_PGXP);
-    set_option("swanstation_GPU_Renderer", session_renderer == 1 ? "Software" : "Vulkan");
+    set_option("swanstation_GPU_Renderer", session_renderer == 1 || SwanStationPS5_NO_VULKAN ? "Software" : "Vulkan");
     set_option("swanstation_GPU_ResolutionScale", scale);
     set_option("swanstation_Console_Region", region_override ? region_override : regions[s->region % REGION_COUNT]);
     set_option("swanstation_GPU_TrueColor", s->true_colour ? "true" : "false");
@@ -351,7 +358,7 @@ static void apply_swanstation_options(const Settings *s)
 
 static void apply_settings_to_options(const Settings *s)
 {
-#if defined(SwanStationPS5_VULKAN)
+#if defined(SwanStationPS5_VULKAN) || defined(SwanStationPS5_DESKTOP)
     if (core == &SWANSTATION)
     {
         apply_swanstation_options(s);
