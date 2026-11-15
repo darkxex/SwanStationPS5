@@ -909,6 +909,15 @@ void achievements_screen(uint32_t pressed)
         char pts[32];
         snprintf(pts, sizeof(pts), tr("%u points"), a->points);
         text_draw(x + w - 24, y + 14, 22, FONT_REGULAR, a->unlocked ? TH_GOLD : TH_TEXT_DIM, ALIGN_RIGHT, pts);
+        if (a->challenge)
+        {
+            /* its challenge is up now (the Trigger flag): its condition is being met */
+            const char *tag = tr("Challenge");
+            const float tw = text_width(18, FONT_BOLD, tag) + 24;
+            const float tx = x + w - 24 - text_width(22, FONT_REGULAR, pts) - 16 - tw;
+            draw_rrect(tx, y + 12, tw, 30, 15, 0xffe07a1fu);
+            text_draw(tx + tw * 0.5f, y + 17, 18, FONT_BOLD, 0xffffffffu, ALIGN_CENTER, tag);
+        }
         if (a->unlocked)
             icon_draw(ICON_CIRCLE_CHECK, x + w - 54, y + 46, 30, TH_GOOD);
         else if (a->progress[0])

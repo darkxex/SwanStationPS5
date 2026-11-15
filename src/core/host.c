@@ -12,6 +12,7 @@
 
 #include "../gamedb.h"
 #include "../i18n.h"
+#include "../ra/achievements.h"
 
 #include "libretro.h"
 #include "../platform/platform.h"
@@ -1499,6 +1500,7 @@ bool host_unserialize(const void *buffer, size_t size)
     if (!loaded || !core->unserialize(buffer, size))
         return false;
     plat_audio_clear();
+    ra_clear_indicators(); /* the game jumped: the challenge icons and attempt timers shown are no longer known */
     return true;
 }
 
@@ -1573,7 +1575,10 @@ bool host_load_state(const char *path)
     free(buffer);
     fclose(f);
     if (ok)
+    {
         plat_audio_clear();
+        ra_clear_indicators();
+    }
     return ok;
 }
 

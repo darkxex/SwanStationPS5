@@ -76,6 +76,145 @@ bool ra_tracker(char *title, size_t title_size, char *progress, size_t progress_
     return on;
 }
 
+/* Challenge indicators (an achievement's Trigger flag: its condition is being met right now) and the leaderboard
+ * trackers (the live timer or value of an attempt). Both are filled by rcheevos' events and read by the drawing. */
+#define MAX_CHALLENGES 8
+static struct
+{
+    unsigned id;
+    char title[96], badge_url[160];
+} challenges[MAX_CHALLENGES];
+static int challenge_count;
+
+#define MAX_LB_TRACKERS 4
+static struct
+{
+    unsigned id;
+    char display[RC_CLIENT_LEADERBOARD_DISPLAY_SIZE];
+} lb_trackers[MAX_LB_TRACKERS];
+static int lb_tracker_count;
+
+int ra_challenges(RaChallenge *out, int max)
+{
+    if (!msg_lock)
+        return 0;
+    SDL_LockMutex(msg_lock);
+    int n = challenge_count < max ? challenge_count : max;
+    for (int i = 0; i < n; ++i)
+    {
+        out[i].id = challenges[i].id;
+        str_copy(out[i].title, sizeof(out[i].title), challenges[i].title);
+        str_copy(out[i].badge_url, sizeof(out[i].badge_url), challenges[i].badge_url);
+    }
+    SDL_UnlockMutex(msg_lock);
+    return n;
+}
+
+int ra_lb_trackers(RaLbTracker *out, int max)
+{
+    if (!msg_lock)
+        return 0;
+    SDL_LockMutex(msg_lock);
+    int n = lb_tracker_count < max ? lb_tracker_count : max;
+    for (int i = 0; i < n; ++i)
+    {
+        out[i].id = lb_trackers[i].id;
+        str_copy(out[i].display, sizeof(out[i].display), lb_trackers[i].display);
+    }
+    SDL_UnlockMutex(msg_lock);
+    return n;
+}
+
+static bool challenge_active(unsigned id)
+{
+    bool on = false;
+    if (!msg_lock)
+        return false;
+    SDL_LockMutex(msg_lock);
+    for (int i = 0; i < challenge_count && !on; ++i)
+        on = challenges[i].id == id;
+    SDL_UnlockMutex(msg_lock);
+    return on;
+}
+
+void ra_clear_indicators(void)
+{
+    if (!msg_lock)
+        return;
+    SDL_LockMutex(msg_lock);
+    challenge_count = 0;
+    lb_tracker_count = 0;
+    SDL_UnlockMutex(msg_lock);
+}
+
+static void challenge_show(const rc_client_achievement_t *a)
+{
+    if (!msg_lock || !a || a->id >= WARNING_ID)
+        return;
+    SDL_LockMutex(msg_lock);
+    bool have = false;
+    for (int i = 0; i < challenge_count && !have; ++i)
+        have = challenges[i].id == a->id;
+    if (!have && challenge_count < MAX_CHALLENGES)
+    {
+        challenges[challenge_count].id = a->id;
+        str_copy(challenges[challenge_count].title, sizeof(challenges[0].title), a->title ? a->title : "");
+        challenges[challenge_count].badge_url[0] = '\0';
+        rc_client_achievement_get_image_url(a, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, challenges[challenge_count].badge_url,
+                                            sizeof(challenges[0].badge_url));
+        ++challenge_count;
+    }
+    SDL_UnlockMutex(msg_lock);
+}
+
+static void challenge_hide(unsigned id)
+{
+    if (!msg_lock)
+        return;
+    SDL_LockMutex(msg_lock);
+    for (int i = 0; i < challenge_count; ++i)
+        if (challenges[i].id == id)
+        {
+            memmove(&challenges[i], &challenges[i + 1], (size_t)(challenge_count - i - 1) * sizeof(challenges[0]));
+            --challenge_count;
+            break;
+        }
+    SDL_UnlockMutex(msg_lock);
+}
+
+static void lb_tracker_set(const rc_client_leaderboard_tracker_t *t)
+{
+    if (!msg_lock || !t)
+        return;
+    SDL_LockMutex(msg_lock);
+    int i = 0;
+    while (i < lb_tracker_count && lb_trackers[i].id != t->id)
+        ++i;
+    if (i < MAX_LB_TRACKERS)
+    {
+        lb_trackers[i].id = t->id;
+        str_copy(lb_trackers[i].display, sizeof(lb_trackers[0].display), t->display);
+        if (i == lb_tracker_count)
+            ++lb_tracker_count;
+    }
+    SDL_UnlockMutex(msg_lock);
+}
+
+static void lb_tracker_hide(unsigned id)
+{
+    if (!msg_lock)
+        return;
+    SDL_LockMutex(msg_lock);
+    for (int i = 0; i < lb_tracker_count; ++i)
+        if (lb_trackers[i].id == id)
+        {
+            memmove(&lb_trackers[i], &lb_trackers[i + 1], (size_t)(lb_tracker_count - i - 1) * sizeof(lb_trackers[0]));
+            --lb_tracker_count;
+            break;
+        }
+    SDL_UnlockMutex(msg_lock);
+}
+
 static void post_ex(const char *title, const char *detail, bool quiet)
 {
     SwanStationPS5_log("ra: %s - %s", title, detail);
@@ -366,6 +505,31 @@ static void RC_CCONV on_event(const rc_client_event_t *e, rc_client_t *c)
         break;
     case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_HIDE:
         break; /* shown for 4 s anyway, long enough to read */
+    case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW:
+        challenge_show(e->achievement);
+        break;
+    case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_HIDE:
+        if (e->achievement)
+            challenge_hide(e->achievement->id);
+        break;
+    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW:
+    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_UPDATE:
+        lb_tracker_set(e->leaderboard_tracker);
+        break;
+    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_HIDE:
+        if (e->leaderboard_tracker)
+            lb_tracker_hide(e->leaderboard_tracker->id);
+        break;
+    case RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD:
+        if (e->leaderboard && e->leaderboard_scoreboard)
+        {
+            const rc_client_leaderboard_scoreboard_t *sb = e->leaderboard_scoreboard;
+            char line[192];
+            snprintf(line, sizeof(line), tr("Rank %u of %u  -  score %s  (best %s)"), sb->new_rank, sb->num_entries,
+                     sb->submitted_score, sb->best_score);
+            post(e->leaderboard->title, line);
+        }
+        break;
     case RC_CLIENT_EVENT_GAME_COMPLETED:
     {
         const rc_client_game_t *g = rc_client_get_game_info(c);
@@ -376,14 +540,17 @@ static void RC_CCONV on_event(const rc_client_event_t *e, rc_client_t *c)
         post(tr("Leaderboard attempt started"), e->leaderboard->title);
         break;
     case RC_CLIENT_EVENT_LEADERBOARD_FAILED:
+        lb_tracker_hide(e->leaderboard->id);
         post(tr("Leaderboard attempt failed"), e->leaderboard->title);
         break;
     case RC_CLIENT_EVENT_LEADERBOARD_SUBMITTED:
+        lb_tracker_hide(e->leaderboard->id);
         snprintf(detail, sizeof(detail), "%s: %s", e->leaderboard->title,
                  e->leaderboard->tracker_value);
         post(tr("Leaderboard score submitted"), detail);
         break;
     case RC_CLIENT_EVENT_RESET:
+        ra_clear_indicators();
         host_reset(); /* switching to hardcore restarts the game */
         rc_client_reset(c); /* acknowledges it: until then rcheevos does not evaluate a single achievement */
         break;
@@ -600,6 +767,7 @@ void ra_game_unloaded(void)
     if (!client)
         return;
     rc_client_unload_game(client);
+    ra_clear_indicators();
     warn_emulator = warn_version = false;
     if (regions_ready)
         rc_libretro_memory_destroy(&regions);
@@ -620,6 +788,7 @@ void ra_idle(void)
 
 void ra_reset(void)
 {
+    ra_clear_indicators();
     if (client)
         rc_client_reset(client);
 }
@@ -727,6 +896,7 @@ int ra_list(RaAchievement *out, int max)
             r->percent = a->measured_percent;
             r->points = a->points;
             r->unlocked = a->unlocked != 0;
+            r->challenge = !r->unlocked && challenge_active(a->id);
             r->id = a->id;
             r->badge_url[0] = '\0';
             rc_client_achievement_get_image_url(a, a->unlocked ? RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED

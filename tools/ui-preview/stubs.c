@@ -141,6 +141,33 @@ bool ra_tracker(char *title, size_t ts, char *progress, size_t ps, float *percen
     return true;
 }
 
+int ra_challenges(RaChallenge *out, int max)
+{
+    static const char *const titles[] = {"Perfect Run", "No Mask Needed"};
+    int n = max < 2 ? max : 2;
+    for (int i = 0; i < n; ++i)
+    {
+        memset(&out[i], 0, sizeof(out[i]));
+        out[i].id = 1000u + (unsigned)i;
+        strncpy(out[i].title, titles[i], sizeof(out[i].title) - 1);
+    }
+    return n;
+}
+
+int ra_lb_trackers(RaLbTracker *out, int max)
+{
+    if (max < 1)
+        return 0;
+    memset(&out[0], 0, sizeof(out[0]));
+    out[0].id = 1;
+    strcpy(out[0].display, "01:23.45");
+    return 1;
+}
+
+void ra_clear_indicators(void) {}
+PlatTexture *ra_badge(unsigned id, const char *url) { (void)id; (void)url; return NULL; }
+void ra_badges_shutdown(void) {}
+
 int ra_list(RaAchievement *out, int max)
 {
     static const char *const names[][2] = {
@@ -162,6 +189,7 @@ int ra_list(RaAchievement *out, int max)
         strncpy(r->description, names[i][1], sizeof(r->description) - 1);
         r->points = (unsigned)(5 + i * 5);
         r->unlocked = i < 3;
+        r->challenge = i == 4 || i == 7;
         if (i == 3)
             strcpy(r->progress, "1/3"), r->percent = 33.3f;
         if (i == 6)

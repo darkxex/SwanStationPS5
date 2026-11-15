@@ -30,6 +30,7 @@
 #include "remote.h"
 #include "update.h"
 #include "ra/achievements.h"
+#include "ra/badges.h"
 #include "stats.h"
 #include "state_save.h"
 #include "ui/coverflow.h"
@@ -826,6 +827,40 @@ static void draw_tracker(void)
         draw_rrect(x + 20, y + 62, bw * k < 10 ? 10 : bw * k, 10, 5, TH_GOLD);
 }
 
+/* The badges of the achievements whose challenge is up (their Trigger flag), bottom left, for as long as they are. */
+static void draw_challenges(void)
+{
+    RaChallenge list[8];
+    const int n = ra_challenges(list, 8);
+    if (!n)
+        return;
+    const float size = 56, gap = 12, x0 = 48, y = plat_height() - size - 48;
+    for (int i = 0; i < n; ++i)
+    {
+        const float x = x0 + i * (size + gap);
+        draw_rrect(x - 4, y - 4, size + 8, size + 8, 12, TH_CARD_A(0xe0));
+        PlatTexture *badge = ra_badge(list[i].id, list[i].badge_url);
+        if (badge)
+            plat_draw_texture(badge, x, y, size, size, 0xffffffffu, false);
+        else
+            icon_draw(ICON_TROPHY, x + 8, y + 8, 40, TH_GOLD);
+    }
+}
+
+/* The live timer or value of the leaderboard attempts in progress, top right under the pop-ups. */
+static void draw_lb_trackers(void)
+{
+    RaLbTracker list[4];
+    const int n = ra_lb_trackers(list, 4);
+    for (int i = 0; i < n; ++i)
+    {
+        const float w = text_width(30, FONT_BOLD, list[i].display) + 40, h = 48;
+        const float x = plat_width() - w - 48, y = 120 + i * (h + 10);
+        draw_rrect(x, y, w, h, 24, TH_CARD_A(0xe0));
+        text_draw(x + w * 0.5f, y + 8, 30, FONT_BOLD, TH_TEXT, ALIGN_CENTER, list[i].display);
+    }
+}
+
 /* Splits `s` into lines no wider than max_w, at its own line breaks and at spaces (or between characters when a word is wider, as in Japanese).
  * Returns how many lines were filled; what does not fit in max_lines is dropped. */
 #define WRAP_LINE 200
@@ -882,6 +917,10 @@ static void draw_achievement(void)
     const bool nostalgia = app.game && app.global.nostalgia && app.screen == SCREEN_GAME;
     if (app.screen == SCREEN_GAME && app.global.ra_tracker && !nostalgia)
         draw_tracker();
+    if (app.screen == SCREEN_GAME && app.global.ra_challenges && !nostalgia)
+        draw_challenges();
+    if (app.screen == SCREEN_GAME && app.global.ra_lb_tracker && !nostalgia && ra_hardcore())
+        draw_lb_trackers();
     static char title[96], detail[192];
     static uint64_t shown_at;
     const uint64_t length = 4500000;
@@ -3318,6 +3357,7 @@ int main(int argc, char **argv)
     covers_stop();
     plat_audio_close();
     icons_shutdown();
+    ra_badges_shutdown();
     text_shutdown();
     library_free(&app.library);
     SwanStationPS5_log("shutdown: interface freed");
@@ -3349,6 +3389,7 @@ int main(int argc, char **argv)
         }
     }
     icons_shutdown();
+    ra_badges_shutdown();
     text_shutdown();
     library_free(&app.library);
     SwanStationPS5_log("shutdown: interface freed");

@@ -285,6 +285,11 @@ static const Row ACHIEVEMENTS[] = {
      K_CHOICE, APPLY_NOW, SP_NONE, true, INT_FIELD(ra_popup_style), POPUP_STYLES, 3, 0},
     {NULL, "Progress tracker", "The small card when a counted achievement moves (18/80 dragons).", K_TOGGLE,
      APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_tracker), OFF_ON, 2, 0},
+    {NULL, "Challenge indicators",
+     "The badges of the achievements whose challenge is up (a condition you are meeting right now), also marked in the list.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_challenges), OFF_ON, 2, 0},
+    {NULL, "Leaderboard tracker", "The live timer or value of a leaderboard attempt while you play (hardcore).", K_TOGGLE,
+     APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_lb_tracker), OFF_ON, 2, 0},
     {"Play", "Hardcore mode", "Earn hardcore achievements: save states and cheats are off. Turning it on restarts the game.",
      K_TOGGLE, APPLY_NOW, SP_HARDCORE, true, NO_FIELD, OFF_ON, 2, 0},
 };

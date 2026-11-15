@@ -127,6 +127,8 @@ typedef struct
     int mc_x, mc_y;       /* manual crop: how far the picture is moved, in thousandths of the screen (-500..500) */
     bool ra_popups;       /* achievement unlock banners while playing */
     bool ra_tracker;      /* the progress card when a counted achievement moves */
+    bool ra_challenges;   /* the badges of the achievements whose Trigger flag is up (challenge indicators) */
+    bool ra_lb_tracker;   /* the live timer or value of a leaderboard attempt */
     int ra_popup_style;   /* 0 banner, 1 compact, 2 big trophy */
     int bios_start;       /* Start BIOS boots this region's BIOS: 0 NTSC-U (default), 1 NTSC-J, 2 PAL; not saved */
     int lightbar;         /* 0 left to the system, 1 player colours, 2 the game's cover colour, 3 red in analog mode / off in digital */

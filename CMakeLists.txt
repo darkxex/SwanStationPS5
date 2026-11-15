@@ -57,7 +57,7 @@ set(APP_SOURCES
   src/gamedb.c src/i18n.c src/library.c src/main.c src/net.c src/play.c src/profiles.c src/remote.c
   src/state_save.c src/stats.c src/stb_impl.c src/tips.c src/update.c src/util.c src/vendor.c
   src/core/bios_choices.c src/core/host.c src/core/swanstation_options.c
-  src/ra/achievements.c src/ra/login.c
+  src/ra/achievements.c src/ra/badges.c src/ra/login.c
   src/platform/plat_sdl.c src/platform/xbr.c src/platform/blit.c
   src/platform/desktop_compat.c src/cdscsi.c src/platform/vk/vk_probe.c
   ${UI_SOURCES})

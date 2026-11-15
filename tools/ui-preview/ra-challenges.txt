@@ -1,0 +1,21 @@
+# RetroAchievements: challenge indicators and a leaderboard tracker in play, and the Challenge tag in the list
+wait 60
+press cross
+wait 30
+press right
+wait 15
+press cross
+wait 80
+shot ra01-ingame
+hold menu 40
+wait 30
+press down
+press down
+press down
+press down
+press down
+wait 10
+press cross
+wait 40
+shot ra02-list
+quit

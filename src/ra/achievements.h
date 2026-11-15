@@ -34,6 +34,7 @@ typedef struct
     char badge_url[160]; /* the badge picture (locked or unlocked) */
     unsigned points, id;
     bool unlocked;
+    bool challenge; /* its Trigger flag is up: the condition is being met now */
 } RaAchievement;
 /* The loaded game's achievements, unlocked ones first. Returns how many. */
 int ra_list(RaAchievement *out, int max);
@@ -65,5 +66,25 @@ bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail
 /* While playing: the counted achievement that just moved (18/80 dragons).
  * False when there's nothing to show. */
 bool ra_tracker(char *title, size_t title_size, char *progress, size_t progress_size, float *percent);
+
+/* Challenge indicators: the achievements whose Trigger flag is up right now (their condition is being met), in the order
+ * they appeared. Cleared by reset, unload and loading a state. */
+typedef struct
+{
+    unsigned id;
+    char title[96];
+    char badge_url[160];
+} RaChallenge;
+int ra_challenges(RaChallenge *out, int max);
+
+/* Leaderboard attempts in progress: the live value (a timer, a score...) of each. */
+typedef struct
+{
+    unsigned id;
+    char display[24];
+} RaLbTracker;
+int ra_lb_trackers(RaLbTracker *out, int max);
+
+void ra_clear_indicators(void); /* the emulation jumped (a state was loaded): nothing that was up is known to be */
 
 #endif
