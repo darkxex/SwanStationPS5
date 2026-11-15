@@ -57,7 +57,7 @@ set(APP_SOURCES
   src/gamedb.c src/i18n.c src/library.c src/main.c src/net.c src/play.c src/profiles.c src/remote.c
   src/state_save.c src/stats.c src/stb_impl.c src/tips.c src/update.c src/util.c src/vendor.c
   src/core/bios_choices.c src/core/host.c src/core/swanstation_options.c
-  src/ra/achievements.c src/ra/badges.c src/ra/login.c
+  src/ra/achievements.c src/ra/badges.c src/ra/chd_reader.c src/ra/login.c
   src/platform/plat_sdl.c src/platform/xbr.c src/platform/blit.c
   src/platform/desktop_compat.c src/cdscsi.c src/platform/vk/vk_probe.c
   ${UI_SOURCES})
@@ -81,7 +81,7 @@ if(SS5_PC_VULKAN)
   target_compile_definitions(SwanStationPS5 PRIVATE SwanStationPS5_VULKAN)
 endif()
 target_include_directories(SwanStationPS5 PRIVATE src src/platform/desktop_shim third_party/stb
-  third_party/swanstation/dep/libretro-common/include)
+  third_party/swanstation/dep/libretro-common/include third_party/swanstation/dep/libchdr/include)
 target_compile_options(SwanStationPS5 PRIVATE -w -include ${CMAKE_SOURCE_DIR}/src/platform/desktop_compat.h)
 # SwanStation is C++: link with the C++ driver, and with the system libraries its Windows backends use.
 set_target_properties(SwanStationPS5 PROPERTIES LINKER_LANGUAGE CXX)

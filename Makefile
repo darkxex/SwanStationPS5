@@ -19,7 +19,7 @@ endif
 SwanStationPS5_RCHEEVOS := build/rcheevos-ps5/librcheevos.a
 # Games on NFS servers: libnfs (LGPL-2.1-or-later), built by tools/build-libnfs.sh.
 SwanStationPS5_LIBNFS := build/libnfs-ps5/libnfs.a
-APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include third_party/libnfs/include third_party/libnfs/mount $(SwanStationPS5_VULKAN_INCLUDE)
+APP_INCLUDE_PATHS ?= third_party/swanstation/dep/libretro-common/include third_party/stb examples/update-check third_party/rcheevos/include third_party/swanstation/dep/libchdr/include third_party/libnfs/include third_party/libnfs/mount $(SwanStationPS5_VULKAN_INCLUDE)
 ifeq ($(APP_VULKAN),1)
 # SwanStation (Vulkan renderer), built by tools/build-swanstation.sh
 SwanStationPS5_SWANSTATION := build/swanstation-ps5/libswanstation.a

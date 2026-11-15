@@ -19,6 +19,7 @@
 #include "libretro.h"
 #include "rc_client.h"
 #include "rc_hash.h"
+#include "chd_reader.h"
 #include "../../third_party/rcheevos/src/rc_libretro.h"
 
 #include <SDL2/SDL.h>
@@ -359,7 +360,7 @@ static uint32_t RC_CCONV read_memory(uint32_t address, uint8_t *buffer, uint32_t
 
 /* ---------------------------------------------------------------- disc hashing */
 
-/* rcheevos reads the image file itself (bin/cue, iso). */
+/* rcheevos reads the image file itself (bin/cue, iso); chd_reader.c teaches it .chd. */
 
 /* ---------------------------------------------------------------- events */
 
@@ -668,6 +669,7 @@ void ra_init(const Paths *p)
     snprintf(agent, sizeof(agent), SwanStationPS5_NAME "/" SwanStationPS5_VERSION " (PS5) %s", clause);
 
     rc_hash_init_error_message_callback(hash_error);
+    ra_chd_reader_init(); /* a .chd hashes like the uncompressed disc */
 
     worker = SDL_CreateThread(worker_main, "retroachievements", NULL);
     rc_client_begin_login_with_token(client, user, token, on_login, NULL);

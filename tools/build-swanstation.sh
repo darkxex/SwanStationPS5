@@ -78,7 +78,7 @@ if [[ ! -f $out/libswanstation.a || ! -f $stamp || $(cat "$stamp") != "$want" ]]
     "$lld" -r --whole-archive "$archive" -o "$work/swanstation.o"
     # keep only the libretro API global, then rename it
     "$nm" --defined-only --extern-only "$work/swanstation.o" | awk '{print $NF}' |
-        grep -E '^retro_' | sort -u >"$work/api.txt"
+        grep -E '^(retro_|chd_(open|close|read|get_header|get_metadata)$)' | sort -u >"$work/api.txt"
     [[ -s $work/api.txt ]] || { echo "no retro_* symbols in SwanStation" >&2; exit 1; }
     sed 's/.*/& swanstation_&/' "$work/api.txt" >"$work/rename.txt"
     "$objcopy" --keep-global-symbols="$work/api.txt" "$work/swanstation.o" "$work/swanstation-local.o"
