@@ -697,10 +697,13 @@ void cheats_screen(uint32_t pressed)
 /* ---------------------------------------------------------------- achievements */
 
 #define MAX_ACH 400
+#define MAX_LB 64
 
 static struct
 {
     RaAchievement list[MAX_ACH];
+    RaLeaderboard lb[MAX_LB];
+    int lb_count;
     int count, cursor;
     float scroll, sel_y;
     PlatTexture *badge[MAX_ACH];
@@ -757,6 +760,15 @@ static int ach_view[MAX_ACH], ach_view_count, ach_tab;
 static void build_ach_view(void)
 {
     ach_view_count = 0;
+    if (ach_tab == 2) /* the leaderboards: in the game's own order */
+    {
+        for (int i = 0; i < A.lb_count; ++i)
+            ach_view[ach_view_count++] = i;
+        A.cursor = 0;
+        A.scroll = 0;
+        A.sel_y = 0;
+        return;
+    }
     for (int i = 0; i < A.count; ++i)
         if (A.list[i].unlocked == (ach_tab == 1))
             ach_view[ach_view_count++] = i;
@@ -782,6 +794,7 @@ void achievements_open(void)
 {
     stop_fetcher();
     A.count = ra_list(A.list, MAX_ACH);
+    A.lb_count = ra_leaderboards(A.lb, MAX_LB);
     ach_tab = 0;
     build_ach_view();
     A.cursor = 0;
@@ -796,9 +809,11 @@ void achievements_screen(uint32_t pressed)
 {
     const int rows = 7;
     const float row_h = 104, top = 214, x = 260, w = plat_width() - 520.0f;
+    const int tabs = A.lb_count ? 3 : 2; /* Achievable, Achieved and, when the game has them, Leaderboards */
     if (pressed & (BIT(BTN_L1) | BIT(BTN_R1) | BIT(BTN_LEFT) | BIT(BTN_RIGHT)))
     {
-        ach_tab ^= 1;
+        const int step = (pressed & (BIT(BTN_L1) | BIT(BTN_LEFT))) ? tabs - 1 : 1;
+        ach_tab = (ach_tab + step) % tabs;
         build_ach_view();
         sfx_play(SFX_CLICK);
     }
@@ -845,13 +860,14 @@ void achievements_screen(uint32_t pressed)
         draw_rrect(bx, 62, bw, 10, 5, TH_PILL);
         draw_rrect(bx, 62, bw * unlocked / A.count, 10, 5, TH_GOLD);
     }
-    /* the two tabs */
+    /* the tabs */
     {
-        char label[2][64];
+        char label[3][64];
         snprintf(label[0], sizeof(label[0]), "%s  %d", tr("Achievable"), A.count - unlocked);
         snprintf(label[1], sizeof(label[1]), "%s  %d", tr("Achieved"), unlocked);
+        snprintf(label[2], sizeof(label[2]), "%s  %d", tr("Leaderboards"), A.lb_count);
         float tx = x;
-        for (int t = 0; t < 2; ++t)
+        for (int t = 0; t < tabs; ++t)
         {
             float tw = text_width(22, FONT_REGULAR, label[t]) + 44;
             bool on = t == ach_tab;
@@ -860,6 +876,8 @@ void achievements_screen(uint32_t pressed)
                       ALIGN_CENTER, label[t]);
             tx += tw + 12;
         }
+        if (ach_tab == 2 && !ra_hardcore()) /* they only run in hardcore */
+            text_draw(x + w, 156, 20, FONT_REGULAR, TH_TEXT_DIM, ALIGN_RIGHT, tr("Leaderboards only run in hardcore mode."));
     }
 
     static int top_row;
@@ -882,6 +900,16 @@ void achievements_screen(uint32_t pressed)
         const int i = ach_view[k];
         const RaAchievement *a = &A.list[i];
         float y = top + (k - A.scroll) * row_h;
+        if (ach_tab == 2)
+        {
+            /* a leaderboard: its name and what it asks for */
+            const RaLeaderboard *l = &A.lb[i];
+            draw_rrect(x + 14, y + 10, 64, 64, 10, TH_PILL);
+            icon_draw(ICON_TROPHY, x + 26, y + 22, 40, TH_GOLD);
+            text_draw_fit(x + 100, y + 12, 26, FONT_BOLD, TH_TEXT, ALIGN_LEFT, w - 124, l->title);
+            text_draw_fit(x + 100, y + 48, 20, FONT_REGULAR, TH_TEXT_DIM, ALIGN_LEFT, w - 124, l->description);
+            continue;
+        }
         /* the badge, once downloaded; a trophy or a lock until then */
         if (!A.badge[i] && SDL_AtomicGet(&A.badge_ready[i]) == 1)
         {

@@ -164,6 +164,21 @@ int ra_lb_trackers(RaLbTracker *out, int max)
     return 1;
 }
 
+int ra_leaderboards(RaLeaderboard *out, int max)
+{
+    static const char *const names[][2] = {{"Dr. Light's Lab", "Reach the end of the first stage as fast as you can"},
+                                           {"Highway Run", "Finish the highway stage without taking damage"}};
+    int n = max < 2 ? max : 2;
+    for (int i = 0; i < n; ++i)
+    {
+        memset(&out[i], 0, sizeof(out[i]));
+        out[i].id = 1u + (unsigned)i;
+        strncpy(out[i].title, names[i][0], sizeof(out[i].title) - 1);
+        strncpy(out[i].description, names[i][1], sizeof(out[i].description) - 1);
+    }
+    return n;
+}
+
 void ra_clear_indicators(void) {}
 PlatTexture *ra_badge(unsigned id, const char *url) { (void)id; (void)url; return NULL; }
 void ra_badges_shutdown(void) {}

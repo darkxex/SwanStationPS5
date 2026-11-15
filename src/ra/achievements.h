@@ -85,6 +85,15 @@ typedef struct
 } RaLbTracker;
 int ra_lb_trackers(RaLbTracker *out, int max);
 
+/* The loaded game's leaderboards: what each is called and what it asks for. They only run in hardcore. */
+typedef struct
+{
+    unsigned id;
+    char title[96];
+    char description[192];
+} RaLeaderboard;
+int ra_leaderboards(RaLeaderboard *out, int max);
+
 void ra_clear_indicators(void); /* the emulation jumped (a state was loaded): nothing that was up is known to be */
 
 #endif

@@ -723,6 +723,22 @@ static void RC_CCONV on_game_loaded(int result, const char *error, rc_client_t *
     else
         snprintf(detail, sizeof(detail), tr("%s has no achievements yet"), g ? g->title : tr("This game"));
     post_ex("RetroAchievements", detail, true); /* the game just opened: the sound is for the unlocks */
+    {
+        /* for the log: how many leaderboards the set has (they only run in hardcore) */
+        rc_client_leaderboard_list_t *lbs = rc_client_create_leaderboard_list(c, RC_CLIENT_LEADERBOARD_LIST_GROUPING_NONE);
+        unsigned count = 0;
+        for (uint32_t b = 0; lbs && b < lbs->num_buckets; ++b)
+            count += lbs->buckets[b].num_leaderboards;
+        SwanStationPS5_log("ra: %s: %u achievements, %u leaderboards", g ? g->title : "?", s.num_core_achievements, count);
+        for (uint32_t b = 0; lbs && b < lbs->num_buckets; ++b)
+            for (uint32_t i = 0; i < lbs->buckets[b].num_leaderboards; ++i)
+            {
+                const rc_client_leaderboard_t *l = lbs->buckets[b].leaderboards[i];
+                SwanStationPS5_log("ra: leaderboard %u: %s - %s", l->id, l->title ? l->title : "", l->description ? l->description : "");
+            }
+        if (lbs)
+            rc_client_destroy_leaderboard_list(lbs);
+    }
 }
 
 /* The image rcheevos reads when the core can't hand it sectors: the first
@@ -888,6 +904,27 @@ bool ra_game_progress(int *unlocked, int *total)
     *unlocked = (int)s.num_unlocked_achievements;
     *total = (int)s.num_core_achievements;
     return true;
+}
+
+int ra_leaderboards(RaLeaderboard *out, int max)
+{
+    if (!client || !rc_client_get_game_info(client))
+        return 0;
+    rc_client_leaderboard_list_t *list = rc_client_create_leaderboard_list(client, RC_CLIENT_LEADERBOARD_LIST_GROUPING_NONE);
+    if (!list)
+        return 0;
+    int n = 0;
+    for (uint32_t b = 0; b < list->num_buckets; ++b)
+        for (uint32_t i = 0; i < list->buckets[b].num_leaderboards && n < max; ++i)
+        {
+            const rc_client_leaderboard_t *l = list->buckets[b].leaderboards[i];
+            out[n].id = l->id;
+            str_copy(out[n].title, sizeof(out[n].title), l->title ? l->title : "");
+            str_copy(out[n].description, sizeof(out[n].description), l->description ? l->description : "");
+            ++n;
+        }
+    rc_client_destroy_leaderboard_list(list);
+    return n;
 }
 
 int ra_list(RaAchievement *out, int max)

@@ -827,14 +827,28 @@ static void draw_tracker(void)
         draw_rrect(x + 20, y + 62, bw * k < 10 ? 10 : bw * k, 10, 5, TH_GOLD);
 }
 
-/* The badges of the achievements whose challenge is up (their Trigger flag), bottom left, for as long as they are. */
+/* Top left, from the top: the FPS counter (when it shows), the badges of the challenges that are up, then the leaderboard
+ * attempts' timers. Each takes the room of the ones above it. */
+static float top_left_y(bool after_badges)
+{
+    float y = app.settings.show_fps ? 92.0f : 24.0f;
+    if (after_badges && app.global.ra_challenges)
+    {
+        RaChallenge badges[8];
+        if (ra_challenges(badges, 8) > 0)
+            y += 56.0f + 8.0f + 12.0f; /* the badges' row, its frame and a gap */
+    }
+    return y;
+}
+
+/* The badges of the achievements whose challenge is up (their Trigger flag), for as long as they are. */
 static void draw_challenges(void)
 {
     RaChallenge list[8];
     const int n = ra_challenges(list, 8);
     if (!n)
         return;
-    const float size = 56, gap = 12, x0 = 48, y = plat_height() - size - 48;
+    const float size = 56, gap = 12, x0 = 28, y = top_left_y(false) + 4;
     for (int i = 0; i < n; ++i)
     {
         const float x = x0 + i * (size + gap);
@@ -847,7 +861,7 @@ static void draw_challenges(void)
     }
 }
 
-/* The live timer or value of the leaderboard attempts in progress, top right under the pop-ups. */
+/* The live timer or value of the leaderboard attempts in progress, top left, under the challenge badges. */
 static void draw_lb_trackers(void)
 {
     RaLbTracker list[4];
@@ -855,7 +869,7 @@ static void draw_lb_trackers(void)
     for (int i = 0; i < n; ++i)
     {
         const float w = text_width(30, FONT_BOLD, list[i].display) + 40, h = 48;
-        const float x = plat_width() - w - 48, y = 120 + i * (h + 10);
+        const float x = 24, y = top_left_y(true) + i * (h + 10);
         draw_rrect(x, y, w, h, 24, TH_CARD_A(0xe0));
         text_draw(x + w * 0.5f, y + 8, 30, FONT_BOLD, TH_TEXT, ALIGN_CENTER, list[i].display);
     }
