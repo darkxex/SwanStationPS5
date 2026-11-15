@@ -827,6 +827,18 @@ static void draw_tracker(void)
         draw_rrect(x + 20, y + 62, bw * k < 10 ? 10 : bw * k, 10, 5, TH_GOLD);
 }
 
+/* The fast forward / rewind icon of this frame (0: none): draw_speed_icon puts it over everything. */
+static int speed_icon;
+
+/* Over everything, last of the frame: the pop-ups, the badges and the rest give way to it while the button is held. */
+static void draw_speed_icon(void)
+{
+    if (app.screen != SCREEN_GAME || !speed_icon)
+        return;
+    draw_rrect(plat_width() - 110, 30, 80, 60, 30, 0xb0000000u);
+    icon_draw(speed_icon, plat_width() - 92, 38, 44, TH_TEXT);
+}
+
 /* Where the leaderboard timers start, top left: under the FPS counter when it shows. */
 static float timers_top(void)
 {
@@ -2812,12 +2824,7 @@ static void game_screen(PadState *pads)
         draw_rrect(24, 24, w, 52, 26, 0xb0000000u);
         text_draw(44, 36, 26, FONT_BOLD, TH_GOOD, ALIGN_LEFT, f);
     }
-    if (fast || back)
-    {
-        int icon = back ? ICON_HISTORY : ICON_PLAYER_TRACK_NEXT;
-        draw_rrect(plat_width() - 110, 30, 80, 60, 30, 0xb0000000u);
-        icon_draw(icon, plat_width() - 92, 38, 44, TH_TEXT);
-    }
+    speed_icon = (fast || back) ? (back ? ICON_HISTORY : ICON_PLAYER_TRACK_NEXT) : 0; /* drawn by draw_speed_icon, over everything */
     app_draw_toast();
 }
 
@@ -3343,6 +3350,7 @@ int main(int argc, char **argv)
         message_box_draw();
         question_draw();
         toast_render();
+        draw_speed_icon();
         plat_end_frame();
     }
 
