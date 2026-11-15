@@ -827,31 +827,24 @@ static void draw_tracker(void)
         draw_rrect(x + 20, y + 62, bw * k < 10 ? 10 : bw * k, 10, 5, TH_GOLD);
 }
 
-/* Top left, from the top: the FPS counter (when it shows), the badges of the challenges that are up, then the leaderboard
- * attempts' timers. Each takes the room of the ones above it. */
-static float top_left_y(bool after_badges)
+/* Where the leaderboard timers start, top left: under the FPS counter when it shows. */
+static float timers_top(void)
 {
-    float y = app.settings.show_fps ? 92.0f : 24.0f;
-    if (after_badges && app.global.ra_challenges)
-    {
-        RaChallenge badges[8];
-        if (ra_challenges(badges, 8) > 0)
-            y += 56.0f + 8.0f + 12.0f; /* the badges' row, its frame and a gap */
-    }
-    return y;
+    return app.settings.show_fps ? 92.0f : 24.0f;
 }
 
-/* The badges of the achievements whose challenge is up (their Trigger flag), for as long as they are. */
+/* The badges of the achievements whose challenge is up (their Trigger flag), top right, one below the other, for as long as they are. They are
+ * drawn before the pop-ups, so a pop-up that comes up covers them while it lasts. */
 static void draw_challenges(void)
 {
     RaChallenge list[8];
     const int n = ra_challenges(list, 8);
     if (!n)
         return;
-    const float size = 56, gap = 12, x0 = 28, y = top_left_y(false) + 4;
+    const float size = 56, gap = 16, x = plat_width() - 28 - size; /* the right edge */
     for (int i = 0; i < n; ++i)
     {
-        const float x = x0 + i * (size + gap);
+        const float y = 28 + i * (size + gap); /* the top corner, one below the other */
         draw_rrect(x - 4, y - 4, size + 8, size + 8, 12, TH_CARD_A(0xe0));
         PlatTexture *badge = ra_badge(list[i].id, list[i].badge_url);
         if (badge)
@@ -861,7 +854,7 @@ static void draw_challenges(void)
     }
 }
 
-/* The live timer or value of the leaderboard attempts in progress, top left, under the challenge badges. */
+/* The live timer or value of the leaderboard attempts in progress, top left (under the FPS counter when it shows). */
 static void draw_lb_trackers(void)
 {
     RaLbTracker list[4];
@@ -869,7 +862,7 @@ static void draw_lb_trackers(void)
     for (int i = 0; i < n; ++i)
     {
         const float w = text_width(30, FONT_BOLD, list[i].display) + 40, h = 48;
-        const float x = 24, y = top_left_y(true) + i * (h + 10);
+        const float x = 24, y = timers_top() + i * (h + 10);
         draw_rrect(x, y, w, h, 24, TH_CARD_A(0xe0));
         text_draw(x + w * 0.5f, y + 8, 30, FONT_BOLD, TH_TEXT, ALIGN_CENTER, list[i].display);
     }
