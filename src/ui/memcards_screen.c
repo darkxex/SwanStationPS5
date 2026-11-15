@@ -14,6 +14,7 @@
 #include "draw.h"
 #include "icons.h"
 #include "sfx.h"
+#include "sjis_table.h"
 #include "text.h"
 #include "theme.h"
 
@@ -51,63 +52,69 @@ static struct
     int import_count, import_cursor;
 } C;
 
-/* Save titles are Shift-JIS; most use full-width ASCII, which this maps back. */
-static void sjis_to_ascii(const uint8_t *in, size_t len, char *out, size_t size)
+/* Save titles are Shift-JIS. Full-width ASCII is turned back into ASCII (most Western games write theirs so);
+ * everything else becomes the real character, as UTF-8, which the Japanese font draws. */
+static size_t put_utf8(char *out, size_t o, size_t size, unsigned cp)
+{
+    char tmp[4];
+    size_t n = 0;
+    if (cp < 0x80)
+        tmp[n++] = (char)cp;
+    else if (cp < 0x800)
+    {
+        tmp[n++] = (char)(0xc0 | cp >> 6);
+        tmp[n++] = (char)(0x80 | (cp & 0x3f));
+    }
+    else
+    {
+        tmp[n++] = (char)(0xe0 | cp >> 12);
+        tmp[n++] = (char)(0x80 | ((cp >> 6) & 0x3f));
+        tmp[n++] = (char)(0x80 | (cp & 0x3f));
+    }
+    if (o + n + 1 > size)
+        return o;
+    memcpy(out + o, tmp, n);
+    return o + n;
+}
+
+static void sjis_to_utf8(const uint8_t *in, size_t len, char *out, size_t size)
 {
     size_t o = 0;
     for (size_t i = 0; i < len && in[i] && o + 1 < size;)
     {
-        uint8_t c = in[i];
+        const uint8_t c = in[i];
+        unsigned cp = '?';
         if (c < 0x80)
         {
-            out[o++] = (char)c;
+            cp = c;
             ++i;
-            continue;
         }
-        if (i + 1 >= len)
-            break;
-        unsigned code = (unsigned)c << 8 | in[i + 1];
-        char ch = '?';
-        if (code == 0x8140)
-            ch = ' ';
-        else if (code >= 0x824f && code <= 0x8258)
-            ch = (char)('0' + code - 0x824f);
-        else if (code >= 0x8260 && code <= 0x8279)
-            ch = (char)('A' + code - 0x8260);
-        else if (code >= 0x8281 && code <= 0x829a)
-            ch = (char)('a' + code - 0x8281);
-        else if (code == 0x8146)
-            ch = ':';
-        else if (code == 0x815e)
-            ch = '/';
-        else if (code == 0x817c || code == 0x815d)
-            ch = '-';
-        else if (code == 0x8144)
-            ch = '.';
-        else if (code == 0x8148)
-            ch = '?';
-        else if (code == 0x8149)
-            ch = '!';
-        else if (code == 0x8193)
-            ch = '%';
-        else if (code == 0x8190)
-            ch = '$';
-        else if (code == 0x8194)
-            ch = '#';
-        else if (code == 0x8195)
-            ch = '&';
-        else if (code == 0x8196)
-            ch = '*';
-        else if (code == 0x8197)
-            ch = '@';
-        else if (code == 0x8143)
-            ch = ',';
-        else if (code == 0x8169)
-            ch = '(';
-        else if (code == 0x816a)
-            ch = ')';
-        out[o++] = ch;
-        i += 2;
+        else if (c >= 0xa1 && c <= 0xdf)
+        {
+            cp = sjis_half_to_ucs[c - 0xa1];
+            ++i;
+        }
+        else
+        {
+            if (i + 1 >= len)
+                break;
+            const int row = sjis_row(c);
+            const unsigned trail = in[i + 1];
+            if (row >= 0 && trail >= 0x40 && trail <= 0xfb && sjis_to_ucs[row][trail - 0x40])
+                cp = sjis_to_ucs[row][trail - 0x40];
+            i += 2;
+        }
+        if (cp == 0x3000)
+            cp = ' ';
+        else if (cp >= 0xff01 && cp <= 0xff5e)
+            cp -= 0xfee0;
+        else if (cp == 0x2018 || cp == 0x2019)
+            cp = '\'';
+        else if (cp == 0x201c || cp == 0x201d)
+            cp = '"';
+        else if (cp == 0x30fc && o > 0 && (uint8_t)out[o - 1] < 0x80 && out[o - 1] != ' ') /* "SPIDER-MAN" */
+            cp = '-';
+        o = put_utf8(out, o, size, cp);
     }
     while (o > 0 && out[o - 1] == ' ')
         --o;
@@ -158,10 +165,11 @@ static void read_card(Card *c)
         const uint8_t *title = data + b * 0x2000 + 4; /* the save's own header: "SC", then the title */
         char name[48];
         if (data[b * 0x2000] == 'S' && data[b * 0x2000 + 1] == 'C')
-            sjis_to_ascii(title, 64, name, sizeof(name));
+            sjis_to_utf8(title, 64, name, sizeof(name));
         else
             snprintf(name, sizeof(name), "%.20s", (const char *)frame + 0x0a);
         str_copy(c->saves[c->save_count], sizeof(c->saves[0]), name[0] ? name : "?");
+        text_add_glyphs(name);
         /* the save's icon: header byte 2 is 0x11, 0x12 or 0x13 (frames), the palette is at 0x60, the frames at 0x80 */
         const uint8_t *head = data + b * 0x2000;
         int frames = head[0] == 'S' && head[1] == 'C' && head[2] >= 0x11 && head[2] <= 0x13 ? head[2] - 0x10 : 0;
@@ -191,6 +199,7 @@ static void scan(void)
         for (int i = 0; i < app.library.count; ++i)
             if (!str_icmp(app.library.games[i].serial, c->serial))
                 str_copy(c->title, sizeof(c->title), shelf_game_title(&app.library.games[i]));
+        text_add_glyphs(c->title);
         read_card(c);
     }
     closedir(d);

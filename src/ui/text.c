@@ -23,7 +23,8 @@
 #define FIRST_CP 32
 #define CP_COUNT 224 /* U+0020..U+00FF */
 #define MAX_ATLASES 16
-#define MAX_EXTRA 1024
+#define MAX_EXTRA 2048
+#define MAX_REQUESTED 1024
 
 typedef struct
 {
@@ -48,6 +49,8 @@ static bool jp_ok;
 static int extra_cp[MAX_EXTRA];
 static int extra_count;
 static bool extra_dirty = true;
+static int requested_cp[MAX_REQUESTED]; /* characters asked for by text_add_glyphs (memory card titles...) */
+static int requested_count;
 
 static const int buckets[] = {16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 128};
 
@@ -167,6 +170,16 @@ static int cmp_int(const void *a, const void *b)
     return *(const int *)a - *(const int *)b;
 }
 
+static void add_extra(int cp)
+{
+    if (cp <= 0xff || extra_count == MAX_EXTRA || !stbtt_FindGlyphIndex(&jp_info, cp))
+        return;
+    for (int k = 0; k < extra_count; ++k)
+        if (extra_cp[k] == cp)
+            return;
+    extra_cp[extra_count++] = cp;
+}
+
 /* The non-Latin-1 characters the current language needs (always including the
  * language selector's own names). */
 static void collect_extra(void)
@@ -186,16 +199,38 @@ static void collect_extra(void)
         while (*s)
         {
             int cp = decode(&s);
-            if (cp <= 0xff || extra_count == MAX_EXTRA || !stbtt_FindGlyphIndex(&jp_info, cp))
-                continue;
-            bool seen = false;
-            for (int k = 0; k < extra_count && !seen; ++k)
-                seen = extra_cp[k] == cp;
-            if (!seen)
-                extra_cp[extra_count++] = cp;
+            add_extra(cp);
         }
     }
+    for (int i = 0; i < requested_count; ++i)
+        add_extra(requested_cp[i]);
     qsort(extra_cp, (size_t)extra_count, sizeof(int), cmp_int);
+}
+
+void text_add_glyphs(const char *s)
+{
+    if (!jp_ok || !s)
+        return;
+    bool added = false;
+    while (*s)
+    {
+        const int cp = decode(&s);
+        if (cp <= 0xff || requested_count == MAX_REQUESTED || !stbtt_FindGlyphIndex(&jp_info, cp))
+            continue;
+        bool seen = false;
+        for (int k = 0; k < requested_count && !seen; ++k)
+            seen = requested_cp[k] == cp;
+        if (!seen)
+        {
+            requested_cp[requested_count++] = cp;
+            added = true;
+        }
+    }
+    if (added)
+    {
+        free_atlases();
+        extra_dirty = true;
+    }
 }
 
 void text_language_changed(void)

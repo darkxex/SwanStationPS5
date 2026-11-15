@@ -24,6 +24,9 @@ enum
 bool text_init(void);
 void text_shutdown(void);
 void text_language_changed(void); /* repacks glyphs for the new language */
+/* Makes sure the Japanese glyphs of this UTF-8 text are packed too (texts that do not come from the translations,
+ * such as memory card save titles). Call it when the text is read, not while drawing. */
+void text_add_glyphs(const char *s);
 /* Another pair of faces (assets paths), for the themes. */
 void text_set_fonts(const char *regular, const char *bold);
 

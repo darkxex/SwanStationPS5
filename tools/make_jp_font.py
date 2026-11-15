@@ -2,8 +2,8 @@
 # SwanStationPS5 - builds the Japanese interface font: a small Noto Sans JP subset.
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Noto Sans JP is ~9 MB; SwanStationPS5 only needs kana, punctuation and the kanji its
-translations use. This keeps those (plus all kana, so short new strings work)
+Noto Sans JP is ~9 MB; SwanStationPS5 only needs kana, punctuation, the kanji its
+translations use and the common kanji (JIS level 1) of memory card save titles. This keeps those (plus all kana, so short new strings work)
 and writes assets/fonts/NotoSansJP-SwanStationPS5.ttf (SIL Open Font License 1.1).
 
   pip install fonttools
@@ -24,6 +24,22 @@ CACHE = ROOT / "build" / "NotoSansJP-wght.ttf"
 OUT = ROOT / "assets" / "fonts" / "NotoSansJP-SwanStationPS5.ttf"
 
 
+def jis_level1() -> set[int]:
+    """The 2,965 kanji of JIS X 0208 level 1 (Shift-JIS 0x889F-0x9872)."""
+    out = set()
+    for hi in range(0x88, 0x99):
+        for lo in range(0x40, 0xFD):
+            if hi == 0x98 and lo > 0x72:
+                break
+            try:
+                ch = bytes([hi, lo]).decode("cp932")
+            except UnicodeDecodeError:
+                continue
+            if len(ch) == 1:
+                out.add(ord(ch))
+    return out
+
+
 def wanted_codepoints() -> set[int]:
     text = (ROOT / "src" / "i18n.c").read_text(encoding="utf-8")
     cps = {ord(c) for c in text if ord(c) > 0xFF}
@@ -31,6 +47,8 @@ def wanted_codepoints() -> set[int]:
     cps |= set(range(0x3040, 0x3100))  # hiragana, katakana
     cps |= set(range(0xFF01, 0xFF5F))  # full-width forms
     cps |= {0x30FB, 0x30FC}            # middle dot, long vowel mark
+    cps |= {0x2018, 0x2019, 0x201C, 0x201D}
+    cps |= jis_level1()                # memory card save titles are Shift-JIS: the common kanji of any game
     return cps
 
 
