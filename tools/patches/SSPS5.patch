@@ -314473,7 +314473,7 @@ index f1cea561..d3c5d855 100644
    return std::make_tuple(display_x, display_y);
  }
 diff --git a/src/core/host_interface.cpp b/src/core/host_interface.cpp
-index 1d6f503c..5300bb30 100644
+index 1d6f503c..fd9fadc9 100644
 --- a/src/core/host_interface.cpp
 +++ b/src/core/host_interface.cpp
 @@ -129,7 +129,11 @@ std::optional<std::vector<uint8_t>> HostInterface::GetBIOSImage(ConsoleRegion re
@@ -314488,17 +314488,20 @@ index 1d6f503c..5300bb30 100644
    return image;
  }
  
-@@ -279,6 +283,9 @@ void HostInterface::CheckForSettingsChanges(const Settings& old_settings)
+@@ -279,6 +283,12 @@ void HostInterface::CheckForSettingsChanges(const Settings& old_settings)
          g_settings.gpu_true_color != old_settings.gpu_true_color ||
          g_settings.gpu_scaled_dithering != old_settings.gpu_scaled_dithering ||
          g_settings.gpu_texture_filter != old_settings.gpu_texture_filter ||
 +        g_settings.gpu_stf != old_settings.gpu_stf ||
 +        g_settings.gpu_frt != old_settings.gpu_frt ||
 +        g_settings.gpu_ldm != old_settings.gpu_ldm ||
++        g_settings.gpu_close_gaps != old_settings.gpu_close_gaps ||
++        g_settings.gpu_exact_lines != old_settings.gpu_exact_lines ||
++        g_settings.gpu_accurate_blending != old_settings.gpu_accurate_blending ||
          g_settings.gpu_disable_interlacing != old_settings.gpu_disable_interlacing ||
          g_settings.gpu_force_ntsc_timings != old_settings.gpu_force_ntsc_timings ||
          g_settings.gpu_24bit_chroma_smoothing != old_settings.gpu_24bit_chroma_smoothing ||
-@@ -342,7 +349,9 @@ void HostInterface::CheckForSettingsChanges(const Settings& old_settings)
+@@ -342,7 +352,9 @@ void HostInterface::CheckForSettingsChanges(const Settings& old_settings)
  
      if (g_settings.texture_replacements.enable_vram_write_replacements !=
            old_settings.texture_replacements.enable_vram_write_replacements ||

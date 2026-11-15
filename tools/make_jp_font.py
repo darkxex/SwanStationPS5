@@ -42,6 +42,7 @@ def jis_level1() -> set[int]:
 
 def wanted_codepoints() -> set[int]:
     text = (ROOT / "src" / "i18n.c").read_text(encoding="utf-8")
+    text += (ROOT / "src" / "i18n_swanstation.inc").read_text(encoding="utf-8")
     cps = {ord(c) for c in text if ord(c) > 0xFF}
     cps |= set(range(0x3000, 0x3040))  # CJK punctuation
     cps |= set(range(0x3040, 0x3100))  # hiragana, katakana

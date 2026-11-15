@@ -654,7 +654,10 @@ static void add_swanstation_rows(Tab *tab, const Row *base, int base_count, cons
     for (int c = 0; c < ncat; ++c)
     {
         bool first = true;
-        snprintf(groups[categories[c]], sizeof(groups[0]), "%s (Core)", SS_CATEGORY_NAMES[categories[c]]);
+        if (categories[c] == SSC_LEGACY) /* its own group, not one of the core's */
+            snprintf(groups[categories[c]], sizeof(groups[0]), "%s", SS_CATEGORY_NAMES[categories[c]]);
+        else
+            snprintf(groups[categories[c]], sizeof(groups[0]), "%s (Core)", SS_CATEGORY_NAMES[categories[c]]);
         for (int i = 0; i < SS_OPT_COUNT; ++i)
         {
             if (SS_OPTS[i].category != categories[c] || n >= MAX_ROWS || is_aspect_option(i) || is_widescreen_option(i) ||
@@ -725,8 +728,8 @@ static void ensure_rows(void)
         }
         else if (base == GRAPHICS)
         {
-            static const int cats[] = {SSC_ENHANCEMENT};
-            add_swanstation_rows(&TABS[t], base, count, cats, 1);
+            static const int cats[] = {SSC_LEGACY, SSC_ENHANCEMENT};
+            add_swanstation_rows(&TABS[t], base, count, cats, 2);
         }
         else if (base == DISPLAY)
         {
@@ -758,6 +761,7 @@ static struct
     float tab_x, tab_w, sel_y, scroll, scope_x, remap_y;
     float switch_t[MAX_ROWS];
     int drive; /* the drive shown in Drives */
+    float reset_hold; /* seconds {Triangle} has been held to reset everything */
 } S;
 
 /* The game whose own settings the "This game" side edits: the running one, or the shelf's (Settings opened from the shelf) */
@@ -976,6 +980,8 @@ static bool row_locked(const Row *r)
            (r->kind == K_CHOICE || r->kind == K_TOGGLE || r->kind == K_SLIDER);
 }
 
+static bool bulk_reset; /* every row is being put back to default: the running game is told once, at the end */
+
 static void write_value(const Row *r, int v)
 {
     if (row_locked(r) || value_conflicts(r, v))
@@ -1038,7 +1044,7 @@ static void write_value(const Row *r, int v)
         remote_update(app.global.remote);
     if (r->special == SP_SOUND)
         sfx_configure(app.global.ui_sound, (app.global.ui_volume + 1) * 25);
-    if (app.game)
+    if (app.game && !bulk_reset)
     {
         host_apply_settings(&app.settings);
         controls_reconfigure(app.game, &app.settings);
@@ -1154,6 +1160,25 @@ static void default_value(const Row *r)
     config_defaults(&d);
     const char *base = (const char *)&d + r->offset;
     write_value(r, r->is_bool ? (*(const bool *)base ? 1 : 0) : label_of(r, *(const int *)base - r->base));
+}
+
+#define RESET_HOLD 1.0f /* seconds {Triangle} is held to put every setting back to default */
+
+/* Every row that has a value, in every tab: what the settings list shows, for the side being edited (all games or this
+ * game). Rows that are not settings (accounts, actions) are left alone. */
+static void default_all(void)
+{
+    bulk_reset = true;
+    for (int t = 0; t < TAB_COUNT; ++t)
+        for (int i = 0; i < TABS[t].count; ++i)
+            default_value(&TABS[t].rows[i]);
+    bulk_reset = false;
+    if (app.game)
+    {
+        host_apply_settings(&app.settings);
+        controls_reconfigure(app.game, &app.settings);
+    }
+    app_save_settings();
 }
 
 /* ---------------------------------------------------------------- the button-mapping page */
@@ -2274,6 +2299,30 @@ void settings_screen(uint32_t pressed)
             sfx_play(SFX_CLICK);
         }
     }
+    {
+        /* {Triangle} held: all the settings go back to default (a bar fills up to it) */
+        static float held;
+        static bool done;
+        const bool tri = (app.pads[app_nav_pad()].buttons & BIT(BTN_TRIANGLE)) != 0;
+        if (tri && !done)
+        {
+            held += app.dt;
+            if (held >= RESET_HOLD)
+            {
+                held = 0.0f;
+                done = true;
+                default_all();
+                sfx_play(SFX_BACK);
+                app_toast("All the settings are back to default.");
+            }
+        }
+        else if (!tri)
+        {
+            held = 0.0f;
+            done = false;
+        }
+        S.reset_hold = held;
+    }
     if ((pressed & BIT(BTN_SQUARE)) && scope_game() && app.game_has_own)
     {
         /* back to the console-wide settings for this game */
@@ -2301,10 +2350,20 @@ void settings_screen(uint32_t pressed)
 
     draw_rows();
     draw_help(r);
+    if (S.reset_hold > 0.12f)
+    {
+        const char *msg = tr("Keep holding to put all the settings back to default...");
+        const float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
+        const float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
+        draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
+        text_draw(plat_width() * 0.5f, y + 12, 26, FONT_REGULAR, TH_TEXT, ALIGN_CENTER, msg);
+        draw_rrect(x + 32, y + 56, w - 64, 12, 6, TH_DIVIDER);
+        draw_rrect(x + 32, y + 56, fmaxf(12.0f, (w - 64) * fminf(S.reset_hold / RESET_HOLD, 1.0f)), 12, 6, TH_DANGER);
+    }
     if (scope_game() && app.game_has_own && S.game_scope)
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE, GLYPH_SQUARE, GLYPH_TOUCHPAD};
-        const char *const labels[] = {"Change", "Back", "Default", "Use all-games settings",
+        const char *const labels[] = {"Change", "Back", "Default (hold: all)", "Use all-games settings",
                                       app.settings.manual_crop ? "Preview with manual crop" : "Preview"};
         app_draw_hints(glyphs, labels, app.game ? 5 : 4, NULL);
         const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};
@@ -2313,7 +2372,7 @@ void settings_screen(uint32_t pressed)
     else
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE, GLYPH_TOUCHPAD};
-        const char *const labels[] = {"Change", "Back", "Default",
+        const char *const labels[] = {"Change", "Back", "Default (hold: all)",
                                       app.settings.manual_crop ? "Preview with manual crop" : "Preview"};
         app_draw_hints(glyphs, labels, app.game ? 4 : 3, NULL);
         const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};

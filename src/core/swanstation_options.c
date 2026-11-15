@@ -187,8 +187,18 @@ static const char *const v91[] = {"true", "false"};
 static const char *const l91[] = {"Enabled", "Disabled"};
 static const char *const v92[] = {"true", "false"};
 static const char *const l92[] = {"Enabled", "Disabled"};
+static const char *const v93[] = {"true", "false"};
+static const char *const l93[] = {"Enabled", "Disabled"};
+static const char *const v94[] = {"true", "false"};
+static const char *const l94[] = {"Enabled", "Disabled"};
+static const char *const v95[] = {"true", "false"};
+static const char *const l95[] = {"Enabled", "Disabled"};
+static const char *const v96[] = {"true", "false"};
+static const char *const l96[] = {"Enabled", "Disabled"};
+static const char *const v97[] = {"true", "false"};
+static const char *const l97[] = {"Enabled", "Disabled"};
 
-const char *const SS_CATEGORY_NAMES[SSC_COUNT] = {"Console", "Enhancements", "Display", "Controller ports", "Advanced"};
+const char *const SS_CATEGORY_NAMES[SSC_COUNT] = {"Console", "Enhancements", "Display", "Controller ports", "Advanced", "Inherited"};
 
 const SsOpt SS_OPTS[SS_OPT_COUNT] = {
     {"swanstation_BIOS_PathNTSCJ", "NTSC-J BIOS (Restart)",
@@ -470,4 +480,19 @@ const SsOpt SS_OPTS[SS_OPT_COUNT] = {
     {"swanstation_Audio_FastHook", "Use Per-Frame Audio Batching (Restart)",
      "Drains all SPU samples to the frontend once per emulated frame, instead of pushing each chunk as the SPU produces it. This is faster and produces more even audio batching, and is the right choice for almost every game. A small number of titles (notably Formula 1 / Formula 1 '97) hang at boot if audio is not delivered to the frontend mid-frame; the core auto-disables this option for those known titles, but if a game freezes at startup with audio enabled, try disabling this manually.",
      SSC_ADVANCED, 2, 0, v92, l92},
+    {"swanstation_GPU_AccurateBlending", "Accurate Blending",
+     "Blends transparent pixels the way the console does, in the shader, instead of with the GPU's own blending. It is used with one sample of MSAA and while the PGXP depth buffer is off. Only applies to the hardware renderers.",
+     SSC_LEGACY, 2, 0, v93, l93},
+    {"swanstation_GPU_CloseGaps", "Close Gaps Between Polygons",
+     "Draws solid polygons a little larger above 1x resolution, to close the gaps that show between them. Blended polygons and 2D rectangles are left as they are. Only applies to the hardware renderers.",
+     SSC_LEGACY, 2, 1, v94, l94},
+    {"swanstation_GPU_ExactLines", "Exact Lines",
+     "Draws lines the way the console's hardware does instead of approximating them. Only applies to the hardware renderers.",
+     SSC_LEGACY, 2, 0, v95, l95},
+    {"swanstation_TextureReplacements_EnableTextureBlocks", "HD Texture Blocks",
+     "Uses the HD textures of a texture pack by the game's texture blocks. It does nothing when the game has no pack. Only applies to the hardware renderers.",
+     SSC_LEGACY, 2, 1, v96, l96},
+    {"swanstation_TextureReplacements_DumpTextureBlocks", "Dump Texture Blocks",
+     "Writes out the texture blocks the game uses, for those who make texture packs. It slows the game down while it is on.",
+     SSC_LEGACY, 2, 1, v97, l97},
 };

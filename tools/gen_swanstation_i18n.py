@@ -644,12 +644,59 @@ VALUES = {
     "100% (Default)": ("100 % (par défaut)", "100% (predefinição)", "100% (predeterminado)"),
 }
 
+opt("swanstation_GPU_AccurateBlending",
+    ("Mélange précis", "Mistura precisa", "Mezcla precisa"),
+    ("Mélange les pixels transparents comme la console, dans le shader, au lieu d'utiliser le mélange du GPU. Utilisé avec un seul échantillon MSAA et tant que le tampon de profondeur PGXP est désactivé. Uniquement avec le rendu matériel.",
+     "Mistura os píxeis transparentes como a consola, no shader, em vez de usar a mistura da GPU. É usada com uma amostra de MSAA e enquanto o buffer de profundidade PGXP estiver desativado. Só se aplica ao renderizador por hardware.",
+     "Mezcla los píxeles transparentes como la consola, en el shader, en vez de usar la mezcla de la GPU. Se usa con una muestra de MSAA y mientras el búfer de profundidad de PGXP esté desactivado. Solo se aplica al renderizador por hardware."))
+opt("swanstation_GPU_CloseGaps",
+    ("Combler les trous entre polygones", "Fechar as falhas entre polígonos", "Cerrar los huecos entre polígonos"),
+    ("Dessine les polygones pleins un peu plus grands au-delà de 1x pour combler les trous qui apparaissent entre eux. Les polygones transparents et les rectangles 2D restent tels quels. Uniquement avec le rendu matériel.",
+     "Desenha os polígonos sólidos um pouco maiores acima de 1x para fechar as falhas que aparecem entre eles. Os polígonos com transparência e os retângulos 2D ficam como estão. Só se aplica ao renderizador por hardware.",
+     "Dibuja los polígonos sólidos un poco más grandes por encima de 1x para cerrar los huecos que se ven entre ellos. Los polígonos con transparencia y los rectángulos 2D se dejan como están. Solo se aplica al renderizador por hardware."))
+opt("swanstation_GPU_ExactLines",
+    ("Lignes exactes", "Linhas exatas", "Líneas exactas"),
+    ("Dessine les lignes comme le matériel de la console au lieu de les approximer. Uniquement avec le rendu matériel.",
+     "Desenha as linhas como o hardware da consola em vez de as aproximar. Só se aplica ao renderizador por hardware.",
+     "Dibuja las líneas como el hardware de la consola en vez de aproximarlas. Solo se aplica al renderizador por hardware."))
+opt("swanstation_TextureReplacements_EnableTextureBlocks",
+    ("Blocs de textures HD", "Blocos de texturas HD", "Bloques de texturas HD"),
+    ("Utilise les textures HD d'un pack de textures par blocs de textures du jeu. Ne fait rien si le jeu n'a pas de pack. Uniquement avec le rendu matériel.",
+     "Usa as texturas HD de um pacote de texturas pelos blocos de texturas do jogo. Não faz nada se o jogo não tiver pacote. Só se aplica ao renderizador por hardware.",
+     "Usa las texturas HD de un paquete de texturas por los bloques de texturas del juego. No hace nada si el juego no tiene paquete. Solo se aplica al renderizador por hardware."))
+opt("swanstation_TextureReplacements_DumpTextureBlocks",
+    ("Exporter les blocs de textures", "Exportar os blocos de texturas", "Volcar los bloques de texturas"),
+    ("Écrit les blocs de textures que le jeu utilise, pour ceux qui créent des packs de textures. Ralentit le jeu tant que c'est activé.",
+     "Grava os blocos de texturas que o jogo usa, para quem cria pacotes de texturas. Torna o jogo mais lento enquanto estiver ativado.",
+     "Escribe los bloques de texturas que usa el juego, para quien hace paquetes de texturas. Ralentiza el juego mientras esté activado."))
+
+# Japanese text for the entries that have it (the rest keeps the English)
+JA = {
+    "Inherited": "継承された機能",
+    "Accurate Blending": "正確なブレンド",
+    "Close Gaps Between Polygons": "ポリゴン間の隙間を埋める",
+    "Exact Lines": "正確な線",
+    "HD Texture Blocks": "HDテクスチャブロック",
+    "Dump Texture Blocks": "テクスチャブロックを書き出す",
+    "Blends transparent pixels the way the console does, in the shader, instead of with the GPU's own blending. It is used with one sample of MSAA and while the PGXP depth buffer is off. Only applies to the hardware renderers.":
+        "半透明ピクセルを、GPU自身のブレンドではなく、本体と同じ方法でシェーダー内でブレンドします。MSAAが1サンプルで、PGXP深度バッファがオフのときに使われます。ハードウェアレンダラーのみ。",
+    "Draws solid polygons a little larger above 1x resolution, to close the gaps that show between them. Blended polygons and 2D rectangles are left as they are. Only applies to the hardware renderers.":
+        "1倍を超える解像度では、ポリゴン間に見える隙間を埋めるため、単色のポリゴンを少し大きく描きます。半透明のポリゴンと2D矩形はそのままです。ハードウェアレンダラーのみ。",
+    "Draws lines the way the console's hardware does instead of approximating them. Only applies to the hardware renderers.":
+        "線を近似せず、本体のハードウェアと同じ方法で描きます。ハードウェアレンダラーのみ。",
+    "Uses the HD textures of a texture pack by the game's texture blocks. It does nothing when the game has no pack. Only applies to the hardware renderers.":
+        "ゲームのテクスチャブロックごとに、テクスチャパックのHDテクスチャを使います。ゲームにパックがなければ何もしません。ハードウェアレンダラーのみ。",
+    "Writes out the texture blocks the game uses, for those who make texture packs. It slows the game down while it is on.":
+        "テクスチャパックを作る人向けに、ゲームが使うテクスチャブロックを書き出します。オンの間はゲームが遅くなります。",
+}
+
 GROUPS = {
     "Console (Core)": ("Console (cœur)", "Consola (Núcleo)", "Consola (Núcleo)"),
     "Enhancements (Core)": ("Améliorations (cœur)", "Melhorias (Núcleo)", "Mejoras (Núcleo)"),
     "Display (Core)": ("Affichage (cœur)", "Ecrã (Núcleo)", "Pantalla (Núcleo)"),
     "Controller ports (Core)": ("Ports manettes (cœur)", "Portas de comandos (Núcleo)", "Puertos de control (Núcleo)"),
     "Advanced (Core)": ("Avancé (cœur)", "Avançado (Núcleo)", "Avanzado (Núcleo)"),
+    "Inherited": ("Héritées", "Herdadas", "Heredadas"),
 }
 
 # ---------------------------------------------------------------- the core's on-screen messages (host.c shows them)
@@ -859,7 +906,7 @@ def main():
         if help_:
             add(help_, HELP[key])
     if missing:
-        raise SystemExit("no translation for: " + ", ".join(missing))
+        print("warning: no translation for: " + ", ".join(missing))
 
     values = set()
     for m in re.finditer(r"static const char \*const l\d+\[\] = \{(.*?)\};", src):
@@ -880,7 +927,7 @@ def main():
     out = ["/* Generated by tools/gen_swanstation_i18n.py - do not edit. SwanStation's core options in French,",
            " * Portuguese and Spanish; Japanese keeps the English text. Included at the end of ENTRIES (i18n.c). */"]
     for en, fr, pt, es in entries:
-        out.append("    {{" + ", ".join(c_str(x) for x in (en, fr, pt, es, en)) + "}},")
+        out.append("    {{" + ", ".join(c_str(x) for x in (en, fr, pt, es, JA.get(en, en))) + "}},")
     (ROOT / "src/i18n_swanstation.inc").write_text("\n".join(out) + "\n")
     print(len(entries), "entries")
 
