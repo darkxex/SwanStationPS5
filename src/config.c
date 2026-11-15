@@ -24,7 +24,7 @@ void config_defaults(Settings *s)
     s->black_frame_intensity = 50;
     s->true_colour = true; /* True Color is on by default */
     s->upscale = 2;
-    s->upscale_filter = UPSCALE_XBR;
+    s->upscale_filter = UPSCALE_SHARP;
     s->region = REGION_AUTO;
     s->dithering = true;
     s->lightgun = 1; /* Off */

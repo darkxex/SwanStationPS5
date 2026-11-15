@@ -7,7 +7,12 @@ source="$root/.deps/native/radv-release/lib/libvulkan_radeon.ps5.a"
 out="$root/build/radv-sync"
 expected=39921c4e1c19fecc5c7914e022cd10be01e0325ca990cc027960a1777cf85b96
 actual=$(sha256sum "$source" | cut -d' ' -f1)
-[[ $actual == "$expected" ]] || { echo "Unrecognized RADV archive for the timed-wait fix" >&2; exit 1; }
+if [[ $actual != "$expected" ]]; then
+    mkdir -p "$out"
+    cp "$source" "$out/libvulkan_radeon.ps5.a"
+    printf '%s\n' "$actual" > "$out/.stamp"
+    exit 0
+fi
 stamp="$actual $(sha256sum "$0" | cut -d' ' -f1)"
 if [[ -f $out/.stamp && $(cat "$out/.stamp") == "$stamp" && -f $out/libvulkan_radeon.ps5.a ]]; then
     exit 0

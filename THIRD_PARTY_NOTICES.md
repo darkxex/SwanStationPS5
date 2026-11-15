@@ -168,6 +168,7 @@ No proprietary runtime module, encryption key, or game file is included.
 
 | Component | Use | License |
 | --- | --- | --- |
+| [PSSwanStation](https://github.com/Press5elect/PSSwanStation) by Press5elect and Crux2 | the hardware renderer of the SwanStation core: accurate blending with the fragment shader interlock, closing the gaps between polygons, exact lines and HD texture blocks (`tools/patches/SSPS5.patch`) | GPL-3.0-or-later |
 | [stb_image, stb_truetype](https://github.com/nothings/stb) | cover decoding, font rendering (`third_party/stb`) | Public domain / MIT |
 | [Inter](https://github.com/rsms/inter) | interface font (`assets/fonts`) | SIL Open Font License 1.1 (`assets/fonts/OFL.txt`) |
 | [xlenore/psx-covers](https://github.com/xlenore/psx-covers) | cover art, downloaded at runtime by serial; not bundled | see that repository |

@@ -478,6 +478,7 @@ SwanStationPS5 started as a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) b
 
 * **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator SwanStationPS5 runs.
 * **Mihawk-99**, for the PS5 port of Mesa's RADV Vulkan driver.
+* **Press5elect and Crux2**, for [PSSwanStation](https://github.com/Press5elect/PSSwanStation) (GPL-3.0-or-later): the hardware renderer of the emulator core SwanStationPS5 runs is theirs, with its accurate blending, its closing of the gaps between polygons, its exact lines and its HD texture blocks.
 * **BlackBearReloaded**, for [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate), the build pipeline, runtime and deploy tooling that turn SwanStationPS5 into a home-screen app.
 * **John Törnblom**, for the [ps5-payload-dev](https://github.com/ps5-payload-dev) SDK, and PacBrew's SDL2 and libcurl ports.
 * **SvenGDK**, for [SharpProspero](https://github.com/SvenGDK/SharpProspero), whose ELF converter and FSELF writer sign `eboot.bin`.

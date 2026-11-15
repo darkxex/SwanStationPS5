@@ -1311,8 +1311,8 @@ static void scale3x(const uint32_t *src, int w, int h, size_t pitch_px, uint32_t
     }
 }
 
-static uint32_t *scale_buf[2];
-static size_t scale_buf_size[2];
+static uint32_t *scale_buf[3];
+static size_t scale_buf_size[3];
 
 static uint32_t *scratch(int which, size_t pixels)
 {
@@ -1623,6 +1623,40 @@ void plat_upload_game(const void *pixels, int width, int height, size_t pitch, i
 {
     if (!pixels || width <= 0 || height <= 0)
         return;
+#if defined(SS5_CANVAS)
+    if (pixel_format != 1) /* the software renderer's frames are 16-bit (RGB565, or 1555): the canvas takes 32-bit */
+    {
+        uint32_t *wide = scratch(2, (size_t)width * height);
+        if (!wide)
+            return;
+        for (int y = 0; y < height; ++y)
+        {
+            const uint16_t *row = (const uint16_t *)((const uint8_t *)pixels + (size_t)y * pitch);
+            uint32_t *out_row = wide + (size_t)y * width;
+            for (int x = 0; x < width; ++x)
+            {
+                const uint32_t c = row[x];
+                uint32_t r, g, b;
+                if (pixel_format == 2)
+                {
+                    r = (c >> 11) & 31, g = (c >> 5) & 63, b = c & 31;
+                    g = (g << 2) | (g >> 4);
+                }
+                else
+                {
+                    r = (c >> 10) & 31, g = ((c >> 5) & 31) << 3, b = c & 31;
+                    g |= g >> 5;
+                }
+                r = (r << 3) | (r >> 2);
+                b = (b << 3) | (b >> 2);
+                out_row[x] = 0xff000000u | (r << 16) | (g << 8) | b;
+            }
+        }
+        pixels = wide;
+        pitch = (size_t)width * 4;
+        pixel_format = 1;
+    }
+#endif
     game_gpu = false;
     game_src_w = width;
     game_src_h = height;

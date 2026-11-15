@@ -167,15 +167,11 @@ static const char *const VIDEO_OUTS[] = {"60 Hz", "120 Hz"};
 static const char *const SORTS[] = {"Title", "Recently played", "Most played", "Region"};
 
 static const Row DISPLAY[] = {
-    /* "Upscale filter" and "Upscale" are CPU prescalers (Scale2x, xBR) for the software frames of the old core;
-     * SwanStation draws on the GPU and never goes through them, so they did nothing. To bring them back, restore
-     * these two rows and the "Picture" group header on the first one.
-    {"Picture", "Upscale filter", "How pixels are smoothed when the picture is enlarged.", K_CHOICE,
+    /* "Upscale filter" and "Upscale" (under "Internal resolution") are CPU prescalers (Scale2x, xBR) for the software
+     * renderer's frames: the GPU renderer never goes through them, and the descriptions say so. */
+    {"Picture", "Upscale filter (CPU)", "How pixels are smoothed when the picture is enlarged. Only with the CPU renderer.", K_CHOICE,
      APPLY_NOW, SP_NONE, false, INT_FIELD(upscale_filter), FILTERS, 3, 0},
-    {NULL, "Upscale", "Enlarges the picture before it is scaled to the screen.", K_CHOICE, APPLY_NOW,
-     SP_NONE, false, INT_FIELD(upscale), UPSCALE, 4, 1},
-    */
-    {"Picture", "Shader", "Gives the picture the look of a CRT TV, a handheld LCD or the analog NTSC signal. The most detailed ones are heavy.",
+    {NULL, "Shader", "Gives the picture the look of a CRT TV, a handheld LCD or the analog NTSC signal. The most detailed ones are heavy.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(shader), SHADERS, 14, 0, SHADER_ORDER},
     {NULL, "AMD FidelityFX Super Resolution",
      "Scales the picture to your screen before the shader, following the edges of the image, and sharpens it (AMD FSR 1).",
@@ -226,6 +222,8 @@ static const Row GRAPHICS[] = {
      K_CHOICE, APPLY_NEXT_GAME, SP_NONE, false, INT_FIELD(renderer), RENDERERS, 2, 0},
     {NULL, "Internal resolution", "Draws 3D at a higher resolution: sharper polygons.",
      K_CHOICE, APPLY_NOW, SP_NONE, false, INT_FIELD(internal_res), INTERNAL, 16, 1},
+    {NULL, "Upscale (CPU)", "Enlarges the picture before it is scaled to the screen. Only with the CPU renderer.", K_CHOICE, APPLY_NOW,
+     SP_NONE, false, INT_FIELD(upscale), UPSCALE, 4, 1},
     {NULL, "Precise geometry (PGXP)", "Stops polygons wobbling and textures warping.",
      K_TOGGLE, APPLY_NOW, SP_NONE, false, BOOL_FIELD(pgxp), OFF_ON, 2, 0},
     {NULL, "True colour", "Draws in 32-bit colour, without the dot pattern or colour banding. Pairs well with a high internal resolution.",
