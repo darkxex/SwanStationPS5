@@ -507,19 +507,31 @@ static void RC_CCONV on_event(const rc_client_event_t *e, rc_client_t *c)
     case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_HIDE:
         break; /* shown for 4 s anyway, long enough to read */
     case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW:
+        if (e->achievement)
+            SwanStationPS5_log("ra: challenge indicator up: %u %s", e->achievement->id, e->achievement->title);
         challenge_show(e->achievement);
         break;
     case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_HIDE:
         if (e->achievement)
+        {
+            SwanStationPS5_log("ra: challenge indicator down: %u", e->achievement->id);
             challenge_hide(e->achievement->id);
+        }
         break;
     case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW:
-    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_UPDATE:
+        if (e->leaderboard_tracker)
+            SwanStationPS5_log("ra: leaderboard tracker up: %u %s", e->leaderboard_tracker->id, e->leaderboard_tracker->display);
+        lb_tracker_set(e->leaderboard_tracker);
+        break;
+    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_UPDATE: /* nearly every frame for a timer: not logged */
         lb_tracker_set(e->leaderboard_tracker);
         break;
     case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_HIDE:
         if (e->leaderboard_tracker)
+        {
+            SwanStationPS5_log("ra: leaderboard tracker down: %u", e->leaderboard_tracker->id);
             lb_tracker_hide(e->leaderboard_tracker->id);
+        }
         break;
     case RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD:
         if (e->leaderboard && e->leaderboard_scoreboard)

@@ -83,6 +83,7 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 - **Memory card manager.** See the saves on every game's card with each save's own icon (animated, as on a PS1), export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards.
 - **Achievements list.** Every achievement of the game you're playing, with badges, in two tabs: *Achievable* (closest first) and *Achieved*.
   - Counted achievements (18/80 dragons) show a progress bar, and a small tracker pops up in game when they move.
+  - Achievements whose challenge is up (a condition you are meeting right now, RetroAchievements' Trigger flag) carry a *Challenge* tag, and their badges show in game while they are.
 - **Settings from your phone.** Turn it on and scan the QR code: a settings page opens on any phone on the same network.
 - **Updates from GitHub.** SwanStationPS5 finds a new release when it starts and installs it by itself a second after opening (or from *Settings → About*), into the folder the app is running from: `/data/homebrew`, or an extended or USB drive. After an update it asks once whether to start from the new version's factory settings (✕ resets, ○ keeps yours).
 - **Native app.** A real home-screen title (`PPSA98510`) with its own icon and art. Nothing is streamed and no PC is needed while you play.
@@ -373,7 +374,7 @@ It also shows the time and how long you've been playing.
 | Display | Aspect ratio, texture filtering (including MMPX), shader (LCD3x, CRT Royale and Royale Fast, Newpixie, Hyllian NTSC, Mattias, Lottes, Pi, zfast LCD, NTSC), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, load HD textures, double frames, and SwanStation's display options |
 | Graphics | Internal resolution (native to 16x), PGXP, true colour, supersampling, and SwanStation's enhancement options (MSAA, PGXP details...) |
 | Controls | Controller (digital or DualShock), left stick as D-pad, vibration, light bar, players (multitap), player order, dead zone, stick response, rumble feel, trigger effects, gas and brake on R2 / L2, light gun, button mapping, and SwanStation's controller port options |
-| Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, hardcore mode |
+| Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, challenge indicators, leaderboard tracker, hardcore mode |
 | Library | Theme, cover style, download missing covers, sort, your library, memory cards, rescan |
 | System | SwanStationPS5 (start the BIOS, games folder on USB drives, NFS shares), region, PS1 startup intro, fast CD loading, known game fixes, SwanStation's console and advanced options, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
 
@@ -397,6 +398,9 @@ With several profiles (Settings → System → Who's playing), each person signs
 python tools/SwanStationPS5_sync.py ra-login --host <PS5 IP> --profile "Player 2"
 ```
 
+- **Challenge indicators** (Settings → Achievements, on by default): while a challenge achievement's condition is being met, its badge shows bottom left in game and the achievements list marks it *Challenge*. It goes away when the challenge fails or the achievement unlocks, and on reset, closing the game or loading a state.
+- **Leaderboards**: with hardcore mode on, the live timer or value of an attempt shows top right (Settings → Achievements → Leaderboard tracker), and when it is submitted a notice gives your rank and best score.
+- **Discs in .chd** are hashed like the uncompressed disc image, so the same Redump sets load whether the game is a .bin/.cue, an .iso or a .chd.
 - **Your profile** (Settings → Achievements) shows your points, the games you've mastered, recent unlocks and the games closest to mastery. Covers show a trophy badge with your progress.
 
 - **Hardcore mode** (Settings → Achievements) turns off loading states and cheats, as RetroAchievements requires. Turning it on restarts the running game.

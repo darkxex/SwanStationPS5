@@ -760,11 +760,13 @@ static void build_ach_view(void)
     for (int i = 0; i < A.count; ++i)
         if (A.list[i].unlocked == (ach_tab == 1))
             ach_view[ach_view_count++] = i;
-    if (ach_tab == 0) /* insertion sort: furthest along first, list order otherwise */
+    if (ach_tab == 0) /* insertion sort: the challenges that are up first, then furthest along, list order otherwise */
         for (int i = 1; i < ach_view_count; ++i)
         {
             int v = ach_view[i], j = i;
-            while (j > 0 && A.list[ach_view[j - 1]].percent < A.list[v].percent)
+            while (j > 0 && (A.list[ach_view[j - 1]].challenge < A.list[v].challenge ||
+                             (A.list[ach_view[j - 1]].challenge == A.list[v].challenge &&
+                              A.list[ach_view[j - 1]].percent < A.list[v].percent)))
             {
                 ach_view[j] = ach_view[j - 1];
                 --j;
