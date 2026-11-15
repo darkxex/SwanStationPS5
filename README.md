@@ -23,7 +23,7 @@ SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 ho
 
 Its frontend (the shelf, menus, controls and tools) began as PSXS5's and has been reworked since to be 100% Vulkan. It drives the SwanStation core: SwanStation is the only emulator.
 
-- The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
+- The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core), with the hardware renderer of [PSSwanStation](https://github.com/Press5elect/PSSwanStation): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
 - You pick a game from a cover-flow shelf with your covers.
 - RetroAchievements, cheats for every game, save states and quick resume.
 
@@ -46,10 +46,13 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 
 ## Highlights
 
-- **The shelf and menus on the GPU too.** The interface is drawn through Vulkan, with a floor reflection under every cover. When you start a game, the case's lid opens and the CD spins, with the sound of a disc spinning up.
+- **The shelf and menus on the GPU too.** The interface is drawn through Vulkan, with a floor reflection under every cover. When you start a game, the case's lid opens and the CD spins, with the sound of a disc spinning up; the CD shows in the case's reflection on the floor too, turning with it.
 - **Always 4K.** The picture is sent to the TV at 4K, and it falls back to 1080p if the TV lacks the mode.
 - **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x (4x by default), at full speed.
 - **No more wobbly 3D.** PGXP (precise geometry) keeps polygons still and textures straight.
+- **A cleaner picture on the GPU.** The core's renderer is PSSwanStation's, which draws the picture without the corrupt textures and stray pixels the stock renderer showed on the PS5 at some resolutions (Rayman's backgrounds, for one). Its own features are in *Settings → Graphics → Legacy*: *Accurate Blending* (transparencies blended as the console does), *Close Gaps Between Polygons* (above 1x, off at first), *Exact Lines* and *HD Texture Blocks* (off at first, for texture packs by blocks). They apply while you play.
+- **Everything back to default.** In Settings, hold **Triangle** for a second and every setting goes back to its default for the side you are editing (all games, or this game). A tap still resets just the highlighted one.
+- **The CPU renderer works.** Choosing it no longer gives a black picture. Its *Upscale (CPU)* and *Upscale filter (CPU)* settings are marked as CPU only, and sharp pixels are the default.
 - **One emulator, nothing to choose.** Every game runs on SwanStation. Memory cards are saved per game.
 - **SwanStation's own options.** 104 of its core options (MSAA, texture filter, widescreen hack, PGXP details, controller ports, CPU overclock...) in Settings → Display, Graphics, Controls and System. They are in English and only on the console.
 
@@ -80,7 +83,7 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 - **Close the app from the controller.** Hold O for 2 seconds. Menus show the title from the game database, and the game menu has pills with the serial and the folder.
 - **Up to 4 players.** A multitap for the games that support it: each PS5 controller is a player.
 - **Fan translations.** Put a `.ppf` patch next to a game and SwanStationPS5 applies it when the game starts.
-- **Memory card manager.** See the saves on every game's card with each save's own icon (animated, as on a PS1), export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards.
+- **Memory card manager.** See the saves on every game's card with each save's own icon (animated, as on a PS1), export cards for other emulators, import `.mcr`, `.mcd`, `.srm` or `.gme` cards. Save titles are shown as the game wrote them, Japanese ones included (kana and the common kanji), and Western ones that use full-width letters read as plain text.
 - **Achievements list.** Every achievement of the game you're playing, with badges, in two tabs: *Achievable* (closest first) and *Achieved*.
   - Counted achievements (18/80 dragons) show a progress bar, and a small tracker pops up in game when they move.
   - Achievements whose challenge is up (a condition you are meeting right now, RetroAchievements' Trigger flag) carry a *Challenge* tag, and their badges show in game while they are.
@@ -372,13 +375,13 @@ It also shows the time and how long you've been playing.
 | Section | Settings |
 |---|---|
 | Display | Aspect ratio, texture filtering (including MMPX), shader (LCD3x, CRT Royale and Royale Fast, Newpixie, Hyllian NTSC, Mattias, Lottes, Pi, zfast LCD, NTSC), crop black edges, integer scaling, smooth final scaling, scanlines, border, game artwork border, brightness, colours, FPS counter, load HD textures, double frames, and SwanStation's display options |
-| Graphics | Internal resolution (native to 16x), PGXP, true colour, supersampling, and SwanStation's enhancement options (MSAA, PGXP details...) |
+| Graphics | Internal resolution (native to 16x), PGXP, true colour, supersampling, the renderer's own *Legacy* options (accurate blending, close gaps between polygons, exact lines, HD texture blocks), and SwanStation's enhancement options (MSAA, PGXP details...) |
 | Controls | Controller (digital or DualShock), left stick as D-pad, vibration, light bar, players (multitap), player order, dead zone, stick response, rumble feel, trigger effects, gas and brake on R2 / L2, light gun, button mapping, and SwanStation's controller port options |
 | Achievements | Account, your profile, unlock pop-ups and their style, progress tracker, challenge indicators, leaderboard tracker, hardcore mode |
 | Library | Theme, cover style, download missing covers, sort, your library, memory cards, rescan |
 | System | SwanStationPS5 (start the BIOS, games folder on USB drives, NFS shares), region, PS1 startup intro, fast CD loading, known game fixes, SwanStation's console and advanced options, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
 
-Video settings apply while you play. Internal resolution, PGXP, region, BIOS, controller and SwanStation's options apply from the next game.
+Hold **Triangle** for a second in Settings to put every setting back to its default. Video settings apply while you play. Internal resolution, PGXP, region, BIOS, controller and SwanStation's options apply from the next game.
 
 For GPU-readback stutters with the Vulkan renderer, enable **Graphics → Use Software Renderer For Readbacks (Restart)** and restart the game. This is off by default; its setting is `swanstation_GPU_UseSoftwareRendererForReadbacks=true` in the active global or per-game INI.
 
@@ -481,8 +484,8 @@ python3 tools/make_release.py   # optional: build the payload and the app, and p
 SwanStationPS5 started as a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia and is built on the work of a lot of people. Thank you all.
 
 * **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator SwanStationPS5 runs.
-* **Mihawk-99**, for the PS5 port of Mesa's RADV Vulkan driver.
-* **Press5elect and Crux2**, for [PSSwanStation](https://github.com/Press5elect/PSSwanStation) (GPL-3.0-or-later): the hardware renderer of the emulator core SwanStationPS5 runs is theirs, with its accurate blending, its closing of the gaps between polygons, its exact lines and its HD texture blocks.
+* **Mihawk-99**, for the PS5 port of Mesa's RADV Vulkan driver ([PS5_Mesa](https://github.com/mihawk-99/PS5_Mesa), [PS5_Vulkan](https://github.com/mihawk-99/PS5_Vulkan)) and the payload SDK it is built with ([PS5_PayloadSDK](https://github.com/mihawk-99/PS5_PayloadSDK)), **Crux2**, for the RADV patches that driver carries, and **the Mesa contributors**, for the driver itself.
+* **Press5elect and Crux2**, for [PSSwanStation](https://github.com/Press5elect/PSSwanStation) (GPL-3.0-or-later): the hardware renderer of the emulator core SwanStationPS5 runs is theirs, with its accurate blending, its closing of the gaps between polygons, its exact lines and its HD texture blocks. Using it fixed the corrupt textures the stock renderer drew on the PS5, and SwanStationPS5's own renderer features (the sprite texture filter, MMPX, line detection, true colour and PGXP fixes) are carried on top of it.
 * **BlackBearReloaded**, for [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate), the build pipeline, runtime and deploy tooling that turn SwanStationPS5 into a home-screen app.
 * **John Törnblom**, for the [ps5-payload-dev](https://github.com/ps5-payload-dev) SDK, and PacBrew's SDL2 and libcurl ports.
 * **SvenGDK**, for [SharpProspero](https://github.com/SvenGDK/SharpProspero), whose ELF converter and FSELF writer sign `eboot.bin`.
@@ -499,7 +502,7 @@ SwanStationPS5 started as a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) b
 * **Al-Azif**, for [ps-disc-detect](https://github.com/Al-Azif/ps-disc-detect) (GPL-3.0): the disc installation follows its way of reaching the drive through the CAM pass-through and of dumping a CD to `.bin` and `.cue` with `READ CD`. And **Swordpdf**, for [PS5SX2](https://github.com/Swordpdf/PS5SX2)'s disc code and its rule that a command only counts as done when the drive handed over every byte.
 * **crashGG** ([github.com/crashGG](https://github.com/crashGG)), for MMPX 3.0 and MMPX 3.2, the texture filters of the same names, and **Morgan McGuire and Mara Gagiu**, for [MMPX](https://casual-effects.com/research/McGuire2021PixelArt/), the pixel art filter they are built on (MMPX Basic).
 * **Hans-Kristian Arntzen (Themaister)**, for the NTSC shaders, **TroggleMonkey and Hyllian** for CRT Royale and CRT Royale Fast, **Hyllian** for CRT Hyllian NTSC, **Mattias Gustavsson** and **hunterk** for CRT Newpixie, **Mattias** for CRT Mattias, **Timothy Lottes**, **davej** and **Greg Hogan** for the CRT Lottes, CRT Pi and zfast LCD shaders, and **Gigaherz** for LCD3x.
-* **Sam Lantinga and the SDL contributors** for [SDL2](https://www.libsdl.org/), **Daniel Stenberg** for [curl](https://curl.se/), **Sean Barrett** for [stb](https://github.com/nothings/stb), **Rasmus Andersson** for the [Inter](https://github.com/rsms/inter) font, **Google and Adobe** for [Noto Sans JP](https://github.com/notofonts/noto-cjk) (the Japanese text), and **Doug Lea** for [dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html).
+* **Sam Lantinga and the SDL contributors** for [SDL2](https://www.libsdl.org/), **Daniel Stenberg** for [curl](https://curl.se/), **Sean Barrett** for [stb](https://github.com/nothings/stb), **Rasmus Andersson** for the [Inter](https://github.com/rsms/inter) font, **Google and Adobe** for [Noto Sans JP](https://github.com/notofonts/noto-cjk) (the Japanese text, and the Japanese titles of memory card saves), and **Doug Lea** for [dlmalloc](https://gee.cs.oswego.edu/dl/html/malloc.html).
 * **Microsoft's [DirectXTex](https://github.com/microsoft/DirectXTex)**, **[Pillow](https://python-pillow.org/)** and **[7-Zip](https://www.7-zip.org/)**, for the art pipeline and the PC tool.
 * Developed with the help of [Claude Code](https://claude.com/claude-code).
 

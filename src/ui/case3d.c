@@ -776,7 +776,7 @@ static void draw_plastic(float cx, float cy, float scale, float alpha, bool stri
 
 /* The game's cover under the CD's printed ring: a flat ring on the disc's face, turning with it, showing the middle
  * square of the cover. The CD's own picture (psx_disc.png) is drawn over it with that ring cut out. */
-static void draw_disc_cover(PlatTexture *cover, uint32_t tint, float cx, float cy, float scale)
+static void draw_disc_cover(PlatTexture *cover, uint32_t tint, float cx, float cy, float scale, const Mirror *mirror)
 {
     enum { SEG = 72 };
     int tw = 1, th = 1;
@@ -804,9 +804,20 @@ static void draw_disc_cover(PlatTexture *cover, uint32_t tint, float cx, float c
             const float dx = lx - px, dy = ly - py, dz = lz - pz, dl = sqrtf(dx * dx + dy * dy + dz * dz);
             const float lambert = fmaxf((nx * dx + ny * dy + nz * dz) / dl, 0.0f);
             const float kk = fminf(0.42f + 0.62f * lambert, 1.0f);
-            const uint32_t lit = (argb & 0xff000000u) | (uint32_t)(255.0f * kk * tr) << 16 |
+            uint32_t alpha_mask = argb & 0xff000000u;
+            float mirrored_y = py;
+            if (mirror)
+            {
+                /* its image in the table: the same height below it, fading out with the height */
+                const float height = py - case_floor;
+                mirrored_y = case_floor - height;
+                float fade = 1.0f - height / mirror->reach;
+                fade = fade < 0.0f ? 0.0f : fade > 1.0f ? 1.0f : fade;
+                alpha_mask = (uint32_t)(((argb >> 24) & 0xff) * mirror->near_a * fade) << 24;
+            }
+            const uint32_t lit = alpha_mask | (uint32_t)(255.0f * kk * tr) << 16 |
                                  (uint32_t)(255.0f * kk * tg) << 8 | (uint32_t)(255.0f * kk * tb);
-            ring[r][i] = (PlatVertex){cx + px * scale * persp, cy - py * scale * persp,
+            ring[r][i] = (PlatVertex){cx + px * scale * persp, cy - mirrored_y * scale * persp,
                                       0.5f + (x - DISC_CX) / DISC_R * 0.5f * ux, 0.5f - (y - DISC_CY) / DISC_R * 0.5f * uy,
                                       lit};
         }
@@ -967,7 +978,7 @@ static void draw_disc_sheen(uint32_t tint, float cx, float cy, float scale)
 static void draw_disc(const Pt *pts, PlatTexture *cover, uint32_t tint, float cx, float cy, float scale)
 {
     draw_part(PART_DISC_BOTTOM, pts, cover, tint, NULL);
-    draw_disc_cover(cover, tint, cx, cy, scale);
+    draw_disc_cover(cover, tint, cx, cy, scale, NULL);
     draw_disc_gloss(tint, cx, cy, scale);
     draw_part(PART_DISC_TOP, pts, cover, tint, NULL);
 }
@@ -1063,14 +1074,32 @@ void case3d_draw(PlatTexture *cover, float cx, float cy, float h, float yaw, flo
         m->sy = cy - m->y * scale * persp;
     }
     const float alpha = ((tint >> 24) & 0xff) / 255.0f;
+    float ax, ay, az, bx, by, bz;
+    turn_point(1.0f, 0.0f, 0.0f, &ax, &ay, &az);
+    turn_point(0.0f, 0.0f, 0.0f, &bx, &by, &bz);
+    const bool disc_last = launch_on && !launch_tray && launch_open > 0.55f && az >= bz - 0.001f;
     if (reflection)
     {
-        /* the image in the table: the case turned over its plane, fading out with height */
+        /* the image in the table: the case turned over its plane, fading out with height; the CD, once the lid is
+         * open, is in it too (in the same order as over the table) */
         const Mirror mirror = {case_h * 0.55f, 0.34f};
+        const bool disc_out = launch_on && !launch_tray && launch_open > 0.01f;
         draw_part(PART_BACK, mirrored, cover, tint, &mirror);
         draw_part(PART_INNER, mirrored, cover, tint, &mirror);
+        if (disc_out && !disc_last)
+        {
+            draw_part(PART_DISC_BOTTOM, mirrored, cover, tint, &mirror);
+            draw_disc_cover(cover, tint, cx, cy, scale, &mirror);
+            draw_part(PART_DISC_TOP, mirrored, cover, tint, &mirror);
+        }
         draw_part(PART_PROMO, mirrored, cover, tint, &mirror);
         draw_part(PART_FRONT, mirrored, cover, tint, &mirror);
+        if (disc_out && disc_last)
+        {
+            draw_part(PART_DISC_BOTTOM, mirrored, cover, tint, &mirror);
+            draw_disc_cover(cover, tint, cx, cy, scale, &mirror);
+            draw_part(PART_DISC_TOP, mirrored, cover, tint, &mirror);
+        }
         if (floor_shadow_strength > 0.0f)
             draw_contact_shadow(c, s, cx, cy, scale, alpha * floor_shadow_strength);
     }
@@ -1080,10 +1109,6 @@ void case3d_draw(PlatTexture *cover, float cx, float cy, float h, float yaw, flo
     const bool strip_first = launch_on && !launch_tray && launch_open > 0.08f;
     if (strip_first)
         draw_plastic(cx, cy, scale, alpha, true, false);
-    float ax, ay, az, bx, by, bz;
-    turn_point(1.0f, 0.0f, 0.0f, &ax, &ay, &az);
-    turn_point(0.0f, 0.0f, 0.0f, &bx, &by, &bz);
-    const bool disc_last = launch_on && !launch_tray && launch_open > 0.55f && az >= bz - 0.001f;
     if (launch_on && !disc_last)
         draw_disc(pts, cover, tint, cx, cy, scale);
     draw_part(PART_PROMO, pts, cover, tint, NULL);
