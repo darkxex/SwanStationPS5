@@ -3269,6 +3269,8 @@ int main(int argc, char **argv)
         {
             const bool nostalgia = app.game && app.global.nostalgia && app.screen == SCREEN_GAME;
             sfx_silence(nostalgia);
+            sfx_game_audio(app.game && app.screen == SCREEN_GAME);
+            sfx_pump();
         }
         {
             static const int nfs_seconds[] = {5, 10, 15, 20, 30};

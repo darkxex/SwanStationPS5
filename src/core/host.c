@@ -13,6 +13,7 @@
 #include "../gamedb.h"
 #include "../i18n.h"
 #include "../ra/achievements.h"
+#include "../ui/sfx.h"
 
 #include "libretro.h"
 #include "../platform/platform.h"
@@ -973,13 +974,23 @@ static void RETRO_CALLCONV audio_cb(int16_t left, int16_t right)
     if (speculative)
         return;
     int16_t frame[2] = {left, right};
+    sfx_mix(frame, 1);
     plat_audio_push(frame, 1);
 }
 
 static size_t RETRO_CALLCONV audio_batch_cb(const int16_t *data, size_t frames)
 {
-    if (!speculative)
-        plat_audio_push(data, frames);
+    if (speculative)
+        return frames;
+    int16_t mixed[2 * 1024];
+    for (size_t done = 0; done < frames;)
+    {
+        const size_t n = frames - done < 1024 ? frames - done : 1024;
+        memcpy(mixed, data + done * 2, n * 4);
+        sfx_mix(mixed, n);
+        plat_audio_push(mixed, n);
+        done += n;
+    }
     return frames;
 }
 

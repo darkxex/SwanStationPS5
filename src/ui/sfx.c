@@ -105,6 +105,7 @@ static Sound make(int rate, const Recipe *r)
 }
 
 static Sound disc_sound, notification_sound;
+static int sound_rate = 44100;
 #define DISC_GAIN 0.5f /* the disc sound's gain, before the interface's volume */
 
 static uint32_t le32(const uint8_t *p)
@@ -178,6 +179,7 @@ static Sound load_wav(const char *path, int rate)
 
 void sfx_init(int rate)
 {
+    sound_rate = rate > 0 ? rate : 44100;
     free(disc_sound.frames);
     free(notification_sound.frames);
     char path[512];
@@ -215,44 +217,98 @@ void sfx_silence(bool on)
     silenced = on;
 }
 
+#define VOICES 8
+
+typedef struct
+{
+    const Sound *sound;
+    size_t pos;
+    float gain;
+} Voice;
+
+static Voice voices[VOICES];
+static bool game_audio;
+
+static void voice_start(const Sound *s, float gain)
+{
+    Voice *slot = &voices[0];
+    for (int i = 0; i < VOICES; ++i)
+    {
+        if (!voices[i].sound)
+        {
+            slot = &voices[i];
+            break;
+        }
+        if (voices[i].pos > slot->pos)
+            slot = &voices[i];
+    }
+    slot->sound = s;
+    slot->pos = 0;
+    slot->gain = gain;
+}
+
+void sfx_mix(int16_t *frames, size_t frame_count)
+{
+    for (int v = 0; v < VOICES; ++v)
+    {
+        Voice *p = &voices[v];
+        if (!p->sound)
+            continue;
+        const float g = p->gain * volume;
+        size_t i = 0;
+        for (; i < frame_count && p->pos < p->sound->count; ++i, ++p->pos)
+            for (int c = 0; c < 2; ++c)
+            {
+                const int x = frames[i * 2 + c] + (int)(p->sound->frames[p->pos * 2 + c] * g);
+                frames[i * 2 + c] = (int16_t)(x > 32767 ? 32767 : x < -32768 ? -32768 : x);
+            }
+        if (p->pos >= p->sound->count)
+            p->sound = NULL;
+    }
+}
+
+void sfx_game_audio(bool on)
+{
+    game_audio = on;
+}
+
+void sfx_pump(void)
+{
+    if (game_audio)
+        return;
+    bool any = false;
+    for (int i = 0; i < VOICES; ++i)
+        any |= voices[i].sound != NULL;
+    if (!any)
+        return;
+    const size_t target = (size_t)(sound_rate / 20), queued = plat_audio_queued_frames();
+    if (queued >= target)
+        return;
+    static int16_t block[2 * 4096];
+    size_t n = target - queued;
+    n = n > 4096 ? 4096 : n;
+    memset(block, 0, n * 2 * sizeof(int16_t));
+    sfx_mix(block, n);
+    plat_audio_push(block, n);
+}
+
 void sfx_play(Sfx id)
 {
     if (silenced || !enabled || id >= SFX_COUNT || !sounds[style][id].frames || volume <= 0.0f)
         return;
-    const Sound *s = &sounds[style][id];
-    /* Fast scrolling must not build a backlog of clicks. */
-    if (plat_audio_queued_frames() > s->count)
-        plat_audio_clear();
-    static int16_t scaled[2 * 48000 / 4]; /* up to 250 ms of stereo at 48 kHz */
-    size_t n = s->count * 2 < sizeof(scaled) / sizeof(scaled[0]) ? s->count * 2
-                                                                  : sizeof(scaled) / sizeof(scaled[0]);
-    for (size_t i = 0; i < n; ++i)
-        scaled[i] = (int16_t)(s->frames[i] * volume);
-    plat_audio_push(scaled, n / 2);
+    voice_start(&sounds[style][id], 1.0f);
 }
 
 void sfx_play_notification(void)
 {
     if (silenced || !notification_sound.frames || volume <= 0.0f)
         return;
-    int16_t *scaled = malloc(notification_sound.count * 2 * sizeof(int16_t));
-    if (!scaled)
-        return;
-    for (size_t i = 0; i < notification_sound.count * 2; ++i)
-        scaled[i] = (int16_t)(notification_sound.frames[i] * volume);
-    plat_audio_push(scaled, notification_sound.count);
-    free(scaled);
+    voice_start(&notification_sound, 1.0f);
 }
 
 void sfx_play_disc(void)
 {
     if (silenced || !enabled || !disc_sound.frames || volume <= 0.0f)
         return;
-    int16_t *scaled = malloc(disc_sound.count * 2 * sizeof(int16_t));
-    if (!scaled)
-        return;
-    for (size_t i = 0; i < disc_sound.count * 2; ++i)
-        scaled[i] = (int16_t)(disc_sound.frames[i] * volume * DISC_GAIN);
-    plat_audio_push(scaled, disc_sound.count);
-    free(scaled);
+    voice_start(&disc_sound, DISC_GAIN);
 }
