@@ -1028,8 +1028,6 @@ static void write_value(const Row *r, int v)
         *(bool *)base = v != 0;
     else
         *(int *)base = value_of(r, v) + r->base;
-    if (v && r->is_bool && r->offset == (int)offsetof(Settings, ra_popup_sound))
-        sfx_play_notification();
     /* console-wide edits reach the running game unless it has its own settings */
     if (t == &app.global && (!scope_game() || !app.game_has_own || r->global_only))
     {
