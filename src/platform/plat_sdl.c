@@ -888,11 +888,17 @@ void plat_rumble(int port, uint16_t strong, uint16_t weak)
     port = physical(port);
     if (port < 0 || port >= SwanStationPS5_MAX_PADS || !joys[port])
         return;
-    if (rumble_strong[port] == strong && rumble_weak[port] == weak)
+    Uint32 now = SDL_GetTicks();
+    static Uint32 sent_at[SwanStationPS5_MAX_PADS];
+    bool on = strong || weak;
+    if (rumble_strong[port] == strong && rumble_weak[port] == weak && (!on || now - sent_at[port] < 1500))
+        return;
+    int rc = SDL_JoystickRumble(joys[port], strong, weak, on ? 2000 : 0);
+    if (rc != 0)
         return;
     rumble_strong[port] = strong;
     rumble_weak[port] = weak;
-    SDL_JoystickRumble(joys[port], strong, weak, strong || weak ? 2000 : 0);
+    sent_at[port] = now;
 }
 #else
 

@@ -316337,7 +316337,7 @@ index 3a2301f1..b5ef43cd 100644
      if (g_settings.gpu_resolution_scale > 1)
      {
 diff --git a/src/libretro/libretro_host_interface.cpp b/src/libretro/libretro_host_interface.cpp
-index 6f97a844..8e76600e 100644
+index 6f97a844..c774a269 100644
 --- a/src/libretro/libretro_host_interface.cpp
 +++ b/src/libretro/libretro_host_interface.cpp
 @@ -135,6 +135,20 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -316444,7 +316444,20 @@ index 6f97a844..8e76600e 100644
  unsigned HostInterface::retro_get_region()
  {
    return System::IsPALRegion() ? RETRO_REGION_PAL : RETRO_REGION_NTSC;
-@@ -1332,14 +1388,26 @@ bool HostInterface::UpdateCoreOptionsDisplay(bool controller)
+@@ -1128,6 +1184,12 @@ bool HostInterface::retro_unserialize(const void* data, size_t size)
+    * because they can happen every frame; LoadState resets the system if one of those states is rejected. */
+   const bool restore_on_failure = !is_memory_state && ctx != RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+ 
++  if (HasCoreVariablesChanged() || controller_dirty)
++  {
++    controller_dirty = false;
++    UpdateSettings();
++  }
++
+   std::unique_ptr<ByteStream> stream = ByteStream_CreateReadOnlyMemoryStream(data, static_cast<uint32_t>(size));
+   if (!System::LoadState(stream.get(), is_memory_state, restore_on_failure, media_override, media_subimage_index))
+     return false;
+@@ -1332,14 +1394,26 @@ bool HostInterface::UpdateCoreOptionsDisplay(bool controller)
    g_retro_environment_callback(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
    option_display.key = "swanstation_GPU_TextureFilter";
    g_retro_environment_callback(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
@@ -316471,7 +316484,7 @@ index 6f97a844..8e76600e 100644
  
    option_display.visible = !hardware_renderer;
    option_display.key = "swanstation_GPU_UseThread";
-@@ -1513,6 +1581,8 @@ void HostInterface::LoadSettings()
+@@ -1513,6 +1587,8 @@ void HostInterface::LoadSettings()
    }
  }
  
@@ -316480,7 +316493,7 @@ index 6f97a844..8e76600e 100644
  void HostInterface::UpdateSettings()
  {
    Settings old_settings(std::move(g_settings));
-@@ -1523,8 +1593,38 @@ void HostInterface::UpdateSettings()
+@@ -1523,8 +1599,38 @@ void HostInterface::UpdateSettings()
    {
      if (g_settings.gpu_renderer != old_settings.gpu_renderer)
      {
@@ -316521,7 +316534,7 @@ index 6f97a844..8e76600e 100644
      }
    }
  
-@@ -1610,6 +1710,9 @@ void HostInterface::UpdateSettings()
+@@ -1610,6 +1716,9 @@ void HostInterface::UpdateSettings()
      }
    }
  
@@ -316531,7 +316544,7 @@ index 6f97a844..8e76600e 100644
    CheckForSettingsChanges(old_settings);
  }
  
-@@ -2073,8 +2176,8 @@ void HostInterface::UpdateControllersNamcoGunCon(uint32_t index)
+@@ -2073,8 +2182,8 @@ void HostInterface::UpdateControllersNamcoGunCon(uint32_t index)
    const int16_t gun_y = g_retro_input_state_callback(index, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
    const bool offscreen =
      g_retro_input_state_callback(index, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) != 0;
@@ -316542,7 +316555,7 @@ index 6f97a844..8e76600e 100644
  
    // The cached display mouse position is what NamcoGunCon::UpdatePosition
    // reads during a SIO Transfer to compute the gun's beam-tick / scanline
-@@ -2369,7 +2472,8 @@ void HostInterface::SwitchToSoftwareRenderer()
+@@ -2369,7 +2478,8 @@ void HostInterface::SwitchToSoftwareRenderer()
    m_display = std::make_unique<LibretroHostDisplay>();
    m_display->CreateRenderDevice(wi, {}, false, false);
    m_display->InitializeRenderDevice({}, false, false);
