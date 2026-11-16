@@ -51,7 +51,7 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 - **Up to 16x resolution on the GPU.** SwanStation renders through Vulkan: native, 2x, 4x, 8x or 16x (4x by default), at full speed.
 - **No more wobbly 3D.** PGXP (precise geometry) keeps polygons still and textures straight.
 - **A cleaner picture on the GPU.** The core's renderer is PSSwanStation's, which draws the picture without the corrupt textures and stray pixels the stock renderer showed on the PS5 at some resolutions (Rayman's backgrounds, for one). Its own features are in *Settings → Graphics → Legacy*: *Accurate Blending* (transparencies blended as the console does), *Close Gaps Between Polygons* (above 1x, off at first), *Exact Lines* and *HD Texture Blocks* (off at first, for texture packs by blocks). They apply while you play.
-- **Everything back to default.** In Settings, hold **Triangle** for a second and every setting goes back to its default for the side you are editing (all games, or this game). A tap still resets just the highlighted one.
+- **A tab back to default.** In Settings, hold **Triangle** for a second and every setting of the selected tab goes back to its default for the side you are editing (all games, or this game). A tap still resets just the highlighted one.
 - **The CPU renderer works.** Choosing it no longer gives a black picture. Its *Upscale (CPU)* and *Upscale filter (CPU)* settings are marked as CPU only, and sharp pixels are the default.
 - **One emulator, nothing to choose.** Every game runs on SwanStation. Memory cards are saved per game.
 - **SwanStation's own options.** 104 of its core options (MSAA, texture filter, widescreen hack, PGXP details, controller ports, CPU overclock...) in Settings → Display, Graphics, Controls and System. They are in English and only on the console.
@@ -381,7 +381,7 @@ It also shows the time and how long you've been playing.
 | Library | Theme, cover style, download missing covers, sort, your library, memory cards, rescan |
 | System | SwanStationPS5 (start the BIOS, games folder on USB drives, NFS shares), region, PS1 startup intro, fast CD loading, known game fixes, SwanStation's console and advanced options, quick resume, rewind, auto-save, who's playing (profiles), settings from your phone, language, unlocking `/data`, PS5SX2 Helper whitelist |
 
-Hold **Triangle** for a second in Settings to put every setting back to its default. Video settings apply while you play. Internal resolution, PGXP, region, BIOS, controller and SwanStation's options apply from the next game.
+Hold **Triangle** for a second in Settings to put the selected tab's settings back to their defaults. Video settings apply while you play. Internal resolution, PGXP, region, BIOS, controller and SwanStation's options apply from the next game.
 
 For GPU-readback stutters with the Vulkan renderer, enable **Graphics → Use Software Renderer For Readbacks (Restart)** and restart the game. This is off by default; its setting is `swanstation_GPU_UseSoftwareRendererForReadbacks=true` in the active global or per-game INI.
 

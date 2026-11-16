@@ -764,7 +764,7 @@ static struct
     float tab_x, tab_w, sel_y, scroll, scope_x, remap_y;
     float switch_t[MAX_ROWS];
     int drive; /* the drive shown in Drives */
-    float reset_hold; /* seconds {Triangle} has been held to reset everything */
+    float reset_hold; /* seconds {Triangle} has been held to reset the tab */
 } S;
 
 /* The game whose own settings the "This game" side edits: the running one, or the shelf's (Settings opened from the shelf) */
@@ -1165,19 +1165,21 @@ static void default_value(const Row *r)
     Settings d;
     config_defaults(&d);
     const char *base = (const char *)&d + r->offset;
+    const char *now = (const char *)target(r) + r->offset;
+    if (r->is_bool ? *(const bool *)now == *(const bool *)base : *(const int *)now == *(const int *)base)
+        return;
     write_value(r, r->is_bool ? (*(const bool *)base ? 1 : 0) : label_of(r, *(const int *)base - r->base));
 }
 
-#define RESET_HOLD 1.0f /* seconds {Triangle} is held to put every setting back to default */
+#define RESET_HOLD 1.0f /* seconds {Triangle} is held to put the tab's settings back to default */
 
-/* Every row that has a value, in every tab: what the settings list shows, for the side being edited (all games or this
- * game). Rows that are not settings (accounts, actions) are left alone. */
-static void default_all(void)
+/* Every row that has a value in the selected tab: what the settings list shows, for the side being edited (all games or
+ * this game). Rows that are not settings (accounts, actions) are left alone. */
+static void default_tab(void)
 {
     bulk_reset = true;
-    for (int t = 0; t < TAB_COUNT; ++t)
-        for (int i = 0; i < TABS[t].count; ++i)
-            default_value(&TABS[t].rows[i]);
+    for (int i = 0; i < TABS[S.tab].count; ++i)
+        default_value(&TABS[S.tab].rows[i]);
     bulk_reset = false;
     if (app.game)
     {
@@ -2306,7 +2308,7 @@ void settings_screen(uint32_t pressed)
         }
     }
     {
-        /* {Triangle} held: all the settings go back to default (a bar fills up to it) */
+        /* {Triangle} held: the selected tab's settings go back to default (a bar fills up to it) */
         static float held;
         static bool done;
         const bool tri = (app.pads[app_nav_pad()].buttons & BIT(BTN_TRIANGLE)) != 0;
@@ -2317,9 +2319,9 @@ void settings_screen(uint32_t pressed)
             {
                 held = 0.0f;
                 done = true;
-                default_all();
+                default_tab();
                 sfx_play(SFX_BACK);
-                app_toast("All the settings are back to default.");
+                app_toast("This tab's settings are back to default.");
             }
         }
         else if (!tri)
@@ -2358,7 +2360,7 @@ void settings_screen(uint32_t pressed)
     draw_help(r);
     if (S.reset_hold > 0.12f)
     {
-        const char *msg = tr("Keep holding to put all the settings back to default...");
+        const char *msg = tr("Keep holding to put this tab's settings back to default...");
         const float w = text_width(26, FONT_REGULAR, msg) + 96, h = 84;
         const float x = (plat_width() - w) * 0.5f, y = plat_height() - 300;
         draw_rrect(x, y, w, h, TH_RADIUS_SMALL, 0xf0000000u | (TH_PILL & 0xffffffu));
@@ -2369,7 +2371,7 @@ void settings_screen(uint32_t pressed)
     if (scope_game() && app.game_has_own && S.game_scope)
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE, GLYPH_SQUARE, GLYPH_TOUCHPAD};
-        const char *const labels[] = {"Change", "Back", "Default (hold: all)", "Use all-games settings",
+        const char *const labels[] = {"Change", "Back", "Default (hold: tab)", "Use all-games settings",
                                       app.settings.manual_crop ? "Preview with manual crop" : "Preview"};
         app_draw_hints(glyphs, labels, app.game ? 5 : 4, NULL);
         const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};
@@ -2378,7 +2380,7 @@ void settings_screen(uint32_t pressed)
     else
     {
         static const int glyphs[] = {GLYPH_CROSS, GLYPH_CIRCLE, GLYPH_TRIANGLE, GLYPH_TOUCHPAD};
-        const char *const labels[] = {"Change", "Back", "Default (hold: all)",
+        const char *const labels[] = {"Change", "Back", "Default (hold: tab)",
                                       app.settings.manual_crop ? "Preview with manual crop" : "Preview"};
         app_draw_hints(glyphs, labels, app.game ? 4 : 3, NULL);
         const HintCombo right[1] = {{{GLYPH_L1, GLYPH_R1}, 2, '/', "Tabs"}};
