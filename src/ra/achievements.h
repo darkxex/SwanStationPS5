@@ -62,8 +62,18 @@ bool ra_warning(bool *emulator, bool *version);
 /* "12 of 40 achievements, 115 of 400 points", or "" when no set is loaded */
 void ra_game_summary(char *out, size_t size);
 
-/* Messages for the UI (unlocks, leaderboards...); `unlock` is set for an achievement earned. Returns false when empty. */
-bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail_size, bool *unlock);
+/* Messages for the UI (unlocks, leaderboards...); `badge_id` is the achievement earned (0 for any other message).
+ * Returns false when empty. */
+bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail_size, unsigned *badge_id);
+
+/* The badge pictures of the loaded game's achievements, to download them while it is played. */
+typedef struct
+{
+    unsigned id;
+    bool unlocked;
+    char url_locked[160], url_unlocked[160];
+} RaBadgeJob;
+int ra_badge_jobs(RaBadgeJob *out, int max);
 
 /* While playing: the counted achievement that just moved (18/80 dragons).
  * False when there's nothing to show. */
