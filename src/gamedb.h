@@ -54,6 +54,8 @@ enum
     GDT_PGXP_PROJ = 1u << 6,
     GDT_LINE_MODE = 1u << 9,      /* gpuLineDetectMode: 1 quads, 2 basic triangles, 3 aggressive triangles */
     GDT_CROP_MODE = 1u << 8,      /* displayCropMode: 0 none, 1 overscan, 2 all borders */
+    GDT_DEPTH_THRESHOLD = 1u << 10, /* gpuPGXPDepthThreshold, in the same units as the core's option */
+    GDT_NORM_DEPTH = 1u << 11,      /* gpuPGXPNormalizeDepth: 1 always, 2 only with the depth buffer */
     GDT_FILTER_UPLOADS = 1u << 7, /* gpuFilterFramebufferUploads: filters VRAM writes of at least this size */
 };
 #define GDB_FIXES (GDB_NO_WIDESCREEN | GDB_NO_PGXP | GDB_PGXP_CPU | GDB_NO_UPSCALING | GDB_NO_TEXTURE_FILTER | \
@@ -70,7 +72,8 @@ typedef struct
     unsigned flags;                     /* GDB_* */
     unsigned set;                       /* GDT_*: which of the values below the database gives */
     int active_start, active_end, line_start, dma_slice, dma_halt;
-    float pgxp_tolerance;
+    float pgxp_tolerance, pgxp_depth_threshold;
+    int norm_depth;
     bool pgxp_proj;
     int filter_uploads_w, filter_uploads_h;
     int crop_mode, line_mode;

@@ -266,6 +266,18 @@ static void apply_game_fixes(void)
         snprintf(text, sizeof(text), "%.2f", g->pgxp_tolerance);
         set_option("swanstation_GPU_PGXPTolerance", text);
     }
+    if (g->set & GDT_DEPTH_THRESHOLD)
+    {
+        char text[16];
+        snprintf(text, sizeof(text), "%.0f", g->pgxp_depth_threshold);
+        set_option("swanstation_GPU_PGXPDepthClearThreshold", text);
+    }
+    if (g->set & GDT_NORM_DEPTH)
+    {
+        const Option *depth = find_option("swanstation_GPU_PGXPDepthBuffer");
+        if (g->norm_depth == 1 || (depth && !strcmp(depth->value, "true")))
+            set_option("swanstation_GPU_PGXPNormalizeDepth", "true");
+    }
     if (g->set & GDT_LINE_MODE)
         set_option("swanstation_GPU_LineDetectMode",
                    g->line_mode == 3 ? "AggressiveTriangles" : g->line_mode == 2 ? "BasicTriangles" : "Quads");
