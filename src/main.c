@@ -943,11 +943,11 @@ static void draw_achievement(void)
     static char title[96], detail[192];
     static uint64_t shown_at;
     const uint64_t length = 4500000;
-    static bool showing, quiet;
+    static bool showing, unlock;
     uint64_t now = plat_ticks_us();
     if (!showing || now > shown_at + length)
     {
-        showing = ra_next_message(title, sizeof(title), detail, sizeof(detail), &quiet);
+        showing = ra_next_message(title, sizeof(title), detail, sizeof(detail), &unlock);
         if (!showing)
             return;
         /* pop-ups off: messages that arrive during play are dropped, not shown */
@@ -957,9 +957,8 @@ static void draw_achievement(void)
             return;
         }
         shown_at = now;
-        /* quiet: the summary shown when a game opens; the sound is for the rest */
-        if (!quiet)
-            sfx_play(SFX_SELECT);
+        if (unlock && app.global.ra_popups && app.global.ra_popup_sound)
+            sfx_play_notification();
     }
     float t = (float)(now - shown_at) / 1e6f, total = length / 1e6f;
     float in = t < 0.25f ? t / 0.25f : 1.0f, out = total - t < 0.4f ? (total - t) / 0.4f : 1.0f;

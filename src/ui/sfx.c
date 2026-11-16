@@ -104,7 +104,7 @@ static Sound make(int rate, const Recipe *r)
     return s;
 }
 
-static Sound disc_sound;
+static Sound disc_sound, notification_sound;
 #define DISC_GAIN 0.5f /* the disc sound's gain, before the interface's volume */
 
 static uint32_t le32(const uint8_t *p)
@@ -179,9 +179,12 @@ static Sound load_wav(const char *path, int rate)
 void sfx_init(int rate)
 {
     free(disc_sound.frames);
+    free(notification_sound.frames);
     char path[512];
     plat_asset_path(path, sizeof(path), "psxdiscsound.wav");
     disc_sound = load_wav(path, rate);
+    plat_asset_path(path, sizeof(path), "notification.wav");
+    notification_sound = load_wav(path, rate);
     for (int st = 0; st < SFX_STYLE_COUNT; ++st)
     {
         for (int i = 0; i < SFX_COUNT; ++i)
@@ -226,6 +229,19 @@ void sfx_play(Sfx id)
     for (size_t i = 0; i < n; ++i)
         scaled[i] = (int16_t)(s->frames[i] * volume);
     plat_audio_push(scaled, n / 2);
+}
+
+void sfx_play_notification(void)
+{
+    if (silenced || !notification_sound.frames || volume <= 0.0f)
+        return;
+    int16_t *scaled = malloc(notification_sound.count * 2 * sizeof(int16_t));
+    if (!scaled)
+        return;
+    for (size_t i = 0; i < notification_sound.count * 2; ++i)
+        scaled[i] = (int16_t)(notification_sound.frames[i] * volume);
+    plat_audio_push(scaled, notification_sound.count);
+    free(scaled);
 }
 
 void sfx_play_disc(void)

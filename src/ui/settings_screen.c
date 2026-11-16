@@ -282,6 +282,8 @@ static const Row ACHIEVEMENTS[] = {
      K_ACTION, APPLY_NOW, SP_PROFILE, true, NO_FIELD, NULL, 0, 0},
     {"While playing", "Unlock pop-ups", "The banner when you earn an achievement. Off only hides it: achievements still unlock.",
      K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_popups), OFF_ON, 2, 0},
+    {NULL, "Unlock sound", "Plays a sound when an achievement unlocks. Needs Unlock pop-ups on, and it is silent in Nostalgia mode.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_popup_sound), OFF_ON, 2, 0},
     {NULL, "Pop-up style", "Banner: top right. Compact: a small line at the top. Big trophy: in the middle, like the PS5's.",
      K_CHOICE, APPLY_NOW, SP_NONE, true, INT_FIELD(ra_popup_style), POPUP_STYLES, 3, 0},
     {NULL, "Progress tracker", "The small card when a counted achievement moves (18/80 dragons).", K_TOGGLE,

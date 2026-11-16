@@ -126,6 +126,7 @@ typedef struct
     int mc_w, mc_h;       /* manual crop: the picture's width and height as a percentage of its normal size (25..150) */
     int mc_x, mc_y;       /* manual crop: how far the picture is moved, in thousandths of the screen (-500..500) */
     bool ra_popups;       /* achievement unlock banners while playing */
+    bool ra_popup_sound;  /* the notification sound when an achievement unlocks (with the banners on) */
     bool ra_tracker;      /* the progress card when a counted achievement moves */
     bool ra_challenges;   /* the badges of the achievements whose Trigger flag is up (challenge indicators) */
     bool ra_lb_tracker;   /* the live timer or value of a leaderboard attempt */
