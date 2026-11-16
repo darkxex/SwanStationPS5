@@ -28,7 +28,7 @@
 
 static SDL_atomic_t state; /* 0 idle, 1 downloading, 2 a new index is there */
 /* the index's first line: the version of its format */
-#define GAMEDB_HEADER "#v12"
+#define GAMEDB_HEADER "#v13"
 
 static char yaml_path[SwanStationPS5_PATH_MAX], index_path[SwanStationPS5_PATH_MAX];
 
@@ -84,6 +84,8 @@ static const struct
     {"gpuPGXPPreserveProjFP", "pp"},    {"gpuFilterFramebufferUploads", "fu"},
     {"displayCropMode", "cm"},
     {"gpuLineDetectMode", "ld"},
+    {"gpuPGXPDepthThreshold", "pd"},
+    {"gpuPGXPNormalizeDepth", "nd"},
 };
 
 typedef struct
@@ -400,6 +402,14 @@ static void load(void)
                     g->dma_halt = n, g->set |= GDT_DMA_HALT;
                 else if (!strncmp(tag, "pt", 2))
                     g->pgxp_tolerance = (float)atof(eq + 1), g->set |= GDT_PGXP_TOLERANCE;
+                else if (!strncmp(tag, "pd", 2))
+                    g->pgxp_depth_threshold = (float)atof(eq + 1), g->set |= GDT_DEPTH_THRESHOLD;
+                else if (!strncmp(tag, "nd", 2))
+                {
+                    g->norm_depth = !strcmp(eq + 1, "Always") ? 1 : !strcmp(eq + 1, "DepthBufferOnly") ? 2 : 0;
+                    if (g->norm_depth)
+                        g->set |= GDT_NORM_DEPTH;
+                }
                 else if (!strncmp(tag, "cm", 2))
                 {
                     const char *v = eq + 1;

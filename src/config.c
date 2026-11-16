@@ -44,6 +44,7 @@ void config_defaults(Settings *s)
     s->theme = THEME_GRAYRAT; /* Grayrat (ui/theme.h) */
     s->pgxp = true; /* no wobbling polygons */
     s->ra_popups = true;
+    s->ra_popup_sound = true;
     s->hd_textures = true;
     s->ra_tracker = true;
     s->ra_challenges = true;
@@ -213,6 +214,8 @@ static bool config_apply(Settings *s, const char *path)
             s->mc_y = clamp_int(atoi(value), -500, 500);
         else if (strcmp(key, "ra_popups") == 0)
             s->ra_popups = as_bool(value);
+        else if (strcmp(key, "ra_popup_sound") == 0)
+            s->ra_popup_sound = as_bool(value);
         else if (strcmp(key, "ra_tracker") == 0)
             s->ra_tracker = as_bool(value);
         else if (strcmp(key, "ra_challenges") == 0)
@@ -481,7 +484,8 @@ bool config_save(const Settings *s, const char *path)
     fprintf(f, "version=%s\n", SwanStationPS5_VERSION); /* a newer version starts with clean settings (main.c) */
     fprintf(f, "pgxp=%d\nra_popups=%d\nra_tracker=%d\ncrop_edges=%d\n", s->pgxp, s->ra_popups, s->ra_tracker,
             s->crop_edges);
-    fprintf(f, "ra_challenges=%d\nra_lb_tracker=%d\n", s->ra_challenges, s->ra_lb_tracker);
+    fprintf(f, "ra_challenges=%d\nra_lb_tracker=%d\nra_popup_sound=%d\n", s->ra_challenges, s->ra_lb_tracker,
+            s->ra_popup_sound);
     fprintf(f, "manual_crop=%d\nmc_w=%d\nmc_h=%d\nmc_x=%d\nmc_y=%d\n", s->manual_crop, s->mc_w, s->mc_h, s->mc_x, s->mc_y);
     fprintf(f, "ra_popup_style=%d\nlightbar=%d\nshader=%d\nhd_textures=%d\ntheme=%d\n", s->ra_popup_style,
             s->lightbar, s->shader, s->hd_textures, s->theme);

@@ -13,12 +13,6 @@ Thank you:
     https://casual-effects.com/research/McGuire2021PixelArt/
   - crashGG, for MMPX 3.0 and MMPX 3.2 (MIT license, copyright 2025-2026).
     https://github.com/crashGG
-  - Press5elect and Crux2, for PSSwanStation: the hardware renderer of this core (accurate blending, closing the gaps
-    between polygons, exact lines, HD texture blocks), under GPL-3.0-or-later.
-    https://github.com/Press5elect/PSSwanStation
-  - Everyone behind the PS5 homebrew scene: the SDK, etaHEN and the tools this runs on.
-
-Text before the first "diff" line is ignored by git apply.
 diff --git a/.gitignore b/.gitignore
 index 9e8dcff8..f6b3c883 100644
 --- a/.gitignore
@@ -315339,6 +315333,144 @@ index fb62e9db..2037349f 100644
  #define USE_STATIC_CODE_BUFFER 1
  #endif
  
+diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
+index 137494fc..74b76432 100644
+--- a/src/core/cpu_core.cpp
++++ b/src/core/cpu_core.cpp
+@@ -973,7 +973,7 @@ restart_instruction:
+       WriteRegDelayed(inst.i.rt, sxvalue);
+ 
+       if constexpr (pgxp_mode >= PGXPMode::Memory)
+-        PGXP::CPU_LHx(inst.bits, sxvalue, addr);
++        PGXP::CPU_LH(inst.bits, sxvalue, addr);
+     }
+     break;
+ 
+@@ -1026,7 +1026,7 @@ restart_instruction:
+       WriteRegDelayed(inst.i.rt, zxvalue);
+ 
+       if constexpr (pgxp_mode >= PGXPMode::Memory)
+-        PGXP::CPU_LHx(inst.bits, zxvalue, addr);
++        PGXP::CPU_LHU(inst.bits, zxvalue, addr);
+     }
+     break;
+ 
+@@ -1060,7 +1060,7 @@ restart_instruction:
+       WriteRegDelayed(inst.i.rt, new_value);
+ 
+       if constexpr (pgxp_mode >= PGXPMode::Memory)
+-        PGXP::CPU_LW(inst.bits, new_value, addr);
++        PGXP::CPU_LWx(inst.bits, existing_value, addr);
+     }
+     break;
+ 
+@@ -1088,7 +1088,7 @@ restart_instruction:
+       WriteMemoryHalfWord(addr, value);
+ 
+       if constexpr (pgxp_mode >= PGXPMode::Memory)
+-        PGXP::CPU_SH(inst.bits, static_cast<uint16_t>(value), addr);
++        PGXP::CPU_SH(inst.bits, value, addr);
+     }
+     break;
+ 
+@@ -1132,10 +1132,10 @@ restart_instruction:
+         new_value = (mem_value & mem_mask) | (reg_value << shift);
+       }
+ 
+-      WriteMemoryWord(aligned_addr, new_value);
+-
+       if constexpr (pgxp_mode >= PGXPMode::Memory)
+-        PGXP::CPU_SW(inst.bits, new_value, addr);
++        PGXP::CPU_SWx(inst.bits, reg_value, addr);
++
++      WriteMemoryWord(aligned_addr, new_value);
+     }
+     break;
+ 
+diff --git a/src/core/cpu_recompiler_code_generator.cpp b/src/core/cpu_recompiler_code_generator.cpp
+index 0cfd5460..630005a0 100644
+--- a/src/core/cpu_recompiler_code_generator.cpp
++++ b/src/core/cpu_recompiler_code_generator.cpp
+@@ -1423,7 +1423,8 @@ bool CodeGenerator::Compile_Load(const CodeBlockInstruction& cbi)
+       ConvertValueSizeInPlace(&result, RegSize_32, (cbi.instruction.op == InstructionOp::lh));
+ 
+       if (g_settings.gpu_pgxp_enable)
+-        EmitFunctionCall(nullptr, PGXP::CPU_LHx, Value::FromConstantU32(cbi.instruction.bits), result, address);
++        EmitFunctionCall(nullptr, (cbi.instruction.op == InstructionOp::lh) ? PGXP::CPU_LH : PGXP::CPU_LHU,
++                         Value::FromConstantU32(cbi.instruction.bits), result, address);
+ 
+       if (address_spec)
+       {
+@@ -1508,8 +1509,7 @@ bool CodeGenerator::Compile_Store(const CodeBlockInstruction& cbi)
+     {
+       if (g_settings.gpu_pgxp_enable)
+       {
+-        EmitFunctionCall(nullptr, PGXP::CPU_SH, Value::FromConstantU32(cbi.instruction.bits),
+-                         value.ViewAsSize(RegSize_16), address);
++        EmitFunctionCall(nullptr, PGXP::CPU_SH, Value::FromConstantU32(cbi.instruction.bits), value, address);
+       }
+ 
+       EmitStoreGuestMemory(cbi, address, address_spec, RegSize_16, value);
+@@ -1588,7 +1588,8 @@ bool CodeGenerator::Compile_LoadLeftRight(const CodeBlockInstruction& cbi)
+     address_spec = *address_spec + cbi.instruction.i.imm_sext32();
+ 
+   Value shift = ShlValues(AndValues(address, Value::FromConstantU32(3)), Value::FromConstantU32(3)); // * 8
+-  address = AndValues(address, Value::FromConstantU32(~uint32_t(3)));
++  Value full_address = std::move(address);
++  address = AndValues(full_address, Value::FromConstantU32(~uint32_t(3)));
+ 
+   // hack to bypass load delays
+   Value value;
+@@ -1614,6 +1615,11 @@ bool CodeGenerator::Compile_LoadLeftRight(const CodeBlockInstruction& cbi)
+     value = m_register_cache.ReadGuestRegister(cbi.instruction.i.rt, true, true);
+   }
+ 
++  if (g_settings.gpu_pgxp_enable)
++    EmitFunctionCall(nullptr, PGXP::CPU_LWx, Value::FromConstantU32(cbi.instruction.bits), value, full_address);
++
++  full_address.ReleaseAndClear();
++
+   Value mem;
+   if (cbi.instruction.op == InstructionOp::lwl)
+   {
+@@ -1639,9 +1645,6 @@ bool CodeGenerator::Compile_LoadLeftRight(const CodeBlockInstruction& cbi)
+ 
+   shift.ReleaseAndClear();
+ 
+-  if (g_settings.gpu_pgxp_enable)
+-    EmitFunctionCall(nullptr, PGXP::CPU_LW, Value::FromConstantU32(cbi.instruction.bits), mem, address);
+-
+   m_register_cache.WriteGuestRegisterDelayed(cbi.instruction.i.rt, std::move(mem));
+ 
+   // TODO: Speculative values
+@@ -1669,7 +1672,8 @@ bool CodeGenerator::Compile_StoreLeftRight(const CodeBlockInstruction& cbi)
+   }
+ 
+   Value shift = ShlValues(AndValues(address, Value::FromConstantU32(3)), Value::FromConstantU32(3)); // * 8
+-  address = AndValues(address, Value::FromConstantU32(~uint32_t(3)));
++  Value full_address = std::move(address);
++  address = AndValues(full_address, Value::FromConstantU32(~uint32_t(3)));
+ 
+   Value mem;
+   if (cbi.instruction.op == InstructionOp::swl)
+@@ -1701,9 +1705,15 @@ bool CodeGenerator::Compile_StoreLeftRight(const CodeBlockInstruction& cbi)
+ 
+   shift.ReleaseAndClear();
+ 
+-  EmitStoreGuestMemory(cbi, address, address_spec, RegSize_32, mem);
+   if (g_settings.gpu_pgxp_enable)
+-    EmitFunctionCall(nullptr, PGXP::CPU_SW, Value::FromConstantU32(cbi.instruction.bits), mem, address);
++  {
++    Value rt_value = m_register_cache.ReadGuestRegister(cbi.instruction.r.rt);
++    EmitFunctionCall(nullptr, PGXP::CPU_SWx, Value::FromConstantU32(cbi.instruction.bits), rt_value, full_address);
++    rt_value.ReleaseAndClear();
++  }
++
++  full_address.ReleaseAndClear();
++  EmitStoreGuestMemory(cbi, address, address_spec, RegSize_32, mem);
+ 
+   InstructionEpilogue(cbi);
+   return true;
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
 index bd443b7c..9e17a333 100644
 --- a/src/core/gpu.cpp
@@ -318684,7 +318816,7 @@ index 5e2b93f0..fbbf8f20 100644
  
    // downsampling
 diff --git a/src/core/gte.cpp b/src/core/gte.cpp
-index d33a0430..025cf7f6 100644
+index d33a0430..de0b291a 100644
 --- a/src/core/gte.cpp
 +++ b/src/core/gte.cpp
 @@ -10,6 +10,7 @@
@@ -318740,10 +318872,238 @@ index d33a0430..025cf7f6 100644
 +      if (rz > 0.0f)
 +        precise_depth /= rz;
 +    }
-+    PGXP::GTE_PushSXYZ2f(precise_x, precise_y, precise_depth, REGS.dr32[14]);
++    PGXP::GTE_RTPS(precise_x, precise_y, precise_depth, REGS.dr32[14]);
    }
  
    if (last)
+@@ -811,7 +838,7 @@ static void Execute_NCLIP(Instruction inst)
+ 
+ static void Execute_NCLIP_PGXP(Instruction inst)
+ {
+-  if (PGXP::GTE_NCLIP_valid(REGS.dr32[12], REGS.dr32[13], REGS.dr32[14]))
++  if (PGXP::GTE_HasPreciseVertices(REGS.dr32[12], REGS.dr32[13], REGS.dr32[14]))
+   {
+     REGS.FLAG.Clear();
+     REGS.MAC0 = static_cast<int32_t>(PGXP::GTE_NCLIP());
+@@ -1142,7 +1169,42 @@ static void Execute_GPF(Instruction inst)
+   REGS.FLAG.UpdateError();
+ }
+ 
+-void ExecuteInstruction(uint32_t inst_bits)
++static void Execute_MVMVA_PGXP(Instruction inst)
++{
++  const uint32_t old_ir[3] = {REGS.dr32[9], REGS.dr32[10], REGS.dr32[11]};
++  Execute_MVMVA(inst);
++  PGXP::GTE_MVMVA(inst.bits, old_ir);
++}
++
++static void Execute_GPL_PGXP(Instruction inst)
++{
++  const uint32_t old_ir[3] = {REGS.dr32[9], REGS.dr32[10], REGS.dr32[11]};
++  const uint32_t old_mac[3] = {REGS.dr32[25], REGS.dr32[26], REGS.dr32[27]};
++  Execute_GPL(inst);
++  PGXP::GTE_GPF_GPL(old_ir, old_mac, inst.GetShift());
++}
++
++static void Execute_GPF_PGXP(Instruction inst)
++{
++  const uint32_t old_ir[3] = {REGS.dr32[9], REGS.dr32[10], REGS.dr32[11]};
++  Execute_GPF(inst);
++  PGXP::GTE_GPF_GPL(old_ir, nullptr, inst.GetShift());
++}
++
++template<void (*handler)(Instruction)>
++static void ClearMACIRAfter(Instruction inst)
++{
++  handler(inst);
++  PGXP::GTE_ClearMACIR();
++}
++
++template<void (*handler)(Instruction)>
++static InstructionImpl WrapPGXPCPU()
++{
++  return g_settings.UsingPGXPCPUMode() ? &ClearMACIRAfter<handler> : handler;
++}
++
++static void ExecuteInstructionNative(uint32_t inst_bits)
+ {
+   const Instruction inst{inst_bits};
+   switch (inst.command)
+@@ -1267,14 +1329,14 @@ void ExecuteInstruction(uint32_t inst_bits)
+   }
+ }
+ 
+-InstructionImpl GetInstructionImpl(uint32_t inst_bits, TickCount* ticks)
++static InstructionImpl GetInstructionImplNative(uint32_t inst_bits, TickCount* ticks)
+ {
+   const Instruction inst{inst_bits};
+   switch (inst.command)
+   {
+     case 0x01:
+       *ticks = 15;
+-      return &Execute_RTPS;
++      return WrapPGXPCPU<&Execute_RTPS>();
+ 
+     case 0x06:
+     {
+@@ -1282,88 +1344,88 @@ InstructionImpl GetInstructionImpl(uint32_t inst_bits, TickCount* ticks)
+       if (g_settings.gpu_pgxp_enable && g_settings.gpu_pgxp_culling)
+         return &Execute_NCLIP_PGXP;
+       else
+-        return &Execute_NCLIP;
++        return WrapPGXPCPU<&Execute_NCLIP>();
+     }
+ 
+     case 0x0C:
+       *ticks = 6;
+-      return &Execute_OP;
++      return WrapPGXPCPU<&Execute_OP>();
+ 
+     case 0x10:
+       *ticks = 8;
+-      return &Execute_DPCS;
++      return WrapPGXPCPU<&Execute_DPCS>();
+ 
+     case 0x11:
+       *ticks = 8;
+-      return &Execute_INTPL;
++      return WrapPGXPCPU<&Execute_INTPL>();
+ 
+     case 0x12:
+       *ticks = 8;
+-      return &Execute_MVMVA;
++      return (g_settings.UsingPGXPCPUMode() && PGXP::TracksMVMVAMatrix(inst.mvmva_multiply_matrix)) ? &Execute_MVMVA_PGXP : WrapPGXPCPU<&Execute_MVMVA>();
+ 
+     case 0x13:
+       *ticks = 19;
+-      return &Execute_NCDS;
++      return WrapPGXPCPU<&Execute_NCDS>();
+ 
+     case 0x14:
+       *ticks = 13;
+-      return &Execute_CDP;
++      return WrapPGXPCPU<&Execute_CDP>();
+ 
+     case 0x16:
+       *ticks = 44;
+-      return &Execute_NCDT;
++      return WrapPGXPCPU<&Execute_NCDT>();
+ 
+     case 0x1B:
+       *ticks = 17;
+-      return &Execute_NCCS;
++      return WrapPGXPCPU<&Execute_NCCS>();
+ 
+     case 0x1C:
+       *ticks = 11;
+-      return &Execute_CC;
++      return WrapPGXPCPU<&Execute_CC>();
+ 
+     case 0x1E:
+       *ticks = 14;
+-      return &Execute_NCS;
++      return WrapPGXPCPU<&Execute_NCS>();
+ 
+     case 0x20:
+       *ticks = 30;
+-      return &Execute_NCT;
++      return WrapPGXPCPU<&Execute_NCT>();
+ 
+     case 0x28:
+       *ticks = 5;
+-      return &Execute_SQR;
++      return WrapPGXPCPU<&Execute_SQR>();
+ 
+     case 0x29:
+       *ticks = 8;
+-      return &Execute_DCPL;
++      return WrapPGXPCPU<&Execute_DCPL>();
+ 
+     case 0x2A:
+       *ticks = 17;
+-      return &Execute_DPCT;
++      return WrapPGXPCPU<&Execute_DPCT>();
+ 
+     case 0x2D:
+       *ticks = 5;
+-      return &Execute_AVSZ3;
++      return WrapPGXPCPU<&Execute_AVSZ3>();
+ 
+     case 0x2E:
+       *ticks = 6;
+-      return &Execute_AVSZ4;
++      return WrapPGXPCPU<&Execute_AVSZ4>();
+ 
+     case 0x30:
+       *ticks = 23;
+-      return &Execute_RTPT;
++      return WrapPGXPCPU<&Execute_RTPT>();
+ 
+     case 0x3D:
+       *ticks = 5;
+-      return &Execute_GPF;
++      return g_settings.UsingPGXPCPUMode() ? &Execute_GPF_PGXP : &Execute_GPF;
+ 
+     case 0x3E:
+       *ticks = 5;
+-      return &Execute_GPL;
++      return g_settings.UsingPGXPCPUMode() ? &Execute_GPL_PGXP : &Execute_GPL;
+ 
+     case 0x3F:
+       *ticks = 39;
+-      return &Execute_NCCT;
++      return WrapPGXPCPU<&Execute_NCCT>();
+ 
+     default:
+       break;
+@@ -1371,4 +1433,47 @@ InstructionImpl GetInstructionImpl(uint32_t inst_bits, TickCount* ticks)
+   return nullptr;
+ }
+ 
++void ExecuteInstruction(uint32_t inst_bits)
++{
++  if (!g_settings.UsingPGXPCPUMode())
++  {
++    ExecuteInstructionNative(inst_bits);
++    return;
++  }
++
++  const Instruction inst{inst_bits};
++  switch (inst.command)
++  {
++    case 0x12:
++      if (PGXP::TracksMVMVAMatrix(inst.mvmva_multiply_matrix))
++      {
++        CPU::AddGTETicks(8);
++        Execute_MVMVA_PGXP(inst);
++        return;
++      }
++      break;
++
++    case 0x3D:
++      CPU::AddGTETicks(5);
++      Execute_GPF_PGXP(inst);
++      return;
++
++    case 0x3E:
++      CPU::AddGTETicks(5);
++      Execute_GPL_PGXP(inst);
++      return;
++
++    default:
++      break;
++  }
++
++  ExecuteInstructionNative(inst_bits);
++  PGXP::GTE_ClearMACIR();
++}
++
++InstructionImpl GetInstructionImpl(uint32_t inst_bits, TickCount* ticks)
++{
++  return GetInstructionImplNative(inst_bits, ticks);
++}
++
+ } // namespace GTE
 diff --git a/src/core/gte_types.h b/src/core/gte_types.h
 index 92107c5d..2549267d 100644
 --- a/src/core/gte_types.h
@@ -318877,7 +319237,7 @@ index 900c7b38..e9f896cd 100644
  }
  
 diff --git a/src/core/pgxp.cpp b/src/core/pgxp.cpp
-index 1c1eb1ff..0166de3c 100644
+index 1c1eb1ff..e09e3b39 100644
 --- a/src/core/pgxp.cpp
 +++ b/src/core/pgxp.cpp
 @@ -21,6 +21,7 @@
@@ -318888,15 +319248,27 @@ index 1c1eb1ff..0166de3c 100644
  #include "settings.h"
  #include <climits>
  #include <cmath>
-@@ -43,6 +44,7 @@ inline constexpr uint32_t VERTEX_CACHE_WIDTH = 0x800 * 2, VERTEX_CACHE_HEIGHT =
+@@ -43,6 +44,10 @@ inline constexpr uint32_t VERTEX_CACHE_WIDTH = 0x800 * 2, VERTEX_CACHE_HEIGHT =
  #define VALID_012 (VALID_0 | VALID_1 | VALID_2)
  #define VALID_ALL (VALID_0 | VALID_1 | VALID_2 | VALID_3)
  #define INV_VALID_ALL (ALL ^ VALID_ALL)
 +#define TZ (1u << 31)
++#define BF (1u << 30)
++#define LZ (1u << 25)
++#define HZ (1u << 26)
  
  typedef struct PGXP_value_Tag
  {
-@@ -132,6 +134,28 @@ ALWAYS_INLINE_RELEASE void MaskValidate(PGXP_value* pV, uint32_t psxV, uint32_t
+@@ -123,7 +128,7 @@ ALWAYS_INLINE_RELEASE void MakeValid(PGXP_value* pV, uint32_t psxV)
+ ALWAYS_INLINE_RELEASE void Validate(PGXP_value* pV, uint32_t psxV)
+ {
+   // assume pV is not NULL
+-  pV->flags &= (pV->value == psxV) ? ALL : INV_VALID_ALL;
++  pV->flags = (pV->value == psxV) ? pV->flags : 0;
+ }
+ 
+ ALWAYS_INLINE_RELEASE void MaskValidate(PGXP_value* pV, uint32_t psxV, uint32_t mask, uint32_t validMask)
+@@ -132,6 +137,33 @@ ALWAYS_INLINE_RELEASE void MaskValidate(PGXP_value* pV, uint32_t psxV, uint32_t
    pV->flags &= ((pV->value & mask) == (psxV & mask)) ? ALL : (ALL ^ (validMask));
  }
  
@@ -318922,10 +319294,185 @@ index 1c1eb1ff..0166de3c 100644
 +  f |= ((a.flags | b.flags) & VALID_2);
 +}
 +
++ALWAYS_INLINE_RELEASE bool EZ(const PGXP_value& v, uint32_t p)
++{
++  return (p == 0 && (v.flags & (VALID_01 | VALID_2)) == VALID_01 && v.x == 0.f && v.y == 0.f);
++}
++
  ALWAYS_INLINE_RELEASE double f16Sign(double in)
  {
    /* Scale to 16.16, keep the low 32 bits (mod 2^32), then reinterpret those
-@@ -371,6 +395,7 @@ void GTE_PushSXYZ2f(float x, float y, float z, uint32_t v)
+@@ -152,10 +184,7 @@ ALWAYS_INLINE_RELEASE double f16Unsign(double in)
+ }
+ ALWAYS_INLINE_RELEASE double f16Overflow(double in)
+ {
+-  double out = 0;
+-  int64_t v = ((int64_t)in) >> 16;
+-  out = (double)v;
+-  return out;
++  return std::floor(in / 65536.0);
+ }
+ 
+ ALWAYS_INLINE_RELEASE PGXP_value* GetPtr(uint32_t addr)
+@@ -188,47 +217,40 @@ ALWAYS_INLINE_RELEASE void ValidateAndCopyMem(PGXP_value* dest, uint32_t addr, u
+   *dest = PGXP_value_invalid;
+ }
+ 
+-ALWAYS_INLINE_RELEASE static void ValidateAndCopyMem16(PGXP_value* dest, uint32_t addr, uint32_t value, int sign)
++ALWAYS_INLINE_RELEASE static void ValidateAndCopyMem16(PGXP_value* dest, uint32_t addr, uint32_t value, bool sign)
+ {
+-  uint32_t validMask = 0;
+-  psx_value val, mask;
+   PGXP_value* pMem = GetPtr(addr);
+-  if (pMem != NULL)
++  if (!pMem)
+   {
+-    mask.d = val.d = 0;
+-    // determine if high or low word
+-    if ((addr % 4) == 2)
+-    {
+-      val.w.h = static_cast<uint16_t>(value);
+-      mask.w.h = 0xFFFF;
+-      validMask = VALID_1;
+-    }
+-    else
+-    {
+-      val.w.l = static_cast<uint16_t>(value);
+-      mask.w.l = 0xFFFF;
+-      validMask = VALID_0;
+-    }
++    *dest = PGXP_value_invalid;
++    return;
++  }
+ 
+-    // validate and copy whole value
+-    MaskValidate(pMem, val.d, mask.d, validMask);
+-    *dest = *pMem;
++  const bool hiword = ((addr & 2) != 0);
+ 
+-    // if high word then shift
+-    if ((addr % 4) == 2)
+-    {
+-      dest->x = dest->y;
+-      dest->compFlags[0] = dest->compFlags[1];
+-    }
++  pMem->flags = hiword ? ((static_cast<uint16_t>(pMem->value >> 16) == static_cast<uint16_t>(value)) ? pMem->flags : (pMem->flags & ~VALID_1)) :
++                         ((static_cast<uint16_t>(pMem->value) == static_cast<uint16_t>(value)) ? pMem->flags : (pMem->flags & ~VALID_0));
+ 
+-    // truncate value
+-    dest->y = (dest->x < 0) ? -1.f * sign : 0.f; // 0.f;
+-    dest->value = value;
+-    dest->compFlags[1] = VALID; // iCB: High word is valid, just 0
+-    return;
++  *dest = *pMem;
++
++  if (hiword)
++  {
++    dest->x = dest->y;
++    dest->flags = (dest->flags & ~VALID_0) | ((dest->flags & VALID_1) >> 8);
+   }
+ 
+-  *dest = PGXP_value_invalid;
++  if (dest->flags & VALID_0)
++  {
++    dest->y = (dest->x < 0) ? (sign ? -1.f : 0.f) : 0.f;
++    dest->flags |= VALID_1;
++  }
++  else
++  {
++    dest->y = 0.f;
++    dest->flags &= ~VALID_1;
++  }
++
++  dest->value = value;
+ }
+ 
+ ALWAYS_INLINE_RELEASE void WriteMem(const PGXP_value* value, uint32_t addr)
+@@ -236,7 +258,10 @@ ALWAYS_INLINE_RELEASE void WriteMem(const PGXP_value* value, uint32_t addr)
+   PGXP_value* pMem = GetPtr(addr);
+ 
+   if (pMem)
++  {
+     *pMem = *value;
++    pMem->flags = (value->flags & ~(LZ | HZ)) | ((value->flags & VALID_2) ? (LZ | HZ) : 0);
++  }
+ }
+ 
+ ALWAYS_INLINE_RELEASE static void WriteMem16(const PGXP_value* src, uint32_t addr)
+@@ -245,33 +270,31 @@ ALWAYS_INLINE_RELEASE static void WriteMem16(const PGXP_value* src, uint32_t add
+ 
+   if (dest)
+   {
+-    /* determine if high or low word. Writing the half through explicit shift/
+-     * mask on dest->value rather than aliasing it as a psx_value* (a union of
+-     * a different type) avoids the strict-aliasing violation; the result is
+-     * identical to the little-endian w.l / w.h union writes on all supported
+-     * targets and endianness-independent besides. */
+-    const uint16_t half = static_cast<uint16_t>(src->value);
+-    if ((addr % 4) == 2)
++    const bool hiword = ((addr & 2) != 0);
++    if (hiword)
+     {
+       dest->y = src->x;
+-      dest->compFlags[1] = src->compFlags[0];
+-      dest->value = (dest->value & UINT32_C(0x0000FFFF)) | (static_cast<uint32_t>(half) << 16);
++      dest->flags = (dest->flags & ~VALID_1) | ((src->flags & VALID_0) << 8);
++      dest->value = (dest->value & UINT32_C(0x0000FFFF)) | (src->value << 16);
+     }
+     else
+     {
+       dest->x = src->x;
+-      dest->compFlags[0] = src->compFlags[0];
+-      dest->value = (dest->value & UINT32_C(0xFFFF0000)) | static_cast<uint32_t>(half);
++      dest->flags = (dest->flags & ~VALID_0) | (src->flags & VALID_0);
++      dest->value = (dest->value & UINT32_C(0xFFFF0000)) | (src->value & UINT32_C(0x0000FFFF));
+     }
+ 
+-    // overwrite z/w if valid
+-    if (src->compFlags[2] == VALID)
++    if (src->flags & VALID_2)
+     {
+       dest->z = src->z;
+-      dest->compFlags[2] = src->compFlags[2];
++      dest->flags |= VALID_2 | (hiword ? HZ : LZ);
++    }
++    else
++    {
++      dest->flags &= hiword ? ~HZ : ~LZ;
++      if ((dest->flags & VALID_2) && !(dest->flags & (HZ | LZ)))
++        dest->flags &= ~VALID_2;
+     }
+-
+-    // dest->valid = dest->valid && src->valid;
+   }
+ }
+ 
+@@ -279,6 +302,7 @@ void Initialize()
+ {
+   std::memset(CPU_reg, 0, sizeof(CPU_reg));
+   std::memset(CP0_reg, 0, sizeof(CP0_reg));
++  CPU_reg[0].flags = VALID_01;
+ 
+   std::memset(GTE_data_reg, 0, sizeof(GTE_data_reg));
+   std::memset(GTE_ctrl_reg, 0, sizeof(GTE_ctrl_reg));
+@@ -308,6 +332,7 @@ void Reset()
+ {
+   std::memset(CPU_reg, 0, sizeof(CPU_reg));
+   std::memset(CP0_reg, 0, sizeof(CP0_reg));
++  CPU_reg[0].flags = VALID_01;
+ 
+   std::memset(GTE_data_reg, 0, sizeof(GTE_data_reg));
+   std::memset(GTE_ctrl_reg, 0, sizeof(GTE_ctrl_reg));
+@@ -360,7 +385,7 @@ void Shutdown()
+ #define SXY2 (GTE_data_reg[14])
+ #define SXYP (GTE_data_reg[15])
+ 
+-void GTE_PushSXYZ2f(float x, float y, float z, uint32_t v)
++void GTE_RTPS(float x, float y, float z, uint32_t v)
+ {
+   // push values down FIFO
+   SXY0 = SXY1;
+@@ -371,6 +396,7 @@ void GTE_PushSXYZ2f(float x, float y, float z, uint32_t v)
    SXY2.z = z;
    SXY2.value = v;
    SXY2.flags = VALID_ALL;
@@ -318933,7 +319480,328 @@ index 1c1eb1ff..0166de3c 100644
  
    if (g_settings.gpu_pgxp_vertex_cache)
      PGXP_CacheVertex(static_cast<int16_t>(static_cast<uint16_t>(v)), static_cast<int16_t>(static_cast<uint16_t>(v >> 16)), SXY2);
-@@ -537,7 +562,7 @@ bool GetPreciseVertex(uint32_t addr, uint32_t value, int x, int y, int xOffs, in
+@@ -380,14 +406,12 @@ void GTE_PushSXYZ2f(float x, float y, float z, uint32_t v)
+ #define VY(n) (psxRegs.CP2D.p[n << 1].sw.h)
+ #define VZ(n) (psxRegs.CP2D.p[(n << 1) + 1].sw.l)
+ 
+-int GTE_NCLIP_valid(uint32_t sxy0, uint32_t sxy1, uint32_t sxy2)
++bool GTE_HasPreciseVertices(uint32_t sxy0, uint32_t sxy1, uint32_t sxy2)
+ {
+   Validate(&SXY0, sxy0);
+   Validate(&SXY1, sxy1);
+   Validate(&SXY2, sxy2);
+-  if (((SXY0.flags & SXY1.flags & SXY2.flags & VALID_01) == VALID_01)) // && Config.PGXP_GTE && (Config.PGXP_Mode > 0))
+-    return 1;
+-  return 0;
++  return ((SXY0.flags & SXY1.flags & SXY2.flags & (VALID_01 | VALID_2)) == (VALID_01 | VALID_2));
+ }
+ 
+ float GTE_NCLIP()
+@@ -415,23 +439,269 @@ float GTE_NCLIP()
+   return nclip;
+ }
+ 
+-static void PGXP_MTC2_int(PGXP_value value, uint32_t reg)
++static PGXP_value& GTEP(uint32_t index)
++{
++  return (index < 32) ? GTE_data_reg[index] : GTE_ctrl_reg[index - 32];
++}
++
++void GTE_ClearMACIR()
++{
++  for (uint32_t i = 0; i < 3; i++)
++  {
++    GTE_data_reg[9 + i].flags = 0;
++    GTE_data_reg[25 + i].flags = 0;
++  }
++}
++
++static double GTEComponent(uint32_t index, bool high, uint32_t native, bool* precise)
++{
++  PGXP_value& val = GTEP(index);
++  Validate(&val, native);
++
++  const double nc = high ? static_cast<int16_t>(static_cast<uint16_t>(native >> 16)) : static_cast<int16_t>(static_cast<uint16_t>(native));
++  if (!(val.flags & (high ? VALID_1 : VALID_0)))
++    return nc;
++
++  double r = high ? val.y : val.x;
++  if (r - nc > 32768.0)
++    r -= 65536.0;
++  else if (r - nc < -32768.0)
++    r += 65536.0;
++
++  *precise = true;
++  return r;
++}
++
++void GTE_MVMVA(uint32_t inst_bits, const uint32_t old_ir[3])
++{
++  const GTE::Instruction inst{inst_bits};
++  const GTE::Regs& regs = CPU::g_state.gte_regs;
++  const uint32_t matrix = (inst.mvmva_multiply_matrix == 1) ? 40 : 48;
++  const uint32_t vector = inst.mvmva_multiply_vector;
++  const uint32_t translation = inst.mvmva_translation_vector;
++
++  double v[3];
++  int16_t native_v[3];
++  bool v_precise[3] = {};
++  for (uint32_t i = 0; i < 3; i++)
++  {
++    const uint32_t index = (vector == 3) ? (9 + i) : (vector * 2 + i / 2);
++    const uint32_t native = (vector == 3) ? old_ir[i] : regs.r32[index];
++    const bool high = (vector != 3 && i == 1);
++    native_v[i] = high ? static_cast<int16_t>(static_cast<uint16_t>(native >> 16)) : static_cast<int16_t>(static_cast<uint16_t>(native));
++    v[i] = GTEComponent(index, high, native, &v_precise[i]);
++  }
++
++  const double scale = static_cast<double>(1u << inst.GetShift());
++  for (uint32_t row = 0; row < 3; row++)
++  {
++    PGXP_value& mac = GTE_data_reg[25 + row];
++    PGXP_value& ir = GTE_data_reg[9 + row];
++    mac = PGXP_value_invalid;
++    ir = PGXP_value_invalid;
++    mac.value = regs.r32[25 + row];
++    ir.value = regs.r32[9 + row];
++
++    if (regs.FLAG.bits & ((1u << (30 - row)) | (1u << (27 - row))))
++      continue;
++
++    double result = 0.0;
++    int64_t native_result = 0;
++    bool precise = false;
++    uint8_t z_halves[5] = {};
++    if (translation < 2)
++    {
++      const int32_t native = (translation == 0) ? regs.TR[row] : regs.BK[row];
++      native_result = static_cast<int64_t>(native) * 4096;
++      result = static_cast<double>(native);
++      if (translation == 1)
++      {
++        PGXP_value& val = GTE_ctrl_reg[13 + row];
++        Validate(&val, static_cast<uint32_t>(native));
++
++        const double precise_t = f16Unsign(val.x) + static_cast<double>(val.y) * 65536.0;
++        if ((val.flags & VALID_01) == VALID_01)
++        {
++          result = precise_t;
++          precise = true;
++        }
++      }
++      result *= 4096.0;
++    }
++
++    for (uint32_t col = (translation == 2) ? 1 : 0; col < 3; col++)
++    {
++      const uint32_t offset = row * 3 + col;
++      const uint32_t index = matrix + offset / 2;
++      const bool high = (offset & 1) != 0;
++      const uint32_t word = regs.r32[index];
++      const int16_t native_m = high ? static_cast<int16_t>(static_cast<uint16_t>(word >> 16)) : static_cast<int16_t>(static_cast<uint16_t>(word));
++      bool m_precise = false;
++      const double m = GTEComponent(index, high, word, &m_precise);
++      result += m * v[col];
++      native_result += static_cast<int64_t>(native_m) * native_v[col];
++      precise |= (m_precise && v[col] != 0.0) || (v_precise[col] && m != 0.0);
++
++      if (m_precise && v[col] != 0.0)
++        z_halves[offset / 2] |= high ? 2 : 1;
++    }
++    result /= scale;
++    native_result >>= inst.GetShift();
++
++    if (!precise || native_result < INT_MIN || native_result > INT_MAX || result < static_cast<double>(INT_MIN) ||
++        result > static_cast<double>(INT_MAX))
++    {
++      continue;
++    }
++
++    const double hi = std::floor(result / 65536.0);
++    mac.x = static_cast<float>(f16Sign(result - hi * 65536.0));
++    mac.y = static_cast<float>(hi);
++    mac.flags = VALID_01 | TZ;
++
++    float z_sum = 0.0f;
++    uint32_t z_count = 0;
++    bool z_valid = true;
++    for (uint32_t w = 0; w < 5; w++)
++    {
++      if (z_halves[w] == 0)
++        continue;
++
++      const PGXP_value& val = GTEP(matrix + w);
++      z_valid &= (z_halves[w] == 3 && (val.flags & VALID_2));
++      z_sum += val.z;
++      z_count++;
++    }
++
++    if (z_valid && z_count > 0)
++    {
++      mac.z = z_sum / static_cast<float>(z_count);
++      mac.flags |= VALID_2;
++    }
++
++    const double ir_result = std::min(std::max(result, inst.lm ? 0.0 : -32768.0), 32767.0);
++    const double ir_hi = std::floor(ir_result / 65536.0);
++    ir.x = static_cast<float>(f16Sign(ir_result - ir_hi * 65536.0));
++    ir.y = static_cast<float>(ir_hi);
++    ir.z = mac.z;
++    ir.flags = mac.flags;
++  }
++}
++
++void GTE_GPF_GPL(const uint32_t old_ir[3], const uint32_t* old_mac, uint8_t shift)
++{
++  const double ir0 = static_cast<double>(CPU::g_state.gte_regs.IR0);
++  const double scale = static_cast<double>(1u << shift);
++  for (uint32_t i = 0; i < 3; i++)
++  {
++    PGXP_value& ir = GTE_data_reg[9 + i];
++    PGXP_value& mac = GTE_data_reg[25 + i];
++    const uint32_t ir_val = CPU::g_state.gte_regs.dr32[9 + i];
++    const uint32_t mac_val = CPU::g_state.gte_regs.dr32[25 + i];
++
++    Validate(&ir, old_ir[i]);
++
++    double ir_x = static_cast<double>(GVX(ir, old_ir[i]));
++    const double native_ir = static_cast<double>(static_cast<int16_t>(old_ir[i]));
++    if (ir_x - native_ir > 32768.0)
++      ir_x -= 65536.0;
++    else if (ir_x - native_ir < -32768.0)
++      ir_x += 65536.0;
++
++    double value = ir_x * ir0;
++    PGXP_value result = ir;
++    bool precise = (ir.flags & VALID_0) != 0;
++    if (old_mac)
++    {
++      Validate(&mac, old_mac[i]);
++      const bool mac_precise = ((mac.flags & VALID_01) == VALID_01);
++      value += (mac_precise ? (f16Unsign(mac.x) + static_cast<double>(mac.y) * 65536.0) :
++                              static_cast<double>(static_cast<int32_t>(old_mac[i]))) *
++               scale;
++      CZ(result, mac);
++      precise |= mac_precise;
++    }
++    value /= scale;
++
++    if (!precise || value < static_cast<double>(INT_MIN) || value > static_cast<double>(INT_MAX))
++    {
++      mac.value = mac_val;
++      mac.flags = 0;
++      ir.value = ir_val;
++      ir.flags = 0;
++      continue;
++    }
++
++    const double hi = std::floor(value / 65536.0);
++    mac.x = static_cast<float>(f16Sign(value - hi * 65536.0));
++    mac.y = static_cast<float>(hi);
++    mac.z = result.z;
++    mac.value = mac_val;
++    mac.flags = (result.flags & VALID_2) | VALID_01 | TZ;
++
++    ir = mac;
++    ir.value = ir_val;
++    if (ir_val != mac_val)
++    {
++      ir.x = static_cast<float>(static_cast<int16_t>(ir_val));
++      ir.y = static_cast<float>(static_cast<int16_t>(ir_val >> 16));
++    }
++  }
++}
++
++static void PGXP_MTC2_int(PGXP_value value, uint32_t reg, uint32_t val)
+ {
+   switch (reg)
+   {
+     case 15:
+-      // push FIFO
+       SXY0 = SXY1;
+       SXY1 = SXY2;
+       SXY2 = value;
+       SXYP = SXY2;
+-      break;
++      return;
+ 
++    case 29:
+     case 31:
+       return;
+-  }
+ 
+-  GTE_data_reg[reg] = value;
++    case 1:
++    case 3:
++    case 5:
++    case 7:
++    case 8:
++    case 9:
++    case 10:
++    case 11:
++    case 16:
++    case 17:
++    case 18:
++    case 19:
++    case 36:
++    case 44:
++    case 52:
++    case 58:
++    case 59:
++    case 61:
++    case 62:
++    {
++      const bool sign = (reg != 7 && (reg < 16 || reg > 19));
++      PGXP_value& g = GTEP(reg);
++      g = value;
++
++      const float native = static_cast<float>(sign ? static_cast<int16_t>(val) : static_cast<uint16_t>(val));
++      const float diff = value.x - native;
++      const float precise = value.x + ((diff > 32768.0f) ? -65536.0f : (diff < -32768.0f) ? 65536.0f : 0.0f);
++      g.y = std::floor(precise / 65536.0f);
++      g.value = sign ? static_cast<uint32_t>(static_cast<int32_t>(static_cast<int16_t>(val))) : static_cast<uint32_t>(static_cast<uint16_t>(val));
++      g.flags = (value.flags & ~VALID_1) | ((value.flags & VALID_0) << 8);
++      return;
++    }
++
++    default:
++      GTEP(reg) = value;
++      GTEP(reg).value = val;
++      return;
++  }
+ }
+ 
+ ////////////////////////////////////
+@@ -450,8 +720,7 @@ void CPU_MTC2(uint32_t instr, uint32_t rdVal, uint32_t rtVal)
+ {
+   // GTE_D[Rd] = CPU[Rt]
+   Validate(&CPU_reg[rt(instr)], rtVal);
+-  PGXP_MTC2_int(CPU_reg[rt(instr)], rd(instr));
+-  GTE_data_reg[rd(instr)].value = rdVal;
++  PGXP_MTC2_int(CPU_reg[rt(instr)], rd(instr), rtVal);
+ }
+ 
+ void CPU_CFC2(uint32_t instr, uint32_t rtVal, uint32_t rdVal)
+@@ -466,8 +735,7 @@ void CPU_CTC2(uint32_t instr, uint32_t rdVal, uint32_t rtVal)
+ {
+   // GTE_C[Rd] = CPU[Rt]
+   Validate(&CPU_reg[rt(instr)], rtVal);
+-  GTE_ctrl_reg[rd(instr)] = CPU_reg[rt(instr)];
+-  GTE_ctrl_reg[rd(instr)].value = rdVal;
++  PGXP_MTC2_int(CPU_reg[rt(instr)], rd(instr) + 32, rtVal);
+ }
+ 
+ ////////////////////////////////////
+@@ -478,7 +746,7 @@ void CPU_LWC2(uint32_t instr, uint32_t rtVal, uint32_t addr)
+   // GTE_D[Rt] = Mem[addr]
+   PGXP_value val;
+   ValidateAndCopyMem(&val, addr, rtVal);
+-  PGXP_MTC2_int(val, rt(instr));
++  PGXP_MTC2_int(val, rt(instr), rtVal);
+ }
+ 
+ void CPU_SWC2(uint32_t instr, uint32_t rtVal, uint32_t addr)
+@@ -537,7 +805,7 @@ bool GetPreciseVertex(uint32_t addr, uint32_t value, int x, int y, int xOffs, in
      // There is a value here with valid X and Y coordinates
      *out_x = TruncateVertexPosition(vert->x) + static_cast<float>(xOffs);
      *out_y = TruncateVertexPosition(vert->y) + static_cast<float>(yOffs);
@@ -318942,7 +319810,7 @@ index 1c1eb1ff..0166de3c 100644
  
      if (IsWithinTolerance(*out_x, *out_y, x, y))
      {
-@@ -557,7 +582,7 @@ bool GetPreciseVertex(uint32_t addr, uint32_t value, int x, int y, int xOffs, in
+@@ -557,7 +825,7 @@ bool GetPreciseVertex(uint32_t addr, uint32_t value, int x, int y, int xOffs, in
      {
        *out_x = TruncateVertexPosition(vert->x) + static_cast<float>(xOffs);
        *out_y = TruncateVertexPosition(vert->y) + static_cast<float>(yOffs);
@@ -318951,7 +319819,201 @@ index 1c1eb1ff..0166de3c 100644
  
        if (IsWithinTolerance(*out_x, *out_y, x, y))
          return false;
-@@ -630,136 +655,119 @@ void CPU_MOVE(uint32_t rd_and_rs, uint32_t rsVal)
+@@ -593,10 +861,14 @@ void CPU_LBx(uint32_t instr, uint32_t rtVal, uint32_t addr)
+   CPU_reg[rt(instr)] = PGXP_value_invalid;
+ }
+ 
+-void CPU_LHx(uint32_t instr, uint32_t rtVal, uint32_t addr)
++void CPU_LH(uint32_t instr, uint32_t rtVal, uint32_t addr)
++{
++  ValidateAndCopyMem16(&CPU_reg[rt(instr)], addr, rtVal, true);
++}
++
++void CPU_LHU(uint32_t instr, uint32_t rtVal, uint32_t addr)
+ {
+-  // Rt = Mem[Rs + Im] (sign/zero extended)
+-  ValidateAndCopyMem16(&CPU_reg[rt(instr)], addr, rtVal, 1);
++  ValidateAndCopyMem16(&CPU_reg[rt(instr)], addr, rtVal, false);
+ }
+ 
+ void CPU_SB(uint32_t instr, uint8_t rtVal, uint32_t addr)
+@@ -604,12 +876,10 @@ void CPU_SB(uint32_t instr, uint8_t rtVal, uint32_t addr)
+   WriteMem(&PGXP_value_invalid, addr);
+ }
+ 
+-void CPU_SH(uint32_t instr, uint16_t rtVal, uint32_t addr)
++void CPU_SH(uint32_t instr, uint32_t rtVal, uint32_t addr)
+ {
+   PGXP_value* val = &CPU_reg[rt(instr)];
+-
+-  // validate and copy half value
+-  MaskValidate(val, rtVal, 0xFFFF, VALID_0);
++  Validate(val, rtVal);
+   WriteMem16(val, addr);
+ }
+ 
+@@ -621,6 +891,160 @@ void CPU_SW(uint32_t instr, uint32_t rtVal, uint32_t addr)
+   WriteMem(val, addr);
+ }
+ 
++void CPU_LWx(uint32_t instr, uint32_t rtVal, uint32_t addr)
++{
++  const uint32_t aligned_addr = addr & ~3u;
++  PGXP_value* pmem = GetPtr(aligned_addr);
++  uint32_t memVal;
++  if (!pmem)
++    return;
++  if (!CPU::SafeReadMemoryWord(aligned_addr, &memVal))
++    return;
++  Validate(pmem, memVal);
++
++  PGXP_value& prt = CPU_reg[rt(instr)];
++  Validate(&prt, rtVal);
++
++  const uint32_t byte_shift = addr & 3u;
++  const uint32_t bit_shift = byte_shift * 8;
++
++  if (op(instr) == 0x22)
++  {
++    const uint32_t mixed = (rtVal & (UINT32_C(0x00FFFFFF) >> bit_shift)) | (memVal << (24 - bit_shift));
++    switch (byte_shift)
++    {
++      case 0:
++        prt.y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        prt.value = mixed;
++        prt.flags = (prt.flags & ~VALID_1);
++        break;
++      case 1:
++        prt.y = pmem->x;
++        prt.z = (pmem->flags & LZ) ? pmem->z : prt.z;
++        prt.value = mixed;
++        prt.flags = (prt.flags & ~VALID_1) | ((pmem->flags & VALID_0) << 8) | ((pmem->flags & LZ) ? VALID_2 : 0);
++        break;
++      case 2:
++        prt.x = static_cast<float>(static_cast<int16_t>(mixed));
++        prt.y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        prt.value = mixed;
++        prt.flags &= ~(VALID_01 | VALID_2);
++        break;
++      default:
++        prt = *pmem;
++        prt.value = mixed;
++        break;
++    }
++  }
++  else
++  {
++    const uint32_t mixed = (rtVal & (UINT32_C(0xFFFFFF00) << (24 - bit_shift))) | (memVal >> bit_shift);
++    switch (byte_shift)
++    {
++      case 0:
++        prt = *pmem;
++        prt.value = mixed;
++        break;
++      case 1:
++        prt.x = static_cast<float>(static_cast<int16_t>(mixed));
++        prt.y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        prt.value = mixed;
++        prt.flags &= ~(VALID_01 | VALID_2);
++        break;
++      case 2:
++        prt.x = pmem->y;
++        prt.z = (pmem->flags & HZ) ? pmem->z : prt.z;
++        prt.value = mixed;
++        prt.flags = (prt.flags & ~VALID_0) | ((pmem->flags & VALID_1) >> 8) | ((pmem->flags & HZ) ? VALID_2 : 0);
++        break;
++      default:
++        prt.x = static_cast<float>(static_cast<int16_t>(mixed));
++        prt.value = mixed;
++        prt.flags = (prt.flags & ~VALID_0);
++        break;
++    }
++  }
++}
++
++void CPU_SWx(uint32_t instr, uint32_t rtVal, uint32_t addr)
++{
++  const uint32_t aligned_addr = addr & ~3u;
++  PGXP_value* pmem = GetPtr(aligned_addr);
++  uint32_t memVal;
++  if (!pmem)
++    return;
++  if (!CPU::SafeReadMemoryWord(aligned_addr, &memVal))
++    return;
++  Validate(pmem, memVal);
++
++  PGXP_value& prt = CPU_reg[rt(instr)];
++  Validate(&prt, rtVal);
++
++  const uint32_t byte_shift = addr & 3u;
++  const uint32_t bit_shift = byte_shift * 8;
++
++  if (op(instr) == 0x2A)
++  {
++    const uint32_t mixed = (memVal & (UINT32_C(0xFFFFFF00) << bit_shift)) | (rtVal >> (24 - bit_shift));
++    switch (byte_shift)
++    {
++      case 0:
++        pmem->x = static_cast<float>(static_cast<int16_t>(mixed));
++        pmem->value = mixed;
++        pmem->flags = (pmem->flags & ~(VALID_0 | VALID_2 | LZ)) | ((pmem->flags & HZ) ? VALID_2 : 0);
++        break;
++      case 1:
++        pmem->x = prt.y;
++        pmem->z = (prt.flags & VALID_2) ? prt.z : pmem->z;
++        pmem->value = mixed;
++        pmem->flags = (pmem->flags & ~(VALID_0 | VALID_2 | LZ)) | ((prt.flags & VALID_1) >> 8) |
++                      ((prt.flags & VALID_2) ? (VALID_2 | LZ) : 0) | ((pmem->flags & HZ) ? VALID_2 : 0);
++        break;
++      case 2:
++        pmem->x = static_cast<float>(static_cast<int16_t>(mixed));
++        pmem->y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        pmem->value = mixed;
++        pmem->flags &= ~(VALID_01 | VALID_2 | LZ | HZ);
++        break;
++      default:
++        *pmem = prt;
++        pmem->value = mixed;
++        pmem->flags = (prt.flags & ~(LZ | HZ)) | ((prt.flags & VALID_2) ? (LZ | HZ) : 0);
++        break;
++    }
++  }
++  else
++  {
++    const uint32_t mixed = (memVal & (UINT32_C(0x00FFFFFF) >> (24 - bit_shift))) | (rtVal << bit_shift);
++    switch (byte_shift)
++    {
++      case 0:
++        *pmem = prt;
++        pmem->value = mixed;
++        pmem->flags = (prt.flags & ~(LZ | HZ)) | ((prt.flags & VALID_2) ? (LZ | HZ) : 0);
++        break;
++      case 1:
++        pmem->x = static_cast<float>(static_cast<int16_t>(mixed));
++        pmem->y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        pmem->value = mixed;
++        pmem->flags &= ~(VALID_01 | LZ | HZ);
++        break;
++      case 2:
++        pmem->y = prt.x;
++        pmem->z = (prt.flags & VALID_2) ? prt.z : pmem->z;
++        pmem->value = mixed;
++        pmem->flags = (pmem->flags & ~(VALID_1 | VALID_2 | HZ)) | ((prt.flags & VALID_0) << 8) |
++                      ((prt.flags & VALID_2) ? (VALID_2 | HZ) : 0) | ((pmem->flags & LZ) ? VALID_2 : 0);
++        break;
++      default:
++        pmem->y = static_cast<float>(static_cast<int16_t>(mixed >> 16));
++        pmem->value = mixed;
++        pmem->flags = (pmem->flags & ~(VALID_1 | VALID_2 | HZ)) | ((pmem->flags & LZ) ? VALID_2 : 0);
++        break;
++    }
++  }
++}
++
+ void CPU_MOVE(uint32_t rd_and_rs, uint32_t rsVal)
+ {
+   const uint32_t Rs = (rd_and_rs & 0xFFu);
+@@ -630,157 +1054,128 @@ void CPU_MOVE(uint32_t rd_and_rs, uint32_t rsVal)
  
  void CPU_ADDI(uint32_t instr, uint32_t rsVal)
  {
@@ -318978,12 +320040,12 @@ index 1c1eb1ff..0166de3c 100644
 -    ret.y += tempImm.sw.h + of;
 +  PGXP_value& prt = CPU_reg[rt(instr)];
 +  prt = prs;
++
++  if (immVal == 0)
++    return;
  
 -    // truncate on overflow/underflow
 -    ret.y += (ret.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? USHRT_MAX + 1 : 0.f;
-+  if (immVal == 0)
-+    return;
-+
 +  if (rsVal == 0)
 +  {
 +    prt.x = static_cast<float>(static_cast<int16_t>(static_cast<uint16_t>(immVal)));
@@ -318995,14 +320057,13 @@ index 1c1eb1ff..0166de3c 100644
  
 -  CPU_reg[rt(instr)] = ret;
 -  CPU_reg[rt(instr)].value = rsVal + imm_sext(instr);
-+  prt.x = static_cast<float>(f16Unsign(prt.x));
-+  prt.x += static_cast<float>(static_cast<uint16_t>(immVal));
++  const double x = f16Unsign(GVX(prs, rsVal)) + static_cast<uint16_t>(immVal);
 +
-+  const float of = (prt.x > USHRT_MAX) ? 1.f : (prt.x < 0.f) ? -1.f : 0.f;
-+  prt.x = static_cast<float>(f16Sign(prt.x));
-+  prt.y += static_cast<int16_t>(static_cast<uint16_t>(immVal >> 16)) + of;
++  const float of = (x >= (USHRT_MAX + 1)) ? 1.f : (x < 0.0) ? -1.f : 0.f;
++  prt.x = static_cast<float>(f16Sign(x));
++  prt.y = GVY(prs, rsVal) + static_cast<int16_t>(static_cast<uint16_t>(immVal >> 16)) + of;
 +
-+  prt.y += (prt.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (prt.y < SHRT_MIN) ? (USHRT_MAX + 1) : 0.f;
++  prt.y += (prt.y >= (SHRT_MAX + 1)) ? -(USHRT_MAX + 1) : (prt.y < SHRT_MIN) ? (USHRT_MAX + 1) : 0.f;
 +
 +  prt.value = rsVal + immVal;
 +
@@ -319020,38 +320081,42 @@ index 1c1eb1ff..0166de3c 100644
 +  const uint32_t rtVal = rsVal & im;
    Validate(&CPU_reg[rs(instr)], rsVal);
 -  ret = CPU_reg[rs(instr)];
+-
+-  vRt.d = rtVal;
 +  PGXP_value& prs = CPU_reg[rs(instr)];
 +  PGXP_value& prt = CPU_reg[rt(instr)];
  
--  vRt.d = rtVal;
+-  ret.y = 0.f; // remove upper 16-bits
 +  prt.y = 0.f;
 +  prt.z = prs.z;
 +  prt.value = rtVal;
 +  prt.flags = prs.flags | VALID_1 | TZ;
  
--  ret.y = 0.f; // remove upper 16-bits
--
 -  switch (imm(instr))
-+  switch (im)
++  if (im == 0)
    {
-     case 0:
+-    case 0:
 -      // if 0 then x == 0
 -      ret.x = 0.f;
-+      prt.x = 0.f;
-+      prt.flags |= VALID_0;
-       break;
+-      break;
 -    case 0xFFFF:
 -      // if saturated then x == x
-+    case 0xFFFFu:
-+      prt.x = prs.x;
-       break;
-     default:
+-      break;
+-    default:
 -      // otherwise x is low precision value
 -      ret.x = vRt.sw.l;
 -      ret.flags |= VALID_0;
-+      prt.x = static_cast<float>(static_cast<int16_t>(static_cast<uint16_t>(rtVal)));
-+      prt.flags |= VALID_0;
-+      break;
++    prt.x = 0.f;
++    prt.flags |= VALID_0;
++  }
++  else if (static_cast<uint16_t>(rtVal) == static_cast<uint16_t>(rsVal))
++  {
++    prt.x = prs.x;
++  }
++  else
++  {
++    prt.x = static_cast<float>(static_cast<int16_t>(static_cast<uint16_t>(rtVal)));
++    prt.flags |= VALID_0;
    }
 -
 -  ret.flags |= VALID_1;
@@ -319079,7 +320144,7 @@ index 1c1eb1ff..0166de3c 100644
 +  prt.value = rtVal;
  
 -  switch (imm(instr))
-+  if (im != 0)
++  if (static_cast<uint16_t>(rtVal) != static_cast<uint16_t>(rsVal))
    {
 -    case 0:
 -      // if 0 then x == x
@@ -319107,13 +320172,13 @@ index 1c1eb1ff..0166de3c 100644
  
    Validate(&CPU_reg[rs(instr)], rsVal);
 -  ret = CPU_reg[rs(instr)];
--
--  vRt.d = rtVal;
 +  PGXP_value& prs = CPU_reg[rs(instr)];
 +  PGXP_value& prt = CPU_reg[rt(instr)];
 +  prt = prs;
 +  prt.value = rtVal;
  
+-  vRt.d = rtVal;
+-
 -  switch (imm(instr))
 +  if (im != 0)
    {
@@ -319134,50 +320199,79 @@ index 1c1eb1ff..0166de3c 100644
  
  void CPU_SLTI(uint32_t instr, uint32_t rsVal)
  {
-   // Rt = Rs < Imm (signed)
+-  // Rt = Rs < Imm (signed)
 -  psx_value tempImm;
-   PGXP_value ret;
- 
+-  PGXP_value ret;
+-
    Validate(&CPU_reg[rs(instr)], rsVal);
-   ret = CPU_reg[rs(instr)];
- 
+-  ret = CPU_reg[rs(instr)];
+-
 -  tempImm.w.h = imm(instr);
-+  const float fx = static_cast<float>(static_cast<int16_t>(imm(instr)));
-+  const float fy = (fx < 0.f) ? -1.f : 0.f;
-+
-+  ret.x = (GVY(ret, rsVal) < fy || GVX(ret, rsVal) < fx) ? 1.f : 0.f;
-   ret.y = 0.f;
+-  ret.y = 0.f;
 -  ret.x = (CPU_reg[rs(instr)].x < tempImm.sw.h) ? 1.f : 0.f;
 -  ret.flags |= VALID_1;
-+  ret.flags |= VALID_01 | TZ;
-   ret.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) < imm_sext(instr));
+-  ret.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) < imm_sext(instr));
++  const PGXP_value& prs = CPU_reg[rs(instr)];
  
-   CPU_reg[rt(instr)] = ret;
-@@ -768,17 +776,18 @@ void CPU_SLTI(uint32_t instr, uint32_t rsVal)
+-  CPU_reg[rt(instr)] = ret;
++  PGXP_value& prt = CPU_reg[rt(instr)];
++  prt.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) < imm_sext(instr));
++  prt.x = static_cast<float>(prt.value);
++  prt.y = 0.f;
++  prt.z = prs.z;
++  prt.flags = prs.flags | VALID_01 | TZ;
+ }
+ 
  void CPU_SLTIU(uint32_t instr, uint32_t rsVal)
  {
-   // Rt = Rs < Imm (Unsigned)
+-  // Rt = Rs < Imm (Unsigned)
 -  psx_value tempImm;
-   PGXP_value ret;
- 
+-  PGXP_value ret;
+-
    Validate(&CPU_reg[rs(instr)], rsVal);
-   ret = CPU_reg[rs(instr)];
- 
+-  ret = CPU_reg[rs(instr)];
+-
 -  tempImm.w.h = imm(instr);
-+  const float fx = static_cast<float>(static_cast<int16_t>(imm(instr)));
-+  const float fy = (fx < 0.f) ? -1.f : 0.f;
-+
-+  ret.x = (f16Unsign(GVY(ret, rsVal)) < f16Unsign(fy) || f16Unsign(GVX(ret, rsVal)) < fx) ? 1.f : 0.f;
-   ret.y = 0.f;
+-  ret.y = 0.f;
 -  ret.x = (f16Unsign(CPU_reg[rs(instr)].x) < tempImm.w.h) ? 1.f : 0.f;
 -  ret.flags |= VALID_1;
 -  ret.value = static_cast<uint32_t>(rsVal < imm(instr));
-+  ret.flags |= VALID_01 | TZ;
-+  ret.value = static_cast<uint32_t>(rsVal < imm_sext(instr));
++  const PGXP_value& prs = CPU_reg[rs(instr)];
  
-   CPU_reg[rt(instr)] = ret;
+-  CPU_reg[rt(instr)] = ret;
++  PGXP_value& prt = CPU_reg[rt(instr)];
++  prt.value = static_cast<uint32_t>(rsVal < static_cast<uint32_t>(imm_sext(instr)));
++  prt.x = static_cast<float>(prt.value);
++  prt.y = 0.f;
++  prt.z = prs.z;
++  prt.flags = prs.flags | VALID_01 | TZ;
  }
-@@ -806,36 +815,31 @@ void CPU_ADD(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ 
+ ////////////////////////////////////
+@@ -788,11 +1183,12 @@ void CPU_SLTIU(uint32_t instr, uint32_t rsVal)
+ ////////////////////////////////////
+ void CPU_LUI(uint32_t instr)
+ {
+-  // Rt = Imm << 16
+-  CPU_reg[rt(instr)] = PGXP_value_zero;
+-  CPU_reg[rt(instr)].y = (float)(int16_t)imm(instr);
+-  CPU_reg[rt(instr)].value = static_cast<uint32_t>(imm(instr)) << 16;
+-  CPU_reg[rt(instr)].flags = VALID_01;
++  PGXP_value& prt = CPU_reg[rt(instr)];
++  prt.x = 0.f;
++  prt.y = static_cast<float>(static_cast<int16_t>(imm(instr)));
++  prt.z = 0.f;
++  prt.value = static_cast<uint32_t>(imm(instr)) << 16;
++  prt.flags = VALID_01;
+ }
+ 
+ ////////////////////////////////////
+@@ -801,41 +1197,38 @@ void CPU_LUI(uint32_t instr)
+ 
+ void CPU_ADD(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs + Rt (signed)
+-  PGXP_value ret;
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319193,10 +320287,11 @@ index 1c1eb1ff..0166de3c 100644
 -    ret = CPU_reg[rs(instr)];
 +  const PGXP_value& a = CPU_reg[rs(instr)];
 +  const PGXP_value& b = CPU_reg[rt(instr)];
++  PGXP_value ret;
  
 -    ret.x = (float)f16Unsign(ret.x);
 -    ret.x += (float)f16Unsign(CPU_reg[rt(instr)].x);
-+  if (rtVal == 0)
++  if (rtVal == 0 && !EZ(a, rsVal))
 +  {
 +    ret = a;
 +    CZ(ret, b);
@@ -319215,77 +320310,99 @@ index 1c1eb1ff..0166de3c 100644
 -    ret.x = (float)f16Sign(ret.x);
 -    // ret.x -= of * (USHRT_MAX + 1);
 -    ret.y += CPU_reg[rt(instr)].y + of;
-+    const float of = (x > USHRT_MAX) ? 1.f : (x < 0.0) ? -1.f : 0.f;
++    const float of = (x >= (USHRT_MAX + 1)) ? 1.f : (x < 0.0) ? -1.f : 0.f;
 +    ret.x = static_cast<float>(f16Sign(x));
 +    ret.y = GVY(a, rsVal) + GVY(b, rtVal) + of;
  
 -    // truncate on overflow/underflow
-     ret.y += (ret.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? USHRT_MAX + 1 : 0.f;
+-    ret.y += (ret.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? USHRT_MAX + 1 : 0.f;
++    ret.y += (ret.y >= (SHRT_MAX + 1)) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? (USHRT_MAX + 1) : 0.f;
  
 -    // TODO: decide which "z/w" component to use
--
++    ret.flags = a.flags | (b.flags & VALID_01) | TZ;
++    SZ(ret.z, ret.flags, a, b);
+ 
 -    ret.halfFlags[0] &= CPU_reg[rt(instr)].halfFlags[0];
 -  }
 -  else
 -  {
 -    ret = CPU_reg[rs(instr)];
-+    ret.flags = a.flags | (b.flags & VALID_01) | TZ;
-+    SZ(ret.z, ret.flags, a, b);
++    if (a.flags & b.flags & VALID_2)
++      ret.z = 0.5f * (a.z + b.z);
    }
  
    ret.value = rsVal + rtVal;
-@@ -850,28 +854,27 @@ void CPU_SUB(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -845,201 +1238,169 @@ void CPU_ADD(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ 
+ void CPU_SUB(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs - Rt (signed)
+-  PGXP_value ret;
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
 -  // iCB: Only require one valid input
 -  if (((CPU_reg[rt(instr)].flags & VALID_01) != VALID_01) != ((CPU_reg[rs(instr)].flags & VALID_01) != VALID_01))
-+  const PGXP_value& a = CPU_reg[rs(instr)];
-+  const PGXP_value& b = CPU_reg[rt(instr)];
-+
-+  if (rtVal == 0)
-   {
+-  {
 -    MakeValid(&CPU_reg[rs(instr)], rsVal);
 -    MakeValid(&CPU_reg[rt(instr)], rtVal);
+-  }
++  const PGXP_value& a = CPU_reg[rs(instr)];
++  const PGXP_value& b = CPU_reg[rt(instr)];
++  PGXP_value ret;
+ 
+-  ret = CPU_reg[rs(instr)];
++  if (rtVal == 0)
++  {
 +    ret = a;
 +    CZ(ret, b);
-   }
+ 
+-  ret.x = (float)f16Unsign(ret.x);
+-  ret.x -= (float)f16Unsign(CPU_reg[rt(instr)].x);
++    if (EZ(a, rsVal) && !EZ(b, rtVal))
++      ret.flags &= ~VALID_01;
++  }
 +  else
 +  {
 +    const double x = f16Unsign(GVX(a, rsVal)) - f16Unsign(GVX(b, rtVal));
  
--  ret = CPU_reg[rs(instr)];
--
--  ret.x = (float)f16Unsign(ret.x);
--  ret.x -= (float)f16Unsign(CPU_reg[rt(instr)].x);
--
 -  // carry on over/underflow
 -  float of = (ret.x > USHRT_MAX) ? 1.f : (ret.x < 0) ? -1.f : 0.f;
 -  ret.x = (float)f16Sign(ret.x);
 -  // ret.x -= of * (USHRT_MAX + 1);
 -  ret.y -= CPU_reg[rt(instr)].y - of;
-+    const float of = (x > USHRT_MAX) ? 1.f : (x < 0.0) ? -1.f : 0.f;
++    const float of = (x >= (USHRT_MAX + 1)) ? 1.f : (x < 0.0) ? -1.f : 0.f;
 +    ret.x = static_cast<float>(f16Sign(x));
 +    ret.y = GVY(a, rsVal) - (GVY(b, rtVal) - of);
  
 -  // truncate on overflow/underflow
 -  ret.y += (ret.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? USHRT_MAX + 1 : 0.f;
-+    ret.y += (ret.y > SHRT_MAX) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? USHRT_MAX + 1 : 0.f;
++    ret.y += (ret.y >= (SHRT_MAX + 1)) ? -(USHRT_MAX + 1) : (ret.y < SHRT_MIN) ? (USHRT_MAX + 1) : 0.f;
  
 -  ret.halfFlags[0] &= CPU_reg[rt(instr)].halfFlags[0];
-+    ret.flags = a.flags | (b.flags & VALID_01) | TZ;
++    ret.flags = (EZ(a, rsVal) ? 0 : a.flags) | (b.flags & VALID_01) | TZ;
 +    SZ(ret.z, ret.flags, a, b);
 +  }
  
    ret.value = rsVal - rtVal;
  
-@@ -881,82 +884,35 @@ void CPU_SUB(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
- static void CPU_BITWISE(uint32_t instr, uint32_t rdVal, uint32_t rsVal, uint32_t rtVal)
- {
-   // Rd = Rs & Rt
--  psx_value vald, vals, valt;
-   PGXP_value ret;
+   CPU_reg[rd(instr)] = ret;
+ }
  
+-static void CPU_BITWISE(uint32_t instr, uint32_t rdVal, uint32_t rsVal, uint32_t rtVal)
++enum BitwiseOp : uint32_t
+ {
+-  // Rd = Rs & Rt
+-  psx_value vald, vals, valt;
+-  PGXP_value ret;
++  BW_AND,
++  BW_OR,
++  BW_XOR,
++  BW_NOR
++};
+ 
++static void CPU_BITWISE(uint32_t instr, uint32_t rdVal, uint32_t rsVal, uint32_t rtVal, BitwiseOp fn)
++{
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319307,8 +320424,7 @@ index 1c1eb1ff..0166de3c 100644
 -
 -  if (vald.w.l == 0)
 -  {
-+  if (static_cast<uint16_t>(rdVal) == 0)
-     ret.x = 0.f;
+-    ret.x = 0.f;
 -  }
 -  else if (vald.w.l == vals.w.l)
 -  {
@@ -319320,21 +320436,25 @@ index 1c1eb1ff..0166de3c 100644
 -    ret.x = CPU_reg[rt(instr)].x;
 -    ret.compFlags[0] = CPU_reg[rt(instr)].compFlags[0];
 -  }
-+  else if (static_cast<uint16_t>(rdVal) == static_cast<uint16_t>(rsVal))
-+    ret.x = GVX(a, rsVal);
-+  else if (static_cast<uint16_t>(rdVal) == static_cast<uint16_t>(rtVal))
-+    ret.x = GVX(b, rtVal);
++  float x, y;
++  const PGXP_value* xs = nullptr;
++  const PGXP_value* ys = nullptr;
++  if (static_cast<uint16_t>(rdVal) == 0)
++    x = 0.f;
++  else if (static_cast<uint16_t>(rdVal) == static_cast<uint16_t>(rsVal) && (a.flags & VALID_0))
++    x = (xs = &a)->x;
++  else if (static_cast<uint16_t>(rdVal) == static_cast<uint16_t>(rtVal) && (b.flags & VALID_0))
++    x = (xs = &b)->x;
    else
 -  {
 -    ret.x = (float)vald.sw.l;
 -    ret.compFlags[0] = VALID;
 -  }
-+    ret.x = static_cast<float>(static_cast<int16_t>(rdVal));
++    x = static_cast<float>(static_cast<int16_t>(rdVal));
  
 -  if (vald.w.h == 0)
 -  {
-+  if (static_cast<uint16_t>(rdVal >> 16) == 0)
-     ret.y = 0.f;
+-    ret.y = 0.f;
 -  }
 -  else if (vald.w.h == vals.w.h)
 -  {
@@ -319346,22 +320466,42 @@ index 1c1eb1ff..0166de3c 100644
 -    ret.y = CPU_reg[rt(instr)].y;
 -    ret.compFlags[1] &= CPU_reg[rt(instr)].compFlags[1];
 -  }
-+  else if (static_cast<uint16_t>(rdVal >> 16) == static_cast<uint16_t>(rsVal >> 16))
-+    ret.y = GVY(a, rsVal);
-+  else if (static_cast<uint16_t>(rdVal >> 16) == static_cast<uint16_t>(rtVal >> 16))
-+    ret.y = GVY(b, rtVal);
++  if (static_cast<uint16_t>(rdVal >> 16) == 0)
++    y = 0.f;
++  else if (static_cast<uint16_t>(rdVal >> 16) == static_cast<uint16_t>(rsVal >> 16) && (a.flags & VALID_1))
++    y = (ys = &a)->y;
++  else if (static_cast<uint16_t>(rdVal >> 16) == static_cast<uint16_t>(rtVal >> 16) && (b.flags & VALID_1))
++    y = (ys = &b)->y;
    else
--  {
++    y = static_cast<float>(static_cast<int16_t>(rdVal >> 16));
++
++  if (fn == BW_AND)
+   {
 -    ret.y = (float)vald.sw.h;
 -    ret.compFlags[1] = VALID;
--  }
-+    ret.y = static_cast<float>(static_cast<int16_t>(rdVal >> 16));
++    const bool rt_mask = (static_cast<uint16_t>(rtVal >> 16) == 0xFFFFu);
++    const uint32_t mv = rt_mask ? rtVal : rsVal;
++    const uint32_t sv = rt_mask ? rsVal : rtVal;
++    const PGXP_value& src = rt_mask ? a : b;
++    const uint16_t mask = static_cast<uint16_t>(mv);
++    const int16_t sh = static_cast<int16_t>(sv >> 16);
++    if (static_cast<uint16_t>(mv >> 16) == 0xFFFFu && mask >= 0x0FFF && mask != 0xFFFF && (mask & (mask + 1)) == 0 &&
++        sh != 0 && sh != -1 && (src.flags & (VALID_01 | VALID_2)) == (VALID_01 | VALID_2))
++    {
++      x = static_cast<float>(static_cast<int16_t>(rdVal)) + (src.x - static_cast<float>(static_cast<int16_t>(sv)));
++      y = src.y + static_cast<float>(static_cast<uint16_t>(sv) & ~mask) / 65536.f;
++      xs = ys = &src;
++    }
+   }
  
 -  // iCB Hack: Force validity if even one half is valid
 -  // if ((ret.hFlags & VALID_HALF) || (ret.lFlags & VALID_HALF))
 -  //	ret.valid = 1;
 -  // /iCB Hack
--
++  const bool rz = EZ(a, rsVal);
++  const bool tz = EZ(b, rtVal);
++  const uint32_t sf = (rz ? 0 : a.flags) | (tz ? 0 : b.flags);
+ 
 -  // Get a valid W
 -  if ((CPU_reg[rs(instr)].flags & VALID_2) == VALID_2)
 -  {
@@ -319373,71 +320513,132 @@ index 1c1eb1ff..0166de3c 100644
 -    ret.z = CPU_reg[rt(instr)].z;
 -    ret.compFlags[2] = CPU_reg[rt(instr)].compFlags[2];
 -  }
-+  ret.z = 0.f;
-+  ret.flags = ((a.flags | b.flags) & VALID_01) ? (VALID_01 | TZ) : 0;
-+  SZ(ret.z, ret.flags, a, b);
++  uint32_t flags = ((sf & VALID_01) || (rdVal == 0 && (rz || tz) && fn != BW_NOR)) ? (VALID_01 | TZ) : 0;
++  float z;
++  SZ(z, flags, a, b);
  
++  if (xs && ys && xs != ys && (xs->flags & ys->flags & VALID_2))
++    z = 0.5f * (xs->z + ys->z);
++
++  PGXP_value& ret = CPU_reg[rd(instr)];
++  ret.z = z;
++  ret.x = x;
++  ret.y = y;
++  ret.flags = flags;
    ret.value = rdVal;
-   CPU_reg[rd(instr)] = ret;
-@@ -997,20 +953,16 @@ void CPU_SLT(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
-   Validate(&CPU_reg[rs(instr)], rsVal);
-   Validate(&CPU_reg[rt(instr)], rtVal);
+-  CPU_reg[rd(instr)] = ret;
+ }
  
+ void CPU_AND_(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs & Rt
+-  const uint32_t rdVal = rsVal & rtVal;
+-  CPU_BITWISE(instr, rdVal, rsVal, rtVal);
++  CPU_BITWISE(instr, rsVal & rtVal, rsVal, rtVal, BW_AND);
+ }
+ 
+ void CPU_OR_(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs | Rt
+-  const uint32_t rdVal = rsVal | rtVal;
+-  CPU_BITWISE(instr, rdVal, rsVal, rtVal);
++  if (rtVal == 0 && !EZ(CPU_reg[rs(instr)], rsVal))
++    CPU_MOVE((rd(instr) << 8) | rs(instr), rsVal);
++  else if (rsVal == 0)
++    CPU_MOVE((rd(instr) << 8) | rt(instr), rtVal);
++  else
++    CPU_BITWISE(instr, rsVal | rtVal, rsVal, rtVal, BW_OR);
+ }
+ 
+ void CPU_XOR_(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs ^ Rt
+-  const uint32_t rdVal = rsVal ^ rtVal;
+-  CPU_BITWISE(instr, rdVal, rsVal, rtVal);
++  if (rs(instr) == rt(instr))
++    CPU_BITWISE(instr, 0, rsVal, rtVal, BW_XOR);
++  else if (rtVal == 0 && !EZ(CPU_reg[rs(instr)], rsVal))
++    CPU_MOVE((rd(instr) << 8) | rs(instr), rsVal);
++  else if (rsVal == 0)
++    CPU_MOVE((rd(instr) << 8) | rt(instr), rtVal);
++  else
++    CPU_BITWISE(instr, rsVal ^ rtVal, rsVal, rtVal, BW_XOR);
+ }
+ 
+ void CPU_NOR(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs NOR Rt
+-  const uint32_t rdVal = ~(rsVal | rtVal);
+-  CPU_BITWISE(instr, rdVal, rsVal, rtVal);
++  CPU_BITWISE(instr, ~(rsVal | rtVal), rsVal, rtVal, BW_NOR);
+ }
+ 
+ void CPU_SLT(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs < Rt (signed)
+-  PGXP_value ret;
+   Validate(&CPU_reg[rs(instr)], rsVal);
+-  Validate(&CPU_reg[rt(instr)], rtVal);
+-
 -  // iCB: Only require one valid input
 -  if (((CPU_reg[rt(instr)].flags & VALID_01) != VALID_01) != ((CPU_reg[rs(instr)].flags & VALID_01) != VALID_01))
 -  {
 -    MakeValid(&CPU_reg[rs(instr)], rsVal);
 -    MakeValid(&CPU_reg[rt(instr)], rtVal);
 -  }
-+  const PGXP_value& a = CPU_reg[rs(instr)];
-+  const PGXP_value& b = CPU_reg[rt(instr)];
- 
+-
 -  ret = CPU_reg[rs(instr)];
-+  ret = a;
-+  ret.x = (GVY(a, rsVal) < GVY(b, rtVal) ||
-+           f16Unsign(GVX(a, rsVal)) < f16Unsign(GVX(b, rtVal))) ?
-+            1.f :
-+            0.f;
-   ret.y = 0.f;
+-  ret.y = 0.f;
 -  ret.compFlags[1] = VALID;
 -
 -  ret.x = (CPU_reg[rs(instr)].y < CPU_reg[rt(instr)].y)                       ? 1.f :
 -          (f16Unsign(CPU_reg[rs(instr)].x) < f16Unsign(CPU_reg[rt(instr)].x)) ? 1.f :
 -                                                                                0.f;
-+  ret.flags |= VALID_01 | TZ;
++  const PGXP_value& a = CPU_reg[rs(instr)];
  
++  PGXP_value& ret = CPU_reg[rd(instr)];
    ret.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) < static_cast<int32_t>(rtVal));
-   CPU_reg[rd(instr)] = ret;
-@@ -1023,20 +975,16 @@ void CPU_SLTU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
-   Validate(&CPU_reg[rs(instr)], rsVal);
-   Validate(&CPU_reg[rt(instr)], rtVal);
+-  CPU_reg[rd(instr)] = ret;
++  ret.x = static_cast<float>(ret.value);
++  ret.y = 0.f;
++  ret.z = a.z;
++  ret.flags = a.flags | VALID_01 | TZ;
+ }
  
+ void CPU_SLTU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+ {
+-  // Rd = Rs < Rt (unsigned)
+-  PGXP_value ret;
+   Validate(&CPU_reg[rs(instr)], rsVal);
+-  Validate(&CPU_reg[rt(instr)], rtVal);
+-
 -  // iCB: Only require one valid input
 -  if (((CPU_reg[rt(instr)].flags & VALID_01) != VALID_01) != ((CPU_reg[rs(instr)].flags & VALID_01) != VALID_01))
 -  {
 -    MakeValid(&CPU_reg[rs(instr)], rsVal);
 -    MakeValid(&CPU_reg[rt(instr)], rtVal);
 -  }
-+  const PGXP_value& a = CPU_reg[rs(instr)];
-+  const PGXP_value& b = CPU_reg[rt(instr)];
- 
+-
 -  ret = CPU_reg[rs(instr)];
-+  ret = a;
-+  ret.x = (f16Unsign(GVY(a, rsVal)) < f16Unsign(GVY(b, rtVal)) ||
-+           f16Unsign(GVX(a, rsVal)) < f16Unsign(GVX(b, rtVal))) ?
-+            1.f :
-+            0.f;
-   ret.y = 0.f;
+-  ret.y = 0.f;
 -  ret.compFlags[1] = VALID;
 -
 -  ret.x = (f16Unsign(CPU_reg[rs(instr)].y) < f16Unsign(CPU_reg[rt(instr)].y)) ? 1.f :
 -          (f16Unsign(CPU_reg[rs(instr)].x) < f16Unsign(CPU_reg[rt(instr)].x)) ? 1.f :
 -                                                                                0.f;
-+  ret.flags |= VALID_01 | TZ;
++  const PGXP_value& a = CPU_reg[rs(instr)];
  
++  PGXP_value& ret = CPU_reg[rd(instr)];
    ret.value = static_cast<uint32_t>(rsVal < rtVal);
-   CPU_reg[rd(instr)] = ret;
-@@ -1052,43 +1000,35 @@ void CPU_MULT(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+-  CPU_reg[rd(instr)] = ret;
++  ret.x = static_cast<float>(ret.value);
++  ret.y = 0.f;
++  ret.z = a.z;
++  ret.flags = a.flags | VALID_01 | TZ;
+ }
+ 
+ ////////////////////////////////////
+@@ -1052,43 +1413,35 @@ void CPU_MULT(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319447,39 +320648,45 @@ index 1c1eb1ff..0166de3c 100644
 -    MakeValid(&CPU_reg[rs(instr)], rsVal);
 -    MakeValid(&CPU_reg[rt(instr)], rtVal);
 -  }
+-
+-  CPU_Lo = CPU_Hi = CPU_reg[rs(instr)];
+-
+-  CPU_Lo.halfFlags[0] = CPU_Hi.halfFlags[0] = (CPU_reg[rs(instr)].halfFlags[0] & CPU_reg[rt(instr)].halfFlags[0]);
 +  const PGXP_value& a = CPU_reg[rs(instr)];
 +  const PGXP_value& b = CPU_reg[rt(instr)];
  
--  CPU_Lo = CPU_Hi = CPU_reg[rs(instr)];
+-  double xx, xy, yx, yy;
+-  double lx = 0, ly = 0, hx = 0, hy = 0;
 +  CPU_Lo = a;
 +  CZ(CPU_Lo, b);
 +  CPU_Hi = CPU_Lo;
- 
--  CPU_Lo.halfFlags[0] = CPU_Hi.halfFlags[0] = (CPU_reg[rs(instr)].halfFlags[0] & CPU_reg[rt(instr)].halfFlags[0]);
-+  const float rsx = GVX(a, rsVal);
-+  const float rsy = GVY(a, rsVal);
-+  const float rtx = GVX(b, rtVal);
-+  const float rty = GVY(b, rtVal);
- 
--  double xx, xy, yx, yy;
--  double lx = 0, ly = 0, hx = 0, hy = 0;
-+  const double xx = f16Unsign(rsx) * f16Unsign(rtx);
-+  const double xy = f16Unsign(rsx) * rty;
-+  const double yx = rsy * f16Unsign(rtx);
-+  const double yy = rsy * rty;
  
 -  // Multiply out components
 -  xx = f16Unsign(CPU_reg[rs(instr)].x) * f16Unsign(CPU_reg[rt(instr)].x);
 -  xy = f16Unsign(CPU_reg[rs(instr)].x) * (CPU_reg[rt(instr)].y);
 -  yx = (CPU_reg[rs(instr)].y) * f16Unsign(CPU_reg[rt(instr)].x);
 -  yy = (CPU_reg[rs(instr)].y) * (CPU_reg[rt(instr)].y);
++  const float rsx = GVX(a, rsVal);
++  const float rsy = GVY(a, rsVal);
++  const float rtx = GVX(b, rtVal);
++  const float rty = GVY(b, rtVal);
+ 
+-  // Split values into outputs
+-  lx = xx;
++  const double xx = f16Unsign(rsx) * f16Unsign(rtx);
++  const double xy = f16Unsign(rsx) * rty;
++  const double yx = rsy * f16Unsign(rtx);
++  const double yy = rsy * rty;
+ 
+-  ly = f16Overflow(xx);
+-  ly += xy + yx;
 +  const double lx = xx;
 +  const double ly = f16Overflow(xx) + (xy + yx);
 +  const double hx = f16Overflow(ly) + yy;
 +  const double hy = f16Overflow(hx);
  
--  // Split values into outputs
--  lx = xx;
+-  hx = f16Overflow(ly);
+-  hx += yy;
 +  CPU_Lo.x = static_cast<float>(f16Sign(lx));
 +  CPU_Lo.y = static_cast<float>(f16Sign(ly));
 +  CPU_Lo.flags |= TZ | (b.flags & VALID_01);
@@ -319487,12 +320694,6 @@ index 1c1eb1ff..0166de3c 100644
 +  CPU_Hi.y = static_cast<float>(f16Sign(hy));
 +  CPU_Hi.flags |= TZ | (b.flags & VALID_01);
  
--  ly = f16Overflow(xx);
--  ly += xy + yx;
--
--  hx = f16Overflow(ly);
--  hx += yy;
--
 -  hy = f16Overflow(hx);
 -
 -  CPU_Lo.x = (float)f16Sign(lx);
@@ -319504,7 +320705,7 @@ index 1c1eb1ff..0166de3c 100644
    const uint64_t result = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(rsVal)) * static_cast<int64_t>(static_cast<int32_t>(rtVal)));
    CPU_Hi.value = static_cast<uint32_t>(result >> 32);
    CPU_Lo.value = static_cast<uint32_t>(result);
-@@ -1100,43 +1040,35 @@ void CPU_MULTU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -1100,43 +1453,35 @@ void CPU_MULTU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319571,7 +320772,7 @@ index 1c1eb1ff..0166de3c 100644
    const uint64_t result = static_cast<uint64_t>(rsVal) * static_cast<uint64_t>(rtVal);
    CPU_Hi.value = static_cast<uint32_t>(result >> 32);
    CPU_Lo.value = static_cast<uint32_t>(result);
-@@ -1149,27 +1081,25 @@ void CPU_DIV(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -1149,27 +1494,28 @@ void CPU_DIV(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319595,22 +320796,39 @@ index 1c1eb1ff..0166de3c 100644
  
 -  double vs = f16Unsign(CPU_reg[rs(instr)].x) + (CPU_reg[rs(instr)].y) * (double)(1 << 16);
 -  double vt = f16Unsign(CPU_reg[rt(instr)].x) + (CPU_reg[rt(instr)].y) * (double)(1 << 16);
--
++  const bool zd = (rtVal == 0 || vt == 0.0);
++  const uint32_t df = zd ? 0 : (b.flags & VALID_01);
+ 
 -  double lo = vs / vt;
-+  const double lo = vs / vt;
++  const double lo = zd ? 0.0 : (vs / vt);
    CPU_Lo.y = (float)f16Sign(f16Overflow(lo));
    CPU_Lo.x = (float)f16Sign(lo);
-+  CPU_Lo.flags |= TZ | (b.flags & VALID_01);
++  CPU_Lo.flags |= TZ | df;
  
 -  double hi = fmod(vs, vt);
-+  const double hi = fmod(vs, vt);
++  const double hi = zd ? 0.0 : fmod(vs, vt);
    CPU_Hi.y = (float)f16Sign(f16Overflow(hi));
    CPU_Hi.x = (float)f16Sign(hi);
-+  CPU_Hi.flags |= TZ | (b.flags & VALID_01);
++  CPU_Hi.flags |= TZ | df;
  
    // compute PSX value
    if (static_cast<int32_t>(rtVal) == 0)
-@@ -1198,27 +1128,25 @@ void CPU_DIVU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -1189,6 +1535,14 @@ void CPU_DIV(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+     CPU_Lo.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) / static_cast<int32_t>(rtVal));
+     CPU_Hi.value = static_cast<uint32_t>(static_cast<int32_t>(rsVal) % static_cast<int32_t>(rtVal));
+   }
++
++  if (zd)
++  {
++    CPU_Lo.x = static_cast<float>(static_cast<int16_t>(CPU_Lo.value));
++    CPU_Lo.y = static_cast<float>(static_cast<int16_t>(CPU_Lo.value >> 16));
++    CPU_Hi.x = static_cast<float>(static_cast<int16_t>(CPU_Hi.value));
++    CPU_Hi.y = static_cast<float>(static_cast<int16_t>(CPU_Hi.value >> 16));
++  }
+ }
+ 
+ void CPU_DIVU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -1198,27 +1552,28 @@ void CPU_DIVU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
    Validate(&CPU_reg[rs(instr)], rsVal);
    Validate(&CPU_reg[rt(instr)], rtVal);
  
@@ -319620,36 +320838,51 @@ index 1c1eb1ff..0166de3c 100644
 -    MakeValid(&CPU_reg[rs(instr)], rsVal);
 -    MakeValid(&CPU_reg[rt(instr)], rtVal);
 -  }
--
--  CPU_Lo = CPU_Hi = CPU_reg[rs(instr)];
 +  const PGXP_value& a = CPU_reg[rs(instr)];
 +  const PGXP_value& b = CPU_reg[rt(instr)];
  
--  CPU_Lo.halfFlags[0] = CPU_Hi.halfFlags[0] = (CPU_reg[rs(instr)].halfFlags[0] & CPU_reg[rt(instr)].halfFlags[0]);
+-  CPU_Lo = CPU_Hi = CPU_reg[rs(instr)];
 +  CPU_Lo = a;
 +  CZ(CPU_Lo, b);
 +  CPU_Hi = CPU_Lo;
  
--  double vs = f16Unsign(CPU_reg[rs(instr)].x) + f16Unsign(CPU_reg[rs(instr)].y) * (double)(1 << 16);
--  double vt = f16Unsign(CPU_reg[rt(instr)].x) + f16Unsign(CPU_reg[rt(instr)].y) * (double)(1 << 16);
+-  CPU_Lo.halfFlags[0] = CPU_Hi.halfFlags[0] = (CPU_reg[rs(instr)].halfFlags[0] & CPU_reg[rt(instr)].halfFlags[0]);
 +  const double vs = f16Unsign(GVX(a, rsVal)) + f16Unsign(GVY(a, rsVal)) * (double)(1 << 16);
 +  const double vt = f16Unsign(GVX(b, rtVal)) + f16Unsign(GVY(b, rtVal)) * (double)(1 << 16);
  
+-  double vs = f16Unsign(CPU_reg[rs(instr)].x) + f16Unsign(CPU_reg[rs(instr)].y) * (double)(1 << 16);
+-  double vt = f16Unsign(CPU_reg[rt(instr)].x) + f16Unsign(CPU_reg[rt(instr)].y) * (double)(1 << 16);
++  const bool zd = (rtVal == 0 || vt == 0.0);
++  const uint32_t df = zd ? 0 : (b.flags & VALID_01);
+ 
 -  double lo = vs / vt;
-+  const double lo = vs / vt;
++  const double lo = zd ? 0.0 : (vs / vt);
    CPU_Lo.y = (float)f16Sign(f16Overflow(lo));
    CPU_Lo.x = (float)f16Sign(lo);
-+  CPU_Lo.flags |= TZ | (b.flags & VALID_01);
++  CPU_Lo.flags |= TZ | df;
  
 -  double hi = fmod(vs, vt);
-+  const double hi = fmod(vs, vt);
++  const double hi = zd ? 0.0 : fmod(vs, vt);
    CPU_Hi.y = (float)f16Sign(f16Overflow(hi));
    CPU_Hi.x = (float)f16Sign(hi);
-+  CPU_Hi.flags |= TZ | (b.flags & VALID_01);
++  CPU_Hi.flags |= TZ | df;
  
    if (rtVal == 0)
    {
-@@ -1236,146 +1164,81 @@ void CPU_DIVU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+@@ -1231,359 +1586,191 @@ void CPU_DIVU(uint32_t instr, uint32_t rsVal, uint32_t rtVal)
+     CPU_Lo.value = rsVal / rtVal;
+     CPU_Hi.value = rsVal % rtVal;
+   }
++
++  if (zd)
++  {
++    CPU_Lo.x = static_cast<float>(static_cast<int16_t>(CPU_Lo.value));
++    CPU_Lo.y = static_cast<float>(static_cast<int16_t>(CPU_Lo.value >> 16));
++    CPU_Hi.x = static_cast<float>(static_cast<int16_t>(CPU_Hi.value));
++    CPU_Hi.y = static_cast<float>(static_cast<int16_t>(CPU_Hi.value >> 16));
++  }
+ }
+ 
  ////////////////////////////////////
  // Shift operations (sa)
  ////////////////////////////////////
@@ -319663,7 +320896,10 @@ index 1c1eb1ff..0166de3c 100644
    Validate(&CPU_reg[rt(instr)], rtVal);
  
 -  ret = CPU_reg[rt(instr)];
-+  PGXP_value ret = CPU_reg[rt(instr)];
++  const PGXP_value& prt = CPU_reg[rt(instr)];
++  PGXP_value ret;
++  ret.z = prt.z;
++  ret.value = rtVal << sh;
  
 -  // TODO: Shift flags
 -  double x = f16Unsign(CPU_reg[rt(instr)].x);
@@ -319674,24 +320910,24 @@ index 1c1eb1ff..0166de3c 100644
 -    y = 0.f;
 +    ret.x = 0.f;
 +    ret.y = 0.f;
-+    ret.flags |= VALID_01 | TZ;
++    ret.flags = prt.flags | VALID_01 | TZ;
    }
    else if (sh == 16)
    {
 -    y = f16Sign(x);
 -    x = 0.f;
-+    ret.y = ret.x;
++    ret.y = GVX(prt, rtVal);
 +    ret.x = 0.f;
-+    ret.flags |= TZ | ((ret.flags & VALID_1) >> 8);
++    ret.flags = (prt.flags | TZ) | ((prt.flags & VALID_1) >> 8);
    }
    else if (sh >= 16)
    {
 -    y = x * (1 << (sh - 16));
 -    y = f16Sign(y);
 -    x = 0.f;
-+    ret.y = static_cast<float>(f16Sign(f16Unsign(ret.x * static_cast<double>(1 << (sh - 16)))));
++    ret.y = static_cast<float>(f16Sign(f16Unsign(GVX(prt, rtVal) * static_cast<double>(1 << (sh - 16)))));
 +    ret.x = 0.f;
-+    ret.flags |= TZ | ((ret.flags & VALID_1) >> 8);
++    ret.flags = (prt.flags | TZ) | ((prt.flags & VALID_1) >> 8);
    }
    else
    {
@@ -319700,18 +320936,19 @@ index 1c1eb1ff..0166de3c 100644
 -    y += f16Overflow(x);
 -    x = f16Sign(x);
 -    y = f16Sign(y);
-+    const double x = f16Unsign(ret.x) * static_cast<double>(1 << sh);
-+    const double y = (f16Unsign(ret.y) * static_cast<double>(1 << sh)) + f16Overflow(x);
++    const bool so = ((static_cast<int32_t>(ret.value) >> sh) != static_cast<int32_t>(rtVal));
++    const double x = f16Unsign(GVX(prt, rtVal)) * static_cast<double>(1 << sh);
++    const double yi = so ? static_cast<double>(rtVal >> 16) : f16Unsign(GVY(prt, rtVal));
++    const double y = (yi * static_cast<double>(1 << sh)) + f16Overflow(x);
 +    ret.x = static_cast<float>(f16Sign(x));
 +    ret.y = static_cast<float>(f16Sign(y));
-+    ret.flags |= TZ;
++    ret.flags = (prt.flags & ~BF) | TZ | (so ? BF : 0u);
    }
  
 -  ret.x = (float)x;
 -  ret.y = (float)y;
 -
 -  ret.value = rdVal;
-+  ret.value = rtVal << sh;
    CPU_reg[rd(instr)] = ret;
  }
  
@@ -319746,9 +320983,17 @@ index 1c1eb1ff..0166de3c 100644
 -    x = x / (1 << sh);
 -  else
 -    x = dX.sw.l; // only sign bits left
--
++  SLS(instr, rtVal, sa(instr));
++}
+ 
 -  if (dY.sw.l != iX.sw.h)
--  {
++ALWAYS_INLINE_RELEASE void SRX(uint32_t instr, uint32_t rtVal, uint32_t sh, bool sign, bool var)
++{
++  Validate(&CPU_reg[rt(instr)], rtVal);
++  const PGXP_value prt = CPU_reg[rt(instr)];
++  PGXP_value& prd = CPU_reg[rd(instr)];
++  if (sh == 0)
+   {
 -    if (sh == 16)
 -    {
 -      x = y;
@@ -319763,13 +321008,17 @@ index 1c1eb1ff..0166de3c 100644
 -    {
 -      x += y / (1 << (sh - 16));
 -    }
--  }
--
++    prd = prt;
++    return;
+   }
+ 
 -  if ((dY.sw.h == 0) || (dY.sw.h == -1))
 -    y = dY.sw.h;
 -  else
 -    y = y / (1 << sh);
--
++  const uint32_t rdVal = sign ? static_cast<uint32_t>(static_cast<int32_t>(rtVal) >> sh) : (rtVal >> sh);
++  const int16_t rtHi = static_cast<int16_t>(static_cast<uint16_t>(rtVal >> 16));
+ 
 -  x = f16Sign(x);
 -  y = f16Sign(y);
 -
@@ -319778,31 +321027,39 @@ index 1c1eb1ff..0166de3c 100644
 -
 -  ret.value = rdVal;
 -  CPU_reg[rd(instr)] = ret;
-+  SLS(instr, rtVal, sa(instr));
- }
+-}
++  if (sh >= 16)
++  {
++    const double y = ((prt.flags & BF) ? (static_cast<double>(static_cast<int32_t>(rdVal)) * static_cast<double>(1 << (sh - 16))) :
++                                         static_cast<double>(sign ? rtHi : static_cast<uint16_t>(rtVal >> 16))) +
++                     f16Sign(GVY(prt, rtVal) - rtHi);
++    const double x = std::trunc(y / static_cast<double>(1 << (sh - 16)) * 65536.0) / 65536.0;
++    prd.x = static_cast<float>(f16Sign(x));
++    prd.y = static_cast<float>(std::floor(x / 65536.0));
++    prd.z = prt.z;
++    prd.value = rdVal;
++    prd.flags = (prt.flags & ~(VALID_0 | BF)) | ((prt.flags & VALID_1) >> 8) | TZ;
++    return;
++  }
  
 -void CPU_SRA(uint32_t instr, uint32_t rtVal)
-+ALWAYS_INLINE_RELEASE void SRX(uint32_t instr, uint32_t rtVal, uint32_t sh, bool sign, bool var)
- {
+-{
 -  // Rd = Rt >> Sa
 -  const uint32_t rdVal = static_cast<uint32_t>(static_cast<int32_t>(rtVal) >> sa(instr));
 -  PGXP_value ret;
 -  uint32_t sh = sa(instr);
-   Validate(&CPU_reg[rt(instr)], rtVal);
+-  Validate(&CPU_reg[rt(instr)], rtVal);
 -  ret = CPU_reg[rt(instr)];
-+  PGXP_value& prt = CPU_reg[rt(instr)];
-+  PGXP_value& prd = CPU_reg[rd(instr)];
-+  if (sh == 0)
-+  {
-+    prd = prt;
-+    return;
-+  }
-+
-+  const uint32_t rdVal = sign ? static_cast<uint32_t>(static_cast<int32_t>(rtVal) >> sh) : (rtVal >> sh);
++  double x = GVX(prt, rtVal);
++  double y = sign ? GVY(prt, rtVal) : f16Unsign(GVY(prt, rtVal));
  
 -  double x = CPU_reg[rt(instr)].x, y = CPU_reg[rt(instr)].y;
-+  double x = prt.x;
-+  double y = sign ? prt.y : f16Unsign(prt.y);
++  const double nx = static_cast<double>(static_cast<int16_t>(static_cast<uint16_t>(rtVal)));
++  if (x - nx > 32768.0)
++    x -= 65536.0;
++  else if (x - nx < -32768.0)
++    x += 65536.0;
++  const bool xneg = (x < 0.0);
  
 -  psx_value iX;
 -  iX.d = rtVal;
@@ -319835,32 +321092,39 @@ index 1c1eb1ff..0166de3c 100644
 +    x = dXl;
  
 -  if (dY.sw.l != iX.sw.h)
-+  if (dYl != iXh)
++  const bool ys = (dYh == 0) || (dYh == -1);
++  const bool xs = (dYl != iXh);
++  if (xs)
    {
-     if (sh == 16)
-     {
-@@ -1383,207 +1246,67 @@ void CPU_SRA(uint32_t instr, uint32_t rtVal)
-     }
-     else if (sh < 16)
+-    if (sh == 16)
+-    {
+-      x = y;
+-    }
+-    else if (sh < 16)
++    x += (ys ? y : static_cast<double>(static_cast<uint16_t>(rtVal >> 16))) * static_cast<double>(1 << (16 - sh));
++    if (xneg)
++      x += static_cast<double>(1 << (16 - sh));
++  }
++
++  if (ys)
++  {
++    if (xs)
      {
 -      x += y * (1 << (16 - sh));
 -      if (CPU_reg[rt(instr)].x < 0)
 -        x += 1 << (16 - sh);
-+      x += y * static_cast<double>(1 << (16 - sh));
-+      if (prt.x < 0)
-+        x += static_cast<double>(1 << (16 - sh));
++      x = std::trunc(x * 65536.0) / 65536.0;
++      y = std::floor(x / 65536.0);
      }
      else
      {
 -      x += y / (1 << (sh - 16));
-+      x += y / static_cast<double>(1 << (sh - 16));
++      y = dYh;
      }
    }
- 
+-
 -  if ((dY.sw.h == 0) || (dY.sw.h == -1))
 -    y = dY.sw.h;
-+  if ((dYh == 0) || (dYh == -1))
-+    y = dYh;
    else
 -    y = y / (1 << sh);
 -
@@ -319887,23 +321151,24 @@ index 1c1eb1ff..0166de3c 100644
 -  Validate(&CPU_reg[rs(instr)], rsVal);
 -
 -  ret = CPU_reg[rt(instr)];
-+    y = y / static_cast<double>(1 << sh);
- 
+-
 -  double x = f16Unsign(CPU_reg[rt(instr)].x);
 -  double y = f16Unsign(CPU_reg[rt(instr)].y);
 -  if (sh >= 32)
-+  if (sign && !var && !(prt.flags & VALID_2) && sh < 16)
-   {
+-  {
 -    x = 0.f;
 -    y = 0.f;
 -  }
 -  else if (sh == 16)
--  {
+   {
 -    y = f16Sign(x);
 -    x = 0.f;
--  }
++    y = dYh + (f16Sign(GVY(prt, rtVal) - rtHi) / static_cast<double>(1 << sh));
+   }
 -  else if (sh >= 16)
--  {
++
++  if (sign && !var && !(prt.flags & VALID_2))
+   {
 -    y = x * (1 << (sh - 16));
 -    y = f16Sign(y);
 -    x = 0.f;
@@ -320084,6 +321349,45 @@ index 1c1eb1ff..0166de3c 100644
  }
  
  void CPU_MFHI(uint32_t instr, uint32_t hiVal)
+diff --git a/src/core/pgxp.h b/src/core/pgxp.h
+index 3cfa5528..1b3344dc 100644
+--- a/src/core/pgxp.h
++++ b/src/core/pgxp.h
+@@ -29,8 +29,16 @@ void Shutdown();
+ 
+ // -- GTE functions
+ // Transforms
+-void GTE_PushSXYZ2f(float x, float y, float z, uint32_t v);
+-int GTE_NCLIP_valid(uint32_t sxy0, uint32_t sxy1, uint32_t sxy2);
++void GTE_RTPS(float x, float y, float z, uint32_t v);
++bool GTE_HasPreciseVertices(uint32_t sxy0, uint32_t sxy1, uint32_t sxy2);
++void GTE_MVMVA(uint32_t inst_bits, const uint32_t old_ir[3]);
++void GTE_GPF_GPL(const uint32_t old_ir[3], const uint32_t* old_mac, uint8_t shift);
++void GTE_ClearMACIR();
++
++inline bool TracksMVMVAMatrix(uint32_t matrix)
++{
++  return (matrix == 1 || matrix == 2);
++}
+ float GTE_NCLIP();
+ 
+ // Data transfer tracking
+@@ -47,10 +55,13 @@ bool GetPreciseVertex(uint32_t addr, uint32_t value, int x, int y, int xOffs, in
+ 
+ // -- CPU functions
+ void CPU_LW(uint32_t instr, uint32_t rtVal, uint32_t addr);
+-void CPU_LHx(uint32_t instr, uint32_t rtVal, uint32_t addr);
++void CPU_LH(uint32_t instr, uint32_t rtVal, uint32_t addr);
++void CPU_LHU(uint32_t instr, uint32_t rtVal, uint32_t addr);
++void CPU_LWx(uint32_t instr, uint32_t rtVal, uint32_t addr);
+ void CPU_LBx(uint32_t instr, uint32_t rtVal, uint32_t addr);
+ void CPU_SB(uint32_t instr, uint8_t rtVal, uint32_t addr);
+-void CPU_SH(uint32_t instr, uint16_t rtVal, uint32_t addr);
++void CPU_SH(uint32_t instr, uint32_t rtVal, uint32_t addr);
++void CPU_SWx(uint32_t instr, uint32_t rtVal, uint32_t addr);
+ void CPU_SW(uint32_t instr, uint32_t rtVal, uint32_t addr);
+ void CPU_MOVE(uint32_t rd_and_rs, uint32_t rsVal);
+ 
 diff --git a/src/core/settings.cpp b/src/core/settings.cpp
 index f676325b..0712defb 100644
 --- a/src/core/settings.cpp
@@ -320163,7 +321467,7 @@ index f676325b..0712defb 100644
  std::optional<DisplayAspectRatio> Settings::ParseDisplayAspectRatio(const char* str)
  {
 diff --git a/src/core/settings.h b/src/core/settings.h
-index 2781a894..3e5b5dee 100644
+index 2781a894..7922947f 100644
 --- a/src/core/settings.h
 +++ b/src/core/settings.h
 @@ -54,6 +54,19 @@ struct Settings
@@ -320191,7 +321495,7 @@ index 2781a894..3e5b5dee 100644
    bool display_show_osd_messages = true;
    float gpu_pgxp_tolerance = -1.0f;
 -  float gpu_pgxp_depth_clear_threshold = 300.0f / 4096.0f;
-+  float gpu_pgxp_depth_clear_threshold = 300.0f / 8192.0f;
++  float gpu_pgxp_depth_clear_threshold = 4096.0f / 65535.0f;
  
    uint8_t cdrom_readahead_sectors = DEFAULT_CDROM_READAHEAD_SECTORS;
    bool cdrom_region_check = false;
@@ -320217,10 +321521,19 @@ index 2781a894..3e5b5dee 100644
    ALWAYS_INLINE bool UsingPGXPDepthBuffer() const { return gpu_pgxp_enable && gpu_pgxp_depth_buffer; }
    ALWAYS_INLINE bool UsingPGXPCPUMode() const { return gpu_pgxp_enable && gpu_pgxp_cpu; }
 -  ALWAYS_INLINE void SetPGXPDepthClearThreshold(float value) { gpu_pgxp_depth_clear_threshold = value / 4096.0f; }
-+  ALWAYS_INLINE void SetPGXPDepthClearThreshold(float value) { gpu_pgxp_depth_clear_threshold = value / 8192.0f; }
++  ALWAYS_INLINE void SetPGXPDepthClearThreshold(float value) { gpu_pgxp_depth_clear_threshold = value / 65535.0f; }
  
    ALWAYS_INLINE bool IsUsingFastmem() const
    {
+@@ -194,7 +214,7 @@ struct Settings
+   static constexpr GPUTextureFilter DEFAULT_GPU_TEXTURE_FILTER = GPUTextureFilter::Nearest;
+   static constexpr GPUDownsampleMode DEFAULT_GPU_DOWNSAMPLE_MODE = GPUDownsampleMode::Disabled;
+   static constexpr ConsoleRegion DEFAULT_CONSOLE_REGION = ConsoleRegion::Auto;
+-  static constexpr float DEFAULT_GPU_PGXP_DEPTH_THRESHOLD = 300.0f;
++  static constexpr float DEFAULT_GPU_PGXP_DEPTH_THRESHOLD = 4096.0f;
+ 
+ #ifdef WITH_RECOMPILER
+   static constexpr CPUExecutionMode DEFAULT_CPU_EXECUTION_MODE = CPUExecutionMode::Recompiler;
 diff --git a/src/core/texture_replacements.cpp b/src/core/texture_replacements.cpp
 index 2afd38ab..f9d9d85e 100644
 --- a/src/core/texture_replacements.cpp
@@ -320904,7 +322217,7 @@ index c3eca738..58e18f52 100644
    Native,
    Count
 diff --git a/src/libretro/libretro_core_options.h b/src/libretro/libretro_core_options.h
-index b96b983c..86551fca 100644
+index b96b983c..ed74ebac 100644
 --- a/src/libretro/libretro_core_options.h
 +++ b/src/libretro/libretro_core_options.h
 @@ -482,6 +482,49 @@ struct retro_core_option_v2_definition option_defs_us[] = {
@@ -320957,7 +322270,35 @@ index b96b983c..86551fca 100644
    {"swanstation_GPU_PGXPEnable",
     "PGXP Geometry Correction",
     NULL,
-@@ -1990,6 +2033,32 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+@@ -607,23 +650,10 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+    NULL,
+    "enhancement",
+    {
+-     {"5", NULL},   {"10", NULL},  {"15", NULL},  {"20", NULL},  {"25", NULL},  {"30", NULL},  {"35", NULL},
+-     {"40", NULL},  {"45", NULL},  {"50", NULL},  {"55", NULL},  {"60", NULL},  {"65", NULL},  {"70", NULL},
+-     {"75", NULL},  {"80", NULL},  {"85", NULL},  {"90", NULL},  {"95", NULL},  {"100", NULL}, {"105", NULL},
+-     {"110", NULL}, {"115", NULL}, {"120", NULL}, {"125", NULL}, {"130", NULL}, {"135", NULL}, {"140", NULL},
+-     {"145", NULL}, {"150", NULL}, {"155", NULL}, {"160", NULL}, {"165", NULL}, {"170", NULL}, {"175", NULL},
+-     {"180", NULL}, {"185", NULL}, {"190", NULL}, {"195", NULL}, {"200", NULL}, {"205", NULL}, {"210", NULL},
+-     {"215", NULL}, {"220", NULL}, {"225", NULL}, {"230", NULL}, {"235", NULL}, {"240", NULL}, {"245", NULL},
+-     {"250", NULL}, {"255", NULL}, {"260", NULL}, {"265", NULL}, {"270", NULL}, {"275", NULL}, {"280", NULL},
+-     {"285", NULL}, {"290", NULL}, {"295", NULL}, {"300", NULL}, {"305", NULL}, {"310", NULL}, {"315", NULL},
+-     {"320", NULL}, {"325", NULL}, {"330", NULL}, {"335", NULL}, {"340", NULL}, {"345", NULL}, {"350", NULL},
+-     {"355", NULL}, {"360", NULL}, {"365", NULL}, {"370", NULL}, {"375", NULL}, {"380", NULL}, {"385", NULL},
+-     {"390", NULL}, {"395", NULL}, {"400", NULL}, {"405", NULL}, {"410", NULL}, {"415", NULL}, {"420", NULL},
+-     {"425", NULL}, {"430", NULL}, {"435", NULL}, {"440", NULL}, {"445", NULL}, {"450", NULL}, {"455", NULL},
+-     {"460", NULL}, {"465", NULL}, {"470", NULL}, {"475", NULL}, {"480", NULL}, {"485", NULL}, {"490", NULL},
+-     {"495", NULL}, {"500", NULL}, {NULL, NULL},
+-   },
+-   "300"},
++
++{"64", NULL},{"128", NULL},{"256", NULL},{"384", NULL},{"512", NULL},{"768", NULL},{"1024", NULL},{"1536", NULL},{"2048", NULL},{"3072", NULL},{"4096", NULL},{"5120", NULL},{"6144", NULL},{"8192", NULL},{"12288", NULL},{"16384", NULL},{"24576", NULL},{"32768", NULL},{"49152", NULL},{"65535", NULL},{NULL, NULL},
++   },
++   "4096"},
+   {"swanstation_Display_AspectRatio",
+    "Core Provided Aspect Ratio",
+    NULL,
+@@ -1990,6 +2020,32 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       {NULL, NULL},
     },
     "false"},

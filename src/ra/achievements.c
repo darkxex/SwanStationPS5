@@ -47,7 +47,7 @@ typedef struct
 {
     char title[96];
     char detail[192];
-    bool quiet; /* shown without the sound */
+    unsigned badge_id; /* the achievement earned (the sound and the badge are for these), 0 for the rest */
 } Message;
 
 static Message messages[MESSAGES];
@@ -216,7 +216,7 @@ static void lb_tracker_hide(unsigned id)
     SDL_UnlockMutex(msg_lock);
 }
 
-static void post_ex(const char *title, const char *detail, bool quiet)
+static void post_ex(const char *title, const char *detail, unsigned badge_id)
 {
     SwanStationPS5_log("ra: %s - %s", title, detail);
     if (!msg_lock)
@@ -227,17 +227,17 @@ static void post_ex(const char *title, const char *detail, bool quiet)
         Message *m = &messages[(msg_head + msg_count++) % MESSAGES];
         str_copy(m->title, sizeof(m->title), title);
         str_copy(m->detail, sizeof(m->detail), detail);
-        m->quiet = quiet;
+        m->badge_id = badge_id;
     }
     SDL_UnlockMutex(msg_lock);
 }
 
 static void post(const char *title, const char *detail)
 {
-    post_ex(title, detail, false);
+    post_ex(title, detail, 0);
 }
 
-bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail_size, bool *quiet)
+bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail_size, unsigned *badge_id)
 {
     if (!msg_lock)
         return false;
@@ -247,7 +247,7 @@ bool ra_next_message(char *title, size_t title_size, char *detail, size_t detail
     {
         str_copy(title, title_size, messages[msg_head].title);
         str_copy(detail, detail_size, messages[msg_head].detail);
-        *quiet = messages[msg_head].quiet;
+        *badge_id = messages[msg_head].badge_id;
         msg_head = (msg_head + 1) % MESSAGES;
         --msg_count;
     }
@@ -489,7 +489,7 @@ static void RC_CCONV on_event(const rc_client_event_t *e, rc_client_t *c)
         }
         snprintf(detail, sizeof(detail), tr("%s  (%u points)"), e->achievement->description,
                  e->achievement->points);
-        post(e->achievement->title, detail);
+        post_ex(e->achievement->title, detail, e->achievement->id);
         log_unlock(e->achievement);
         break;
     case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_SHOW:
@@ -644,7 +644,7 @@ static void RC_CCONV on_login(int result, const char *error, rc_client_t *c, voi
     (void)userdata;
     signed_in = result == RC_OK;
     if (signed_in)
-        post_ex("RetroAchievements", tr("Signed in."), true); /* the sound is for the unlocks */
+        post("RetroAchievements", tr("Signed in."));
     else
         post(tr("RetroAchievements sign-in failed"), error ? error : tr("check the token"));
 }
@@ -722,7 +722,7 @@ static void RC_CCONV on_game_loaded(int result, const char *error, rc_client_t *
                  hardcore ? tr(" (hardcore)") : "");
     else
         snprintf(detail, sizeof(detail), tr("%s has no achievements yet"), g ? g->title : tr("This game"));
-    post_ex("RetroAchievements", detail, true); /* the game just opened: the sound is for the unlocks */
+    post("RetroAchievements", detail);
     {
         /* for the log: how many leaderboards the set has (they only run in hardcore) */
         rc_client_leaderboard_list_t *lbs = rc_client_create_leaderboard_list(c, RC_CLIENT_LEADERBOARD_LIST_GROUPING_NONE);
@@ -903,6 +903,53 @@ bool ra_game_progress(int *unlocked, int *total)
         return false;
     *unlocked = (int)s.num_unlocked_achievements;
     *total = (int)s.num_core_achievements;
+    return true;
+}
+
+int ra_badge_jobs(RaBadgeJob *out, int max)
+{
+    if (!client || !rc_client_get_game_info(client))
+        return 0;
+    rc_client_achievement_list_t *list = rc_client_create_achievement_list(
+        client, RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE, RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_LOCK_STATE);
+    if (!list)
+        return 0;
+    int n = 0;
+    for (uint32_t b = 0; b < list->num_buckets; ++b)
+        for (uint32_t i = 0; i < list->buckets[b].num_achievements && n < max; ++i)
+        {
+            const rc_client_achievement_t *a = list->buckets[b].achievements[i];
+            RaBadgeJob *j = &out[n++];
+            j->id = a->id;
+            j->unlocked = a->unlocked != 0;
+            j->url_locked[0] = j->url_unlocked[0] = '\0';
+            rc_client_achievement_get_image_url(a, RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE, j->url_locked,
+                                                sizeof(j->url_locked));
+            rc_client_achievement_get_image_url(a, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, j->url_unlocked,
+                                                sizeof(j->url_unlocked));
+        }
+    rc_client_destroy_achievement_list(list);
+    return n;
+}
+
+bool ra_game_progress_modes(int *soft, int *hard, int *total)
+{
+    int unlocked;
+    if (!ra_game_progress(&unlocked, total))
+        return false;
+    rc_client_achievement_list_t *list = rc_client_create_achievement_list(
+        client, RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE, RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_LOCK_STATE);
+    if (!list)
+        return false;
+    *soft = *hard = 0;
+    for (uint32_t b = 0; b < list->num_buckets; ++b)
+        for (uint32_t i = 0; i < list->buckets[b].num_achievements; ++i)
+        {
+            const uint8_t u = list->buckets[b].achievements[i]->unlocked;
+            *soft += (u & RC_CLIENT_ACHIEVEMENT_UNLOCKED_SOFTCORE) != 0;
+            *hard += (u & RC_CLIENT_ACHIEVEMENT_UNLOCKED_HARDCORE) != 0;
+        }
+    rc_client_destroy_achievement_list(list);
     return true;
 }
 

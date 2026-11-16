@@ -32,6 +32,14 @@ void sfx_play(Sfx sound);
 /* assets/psxdiscsound.wav (the CD spinning up in the 3D case), with the interface's volume; nothing when the interface
  * sound is off or the file is not there. */
 void sfx_play_disc(void);
+/* assets/notification.wav, with the interface's volume (also when the interface sound is off); nothing when the file
+ * is not there. */
+void sfx_play_notification(void);
+/* The sounds play in parallel, each one on its own and mixed into what is playing. While a game runs, they are added to
+ * the game's sound by sfx_mix (the host calls it on every block); otherwise sfx_pump, once a frame, plays them. */
+void sfx_mix(int16_t *frames, size_t frame_count);
+void sfx_game_audio(bool on);
+void sfx_pump(void);
 /* While on, the app plays no sounds (Nostalgia mode during a game). */
 void sfx_silence(bool on);
 /* style: SFX_STYLE_*, or SFX_STYLE_OFF; volume 0..100 */

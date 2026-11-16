@@ -943,11 +943,13 @@ static void draw_achievement(void)
     static char title[96], detail[192];
     static uint64_t shown_at;
     const uint64_t length = 4500000;
-    static bool showing, quiet;
+    static bool showing;
+    static unsigned badge_id;
+    static PlatTexture *popup_badge;
     uint64_t now = plat_ticks_us();
     if (!showing || now > shown_at + length)
     {
-        showing = ra_next_message(title, sizeof(title), detail, sizeof(detail), &quiet);
+        showing = ra_next_message(title, sizeof(title), detail, sizeof(detail), &badge_id);
         if (!showing)
             return;
         /* pop-ups off: messages that arrive during play are dropped, not shown */
@@ -957,9 +959,10 @@ static void draw_achievement(void)
             return;
         }
         shown_at = now;
-        /* quiet: the summary shown when a game opens; the sound is for the rest */
-        if (!quiet)
-            sfx_play(SFX_SELECT);
+        plat_texture_free(popup_badge);
+        popup_badge = badge_id ? ra_badge_cached(badge_id) : NULL;
+        if (badge_id && app.global.ra_popups && app.global.ra_popup_sound)
+            sfx_play_notification();
     }
     float t = (float)(now - shown_at) / 1e6f, total = length / 1e6f;
     float in = t < 0.25f ? t / 0.25f : 1.0f, out = total - t < 0.4f ? (total - t) / 0.4f : 1.0f;
@@ -977,7 +980,10 @@ static void draw_achievement(void)
         float lh = 52 + (n > 1 ? (n - 1) * 28 : 0);
         float lx = (plat_width() - lw) * 0.5f, ly = 24 - slide * 0.5f;
         draw_rrect(lx, ly, lw, lh, n > 1 ? TH_RADIUS_SMALL : 26, argb_alpha(TH_CARD_A(0xf0), a));
-        icon_draw(ICON_TROPHY, lx + 18, ly + 11, 30, argb_alpha(TH_GOLD, a));
+        if (popup_badge)
+            plat_draw_texture(popup_badge, lx + 18, ly + 11, 30, 30, argb_alpha(0xffffffffu, a), false);
+        else
+            icon_draw(ICON_TROPHY, lx + 18, ly + 11, 30, argb_alpha(TH_GOLD, a));
         for (int i = 0; i < n; ++i)
             text_draw_fit(lx + 60, ly + 13 + i * 28, 22, FONT_REGULAR, argb_alpha(TH_TEXT, a), ALIGN_LEFT, lw - 80,
                           rows[i]);
@@ -992,7 +998,10 @@ static void draw_achievement(void)
               by = (plat_height() - bh) * 0.5f - 40 + slide * 0.4f;
         draw_rrect(bx, by, bw, bh, TH_RADIUS, argb_alpha(TH_CARD_A(0xf0), a));
         draw_circle(bx + bw * 0.5f, by + 92, 62, argb_alpha(0xff2a2410u, a));
-        icon_draw(ICON_TROPHY, bx + bw * 0.5f - 44, by + 48, 88, argb_alpha(TH_GOLD, a));
+        if (popup_badge)
+            plat_draw_texture(popup_badge, bx + bw * 0.5f - 55, by + 37, 110, 110, argb_alpha(0xffffffffu, a), false);
+        else
+            icon_draw(ICON_TROPHY, bx + bw * 0.5f - 44, by + 48, 88, argb_alpha(TH_GOLD, a));
         text_draw_fit(bx + bw * 0.5f, by + 176, 34, FONT_BOLD, argb_alpha(TH_TEXT, a), ALIGN_CENTER, bw - 60, title);
         for (int i = 0; i < n; ++i)
             text_draw_fit(bx + bw * 0.5f, by + 230 + i * 28, 22, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, a), ALIGN_CENTER,
@@ -1004,7 +1013,10 @@ static void draw_achievement(void)
     const float w = 660, h = 116 + (n > 1 ? (n - 1) * 28 : 0), x = plat_width() - w - 48 + slide, y = 48;
     draw_rrect(x, y, w, h, TH_RADIUS, argb_alpha(TH_CARD_A(0xf0), a));
     draw_rrect(x + 18, y + 18, 80, 80, TH_RADIUS_SMALL, argb_alpha(0xff2a2410u, a));
-    icon_draw(ICON_TROPHY, x + 30, y + 30, 56, argb_alpha(TH_GOLD, a));
+    if (popup_badge)
+        plat_draw_texture(popup_badge, x + 18, y + 18, 80, 80, argb_alpha(0xffffffffu, a), false);
+    else
+        icon_draw(ICON_TROPHY, x + 30, y + 30, 56, argb_alpha(TH_GOLD, a));
     text_draw_fit(x + 120, y + 20, 30, FONT_BOLD, argb_alpha(TH_TEXT, a), ALIGN_LEFT, w - 140, title);
     for (int i = 0; i < n; ++i)
         text_draw_fit(x + 120, y + 66 + i * 28, 22, FONT_REGULAR, argb_alpha(TH_TEXT_DIM, a), ALIGN_LEFT, w - 140,
@@ -2303,19 +2315,51 @@ static void disc_after_stop(void)
         shelf_show_game(dp_index());
 }
 
+/* While a game is played (signed in to RetroAchievements), downloads the badge pictures that are missing for its achievements, once
+ * per game. */
+static void badges_prefetch_tick(void)
+{
+    static char for_game[64];
+    static bool started;
+    if (!app.game || game_is_bios(app.game))
+    {
+        if (for_game[0])
+            ra_badges_prefetch_stop();
+        for_game[0] = '\0';
+        return;
+    }
+    if (strcmp(for_game, app.game->id) != 0)
+    {
+        ra_badges_prefetch_stop();
+        str_copy(for_game, sizeof(for_game), app.game->id);
+        started = false;
+    }
+    int unlocked, total;
+    if (started || app.screen != SCREEN_GAME || !ra_signed_in() || !ra_game_progress(&unlocked, &total))
+        return;
+    static RaBadgeJob jobs[600];
+    ra_badges_prefetch(jobs, ra_badge_jobs(jobs, 600));
+    started = true;
+}
+
+static void store_ra_progress(GameStats *st)
+{
+    int soft, hard, total;
+    if (!st || !ra_game_progress_modes(&soft, &hard, &total))
+        return;
+    st->ach_soft = soft;
+    st->ach_hard = hard;
+    st->ach_total = total;
+    st->ach_unlocked = ra_hardcore() ? hard : soft;
+}
+
 void app_stop_game(void)
 {
     host_set_region_override(NULL);
     play_save_resume(false);
     state_save_flush();
     play_rewind_reset();
-    int unlocked, total;
-    GameStats *st = app.game && !game_is_bios(app.game) ? stats_get(app.game->id) : NULL;
-    if (st && ra_game_progress(&unlocked, &total))
-    {
-        st->ach_unlocked = unlocked;
-        st->ach_total = total;
-    }
+    store_ra_progress(app.game && !game_is_bios(app.game) ? stats_get(app.game->id) : NULL);
     stats_save();
     if (!game_is_bios(app.game))
         ra_game_unloaded();
@@ -2845,12 +2889,7 @@ static void count_play_time(void)
     uint64_t now = plat_ticks_us();
     if (now - saved_at > 60000000) /* write it down once a minute */
     {
-        int unlocked, total;
-        if (st && ra_game_progress(&unlocked, &total))
-        {
-            st->ach_unlocked = unlocked;
-            st->ach_total = total;
-        }
+        store_ra_progress(st);
         stats_save_async();
         saved_at = now;
     }
@@ -3066,6 +3105,7 @@ int main(int argc, char **argv)
     if (!app.storage_error[0])
     {
         ra_init(&app.paths);
+        stats_set_ra_mode(ra_hardcore());
         gamedb_start(); /* DuckStation's game database, downloaded once */
     }
     remote_update(app.global.remote && !app.storage_error[0]);
@@ -3264,11 +3304,14 @@ int main(int argc, char **argv)
         }
         last_screen = this_screen;
         count_play_time();
+        badges_prefetch_tick();
         remote_frame();
         /* a game's cheat file arrived from libretro-database */
         {
             const bool nostalgia = app.game && app.global.nostalgia && app.screen == SCREEN_GAME;
             sfx_silence(nostalgia);
+            sfx_game_audio(app.game && app.screen == SCREEN_GAME);
+            sfx_pump();
         }
         {
             static const int nfs_seconds[] = {5, 10, 15, 20, 30};

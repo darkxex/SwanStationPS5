@@ -17,7 +17,7 @@
 #define SwanStationPS5_NAME "SwanStationPS5"           /* identifiers: the User-Agent of network requests, the Vulkan application name */
 #define SwanStationPS5_TITLE "SwanStationPS5" /* what is shown on screen */
 #define SwanStationPS5_TITLE_ID "PPSA98510"
-#define SwanStationPS5_VERSION "1.6.3"
+#define SwanStationPS5_VERSION "1.6.5"
 #define SwanStationPS5_PATH_MAX 512
 
 /* Pad bits use RetroPad numbering so the host can hand the mask to the core
@@ -126,6 +126,7 @@ typedef struct
     int mc_w, mc_h;       /* manual crop: the picture's width and height as a percentage of its normal size (25..150) */
     int mc_x, mc_y;       /* manual crop: how far the picture is moved, in thousandths of the screen (-500..500) */
     bool ra_popups;       /* achievement unlock banners while playing */
+    bool ra_popup_sound;  /* the notification sound when an achievement unlocks (with the banners on) */
     bool ra_tracker;      /* the progress card when a counted achievement moves */
     bool ra_challenges;   /* the badges of the achievements whose Trigger flag is up (challenge indicators) */
     bool ra_lb_tracker;   /* the live timer or value of a leaderboard attempt */

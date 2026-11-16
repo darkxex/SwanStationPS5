@@ -17,6 +17,7 @@ typedef struct
     bool favorite;
     int ach_unlocked;     /* RetroAchievements progress, -1 = unknown */
     int ach_total;
+    int ach_soft, ach_hard; /* what each mode counts as unlocked, -1 = unknown; ach_unlocked follows the mode */
 } GameStats;
 
 /* Main-thread API. <root>/stats.txt, one line per game. */
@@ -29,6 +30,8 @@ void stats_save_async(void);
 void stats_shutdown(void);
 /* The record for a game (created on first use; never NULL for a valid id). */
 GameStats *stats_get(const char *id);
+/* Shows each game's count for the mode (hardcore or not) where both are known. */
+void stats_set_ra_mode(bool hardcore);
 /* "3 h 12 min", "45 min", "" when never played */
 void stats_format_time(uint32_t seconds, char *out, size_t size);
 /* "Today", "Yesterday", "3 days ago"...; "" when never */

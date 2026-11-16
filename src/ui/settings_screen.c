@@ -14,6 +14,7 @@
 #include "../platform/platform.h"
 #include "../platform/xbr.h"
 #include "../ra/achievements.h"
+#include "../stats.h"
 #include "../remote.h"
 #include "../update.h"
 #include "../../third_party/qrcodegen/qrcodegen.h"
@@ -281,6 +282,8 @@ static const Row ACHIEVEMENTS[] = {
      K_ACTION, APPLY_NOW, SP_PROFILE, true, NO_FIELD, NULL, 0, 0},
     {"While playing", "Unlock pop-ups", "The banner when you earn an achievement. Off only hides it: achievements still unlock.",
      K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_popups), OFF_ON, 2, 0},
+    {NULL, "Unlock sound", "Plays a sound when an achievement unlocks. Needs Unlock pop-ups on, and it is silent in Nostalgia mode.",
+     K_TOGGLE, APPLY_NOW, SP_NONE, true, BOOL_FIELD(ra_popup_sound), OFF_ON, 2, 0},
     {NULL, "Pop-up style", "Banner: top right. Compact: a small line at the top. Big trophy: in the middle, like the PS5's.",
      K_CHOICE, APPLY_NOW, SP_NONE, true, INT_FIELD(ra_popup_style), POPUP_STYLES, 3, 0},
     {NULL, "Progress tracker", "The small card when a counted achievement moves (18/80 dragons).", K_TOGGLE,
@@ -1005,6 +1008,7 @@ static void write_value(const Row *r, int v)
             return;
         }
         ra_set_hardcore(v != 0); /* turning it on restarts the game */
+        stats_set_ra_mode(v != 0);
         if (v)
             cheats_clear(&app.cheats);
         return;
@@ -1024,6 +1028,8 @@ static void write_value(const Row *r, int v)
         *(bool *)base = v != 0;
     else
         *(int *)base = value_of(r, v) + r->base;
+    if (v && r->is_bool && r->offset == (int)offsetof(Settings, ra_popup_sound))
+        sfx_play_notification();
     /* console-wide edits reach the running game unless it has its own settings */
     if (t == &app.global && (!scope_game() || !app.game_has_own || r->global_only))
     {
