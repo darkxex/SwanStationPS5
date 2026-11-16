@@ -45,8 +45,8 @@ static void write_records(const char *dest, const GameStats *items, int n)
         const GameStats *g = &items[i];
         if (!g->seconds && !g->last_played && !g->favorite && g->ach_unlocked < 0)
             continue;
-        fprintf(f, "%s\t%u\t%lld\t%d\t%d\t%d\n", g->id, g->seconds, (long long)g->last_played,
-                g->favorite ? 1 : 0, g->ach_unlocked, g->ach_total);
+        fprintf(f, "%s\t%u\t%lld\t%d\t%d\t%d\t%d\t%d\n", g->id, g->seconds, (long long)g->last_played,
+                g->favorite ? 1 : 0, g->ach_unlocked, g->ach_total, g->ach_soft, g->ach_hard);
     }
     bool ok = !ferror(f);
     if (fclose(f) == 0 && ok)
@@ -124,6 +124,7 @@ GameStats *stats_get(const char *id)
     memset(g, 0, sizeof(*g));
     str_copy(g->id, sizeof(g->id), id);
     g->ach_unlocked = -1;
+    g->ach_soft = g->ach_hard = -1;
     return g;
 }
 
@@ -164,8 +165,24 @@ void stats_load(const char *root)
             g->ach_unlocked = atoi(fields[4]);
             g->ach_total = atoi(fields[5]);
         }
+        if (n >= 8)
+        {
+            g->ach_soft = atoi(fields[6]);
+            g->ach_hard = atoi(fields[7]);
+        }
     }
     fclose(f);
+}
+
+void stats_set_ra_mode(bool hardcore)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        GameStats *g = &records[i];
+        const int n = hardcore ? g->ach_hard : g->ach_soft;
+        if (n >= 0 && g->ach_total > 0)
+            g->ach_unlocked = n;
+    }
 }
 
 void stats_save(void)

@@ -789,7 +789,7 @@ void library_free(Library *lib)
 
 /* ---------------------------------------------------------------- deleting a game */
 
-#define DEL_MAX 64
+#define DEL_MAX 256
 
 typedef struct
 {
@@ -887,6 +887,36 @@ int library_delete_game_files(const Game *g)
     static DelList list;
     list.count = 0;
     del_collect(&list, g->folder, g->path, 0);
+    const char *ext = path_ext(g->path);
+    const char *track = strstr(g->path, " (Track ");
+    if (list.count <= 2 && track && str_icmp(ext, "bin") == 0)
+    {
+        /* a track of a disc whose cue is gone: the rest of its tracks go with it */
+        char dir[SwanStationPS5_PATH_MAX], prefix[SwanStationPS5_PATH_MAX];
+        str_copy(dir, sizeof(dir), g->path);
+        char *slash = strrchr(dir, '/');
+        const char *base = strrchr(g->path, '/');
+        base = base ? base + 1 : g->path;
+        size_t plen = (size_t)(strstr(base, " (Track ") - base);
+        if (slash && plen < sizeof(prefix))
+        {
+            *slash = '\0';
+            memcpy(prefix, base, plen);
+            prefix[plen] = '\0';
+            DIR *d = opendir(dir);
+            struct dirent *e;
+            while (d && (e = readdir(d)))
+                if (!strncmp(e->d_name, prefix, plen) && !strncmp(e->d_name + plen, " (Track ", 8) &&
+                    str_icmp(path_ext(e->d_name), "bin") == 0)
+                {
+                    char full[SwanStationPS5_PATH_MAX];
+                    path_join(full, sizeof(full), dir, e->d_name);
+                    del_add(&list, g->folder, full);
+                }
+            if (d)
+                closedir(d);
+        }
+    }
     int removed = 0;
     for (int i = 0; i < list.count; ++i)
         if (remove(list.path[i]) == 0)

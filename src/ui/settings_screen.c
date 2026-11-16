@@ -14,6 +14,7 @@
 #include "../platform/platform.h"
 #include "../platform/xbr.h"
 #include "../ra/achievements.h"
+#include "../stats.h"
 #include "../remote.h"
 #include "../update.h"
 #include "../../third_party/qrcodegen/qrcodegen.h"
@@ -1005,6 +1006,7 @@ static void write_value(const Row *r, int v)
             return;
         }
         ra_set_hardcore(v != 0); /* turning it on restarts the game */
+        stats_set_ra_mode(v != 0);
         if (v)
             cheats_clear(&app.cheats);
         return;

@@ -2303,19 +2303,24 @@ static void disc_after_stop(void)
         shelf_show_game(dp_index());
 }
 
+static void store_ra_progress(GameStats *st)
+{
+    int soft, hard, total;
+    if (!st || !ra_game_progress_modes(&soft, &hard, &total))
+        return;
+    st->ach_soft = soft;
+    st->ach_hard = hard;
+    st->ach_total = total;
+    st->ach_unlocked = ra_hardcore() ? hard : soft;
+}
+
 void app_stop_game(void)
 {
     host_set_region_override(NULL);
     play_save_resume(false);
     state_save_flush();
     play_rewind_reset();
-    int unlocked, total;
-    GameStats *st = app.game && !game_is_bios(app.game) ? stats_get(app.game->id) : NULL;
-    if (st && ra_game_progress(&unlocked, &total))
-    {
-        st->ach_unlocked = unlocked;
-        st->ach_total = total;
-    }
+    store_ra_progress(app.game && !game_is_bios(app.game) ? stats_get(app.game->id) : NULL);
     stats_save();
     if (!game_is_bios(app.game))
         ra_game_unloaded();
@@ -2845,12 +2850,7 @@ static void count_play_time(void)
     uint64_t now = plat_ticks_us();
     if (now - saved_at > 60000000) /* write it down once a minute */
     {
-        int unlocked, total;
-        if (st && ra_game_progress(&unlocked, &total))
-        {
-            st->ach_unlocked = unlocked;
-            st->ach_total = total;
-        }
+        store_ra_progress(st);
         stats_save_async();
         saved_at = now;
     }
@@ -3066,6 +3066,7 @@ int main(int argc, char **argv)
     if (!app.storage_error[0])
     {
         ra_init(&app.paths);
+        stats_set_ra_mode(ra_hardcore());
         gamedb_start(); /* DuckStation's game database, downloaded once */
     }
     remote_update(app.global.remote && !app.storage_error[0]);

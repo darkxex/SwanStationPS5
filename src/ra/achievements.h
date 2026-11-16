@@ -24,6 +24,8 @@ const char *ra_user(void);
 unsigned ra_user_score(void); /* points, 0 when not signed in */
 /* The loaded game's achievements; false when it has none or none loaded. */
 bool ra_game_progress(int *unlocked, int *total);
+/* The same, with what each mode counts as unlocked (softcore counts every unlock, hardcore only its own). */
+bool ra_game_progress_modes(int *soft, int *hard, int *total);
 
 typedef struct
 {

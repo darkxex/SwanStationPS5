@@ -906,6 +906,27 @@ bool ra_game_progress(int *unlocked, int *total)
     return true;
 }
 
+bool ra_game_progress_modes(int *soft, int *hard, int *total)
+{
+    int unlocked;
+    if (!ra_game_progress(&unlocked, total))
+        return false;
+    rc_client_achievement_list_t *list = rc_client_create_achievement_list(
+        client, RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE, RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_LOCK_STATE);
+    if (!list)
+        return false;
+    *soft = *hard = 0;
+    for (uint32_t b = 0; b < list->num_buckets; ++b)
+        for (uint32_t i = 0; i < list->buckets[b].num_achievements; ++i)
+        {
+            const uint8_t u = list->buckets[b].achievements[i]->unlocked;
+            *soft += (u & RC_CLIENT_ACHIEVEMENT_UNLOCKED_SOFTCORE) != 0;
+            *hard += (u & RC_CLIENT_ACHIEVEMENT_UNLOCKED_HARDCORE) != 0;
+        }
+    rc_client_destroy_achievement_list(list);
+    return true;
+}
+
 int ra_leaderboards(RaLeaderboard *out, int max)
 {
     if (!client || !rc_client_get_game_info(client))
