@@ -19,9 +19,7 @@
 
 ## What is SwanStationPS5?
 
-SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 home screen. It started as a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia, and it is no longer one. PSXS5 draws its interface on the CPU, with SDL2's software renderer into a canvas that Vulkan only displays; SwanStationPS5 is now 100% Vulkan, the game's picture and the whole interface drawn by the GPU, so the two frontends no longer line up. It runs every game on SwanStation.
-
-Its frontend (the shelf, menus, controls and tools) began as PSXS5's and has been reworked since to be 100% Vulkan. It drives the SwanStation core: SwanStation is the only emulator.
+SwanStationPS5 is a PlayStation 1 emulator that installs as an app on the PS5 home screen. It is 100% Vulkan: the game's picture and the whole interface (the shelf, menus, controls and tools) are drawn by the GPU. Every game runs on the SwanStation core.
 
 - The emulator is [SwanStation](https://github.com/libretro/swanstation) (DuckStation's libretro core): accurate, and drawn on the PS5's GPU through Vulkan at up to 16x the PS1's resolution, with PGXP. It runs without a BIOS dump on its built-in OpenBIOS, but `SCPH1001.BIN` is highly recommended for good emulation.
 - You pick a game from a cover-flow shelf with your covers.
@@ -79,7 +77,6 @@ SwanStationUWP is a separate project with its own releases and issues; everythin
 - **Show FPS that tells the truth.** It shows the emulated frames, the game's own rate when the game repeats pictures (`60.0 FPS (game 25.0)`) and, while frames are generated, the frames you actually see and how many are made for each of the game's (`100.0 FPS (game 25.0) | FG x4`).
 - **HD texture packs.** The *Load HD textures* switch turns on SwanStation's texture replacement; put a pack's PNG files in `/data/SwanStationPS5/cache/textures/<serial>/` (for example `SCUS-94900`).
 - **PS1 homebrew.** Homebrew discs boot too: [Yume Nikki PS1](https://eliasdaler.itch.io/yume-nikki-ps1) and [Doki Doki Literature Club PSX](https://www.psxhomebrewgames.com/2025/09/doki-doki-literature-club-psx.html) are confirmed.
-- **PSXS5 friendly.** It still reads PSXS5's games and BIOS folders (see [supported folders](#supported-folders-for-games-and-bios)), so a PSXS5 library keeps working.
 - **Close the app from the controller.** Hold O for 2 seconds. Menus show the title from the game database, and the game menu has pills with the serial and the folder.
 - **Up to 4 players.** A multitap for the games that support it: each PS5 controller is a player.
 - **Fan translations.** Put a `.ppf` patch next to a game and SwanStationPS5 applies it when the game starts.
@@ -163,7 +160,7 @@ The games are looked for in all of these folders at once. Inside each, **one fol
 | Where | Folder |
 |---|---|
 | **The console** (the default) | `/data/SwanStationPS5/games/<Game name>/` |
-| The console, from PSXS5 | `/data/PSXS5/games/<Game name>/` |
+| The console, legacy folder | `/data/PSXS5/games/<Game name>/` |
 | **A USB drive** | `/mnt/usb0` to `/mnt/usb7`, then `SwanStationPS5/games/<Game name>/` |
 | An extended storage | `/mnt/ext0` or `/mnt/ext1`, then `SwanStationPS5/games/<Game name>/` |
 | **An NFS server** | the folder you add in Settings > System > NFS shares, one folder per game (see [Games on an NFS server](#games-on-an-nfs-server)) |
@@ -172,7 +169,7 @@ On each USB drive and extended storage these four also work (`<drive>` is `/mnt/
 
 - `<drive>/SwanStationPS5/games/<Game name>/`
 - `<drive>/SwanStationPS5/<Game name>/` (without `games`)
-- `<drive>/PSXS5/games/<Game name>/` (PSXS5's folder)
+- `<drive>/PSXS5/games/<Game name>/` (legacy folder)
 - `<drive>/PSXS5/<Game name>/`
 
 Example on a USB drive: `/mnt/usb0/SwanStationPS5/games/Crash Bandicoot/Crash Bandicoot.chd`.
@@ -184,7 +181,7 @@ You can also pick one folder name for drives in Settings > System > SwanStationP
 | Priority | Folder |
 |---|---|
 | 1st | `/data/SwanStationPS5/bios/` |
-| 2nd (only if the first has no `.bin`) | `/data/PSXS5/bios/` (PSXS5's folder) |
+| 2nd (only if the first has no `.bin`) | `/data/PSXS5/bios/` (legacy folder) |
 
 Put the BIOS files directly in the folder, not in a subfolder, and keep their standard names: `SCPH1001.BIN` (recommended), `scph5500.bin` (Japan), `scph5501.bin` (USA), `scph5502.bin` (Europe), `scph101.bin`. A BIOS on a USB drive or extended storage is not read. With no BIOS, SwanStation uses its built-in OpenBIOS. *Settings → About* shows which one is in use.
 
@@ -481,7 +478,9 @@ python3 tools/make_release.py   # optional: build the payload and the app, and p
 
 ## Credits
 
-SwanStationPS5 started as a fork of [PSXS5](https://github.com/SynoPiia/PSXS5) by SynoPiia and is built on the work of a lot of people. Thank you all.
+SwanStationPS5 is built on the work of a lot of people. Thank you all.
+
+* **SynoPiia**, for [PSXS5](https://github.com/SynoPiia/PSXS5), part of whose code this project builds on.
 
 * **The SwanStation and DuckStation contributors**, for [SwanStation](https://github.com/libretro/swanstation), the emulator SwanStationPS5 runs.
 * **Mihawk-99**, for the PS5 port of Mesa's RADV Vulkan driver ([PS5_Mesa](https://github.com/mihawk-99/PS5_Mesa), [PS5_Vulkan](https://github.com/mihawk-99/PS5_Vulkan)) and the payload SDK it is built with ([PS5_PayloadSDK](https://github.com/mihawk-99/PS5_PayloadSDK)), **Crux2**, for the RADV patches that driver carries, and **the Mesa contributors**, for the driver itself.
